@@ -1,3 +1,6 @@
 [submodule "src/imgui"]
 	path = src/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "src/rapidjson"]
+	path = src/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
