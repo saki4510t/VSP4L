@@ -43,7 +43,8 @@ pkg_check_modules(LIBGLEW REQUIRED glew)
 # search library with pkg-config and name its results "LIBPNG"
 pkg_check_modules(LIBPNG REQUIRED libpng)
 # search library with pkg-config and name its results "LIBJPEG_TURBO"
-pkg_check_modules(LIBJPEG_TURBO REQUIRED libjpeg)
+pkg_check_modules(LIBJPEG REQUIRED libjpeg)
+pkg_check_modules(LIBJPEG_TURBO REQUIRED libturbojpeg)
 # search library with pkg-config and name its results "LIBYUV"
 pkg_check_modules(LIBYUV REQUIRED libyuv)
 # search library with pkg-config and name its results "LIBUDEV"
@@ -51,13 +52,15 @@ pkg_check_modules(LIBUDEV REQUIRED libudev)
 # search library with pkg-config and name its results "GLFW"
 pkg_check_modules(LIBGLFW REQUIRED glfw3)
 
+# サブモジュールとしてsrc下に取り込んだimguiをスタティックライブラリーとしてビルドする
 add_library(imgui STATIC
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
     imgui/imgui_draw.cpp
     imgui/imgui_tables.cpp
     imgui/imgui_widgets.cpp
-    imgui/backends/imgui_impl_android.cpp
+    imgui/backends/imgui_impl_glfw.cpp
+    imgui/backends/imgui_impl_opengl2.cpp
     imgui/backends/imgui_impl_opengl3.cpp
 )
 
@@ -75,12 +78,15 @@ target_include_directories(imgui PUBLIC
     ./imgui/backends/
 )
 
+add_subdirectory(${lib_src_DIR}/aandusb)
+add_subdirectory(${lib_src_DIR}/common)
 
 add_executable(${target}
-    ../window.cpp
+    window.cpp
     main.cpp
 )
 
+# ターゲットアプリのビルド設定
 target_compile_definitions(${target} PRIVATE
     #ログ出力設定
     NDEBUG            # LOG_ALLを無効にする・assertを無効にする場合
@@ -91,6 +97,7 @@ target_compile_definitions(${target} PRIVATE
 
 target_include_directories(${target} PRIVATE
     ../
+    ./aandusb
     ${LIBGLEW_INCLUDE_DIRS}
     ${LIBGL_INCLUDE_DIRS}
     ${LIBGLFW_INCLUDE_DIRS}
@@ -105,15 +112,16 @@ target_link_libraries(${target} PRIVATE
     ${LIBJPEG_TURBO_LIBRARIES}
     ${LIBYUV_LIBRARIES}
     pthread
-    common
-    aandusb
     imgui
+    aandusb_core
+    aandusb_pipeline
+    common_static
 )
 
-message("==================== All variables (samples/linux/v4l2test)  ====================")
+message("==================== All variables (EyeApp)  ====================")
 get_cmake_property(_variableNames CACHE_VARIABLES)
 list (SORT _variableNames)
 foreach (_variableName ${_variableNames})
     message(STATUS "${_variableName}=${${_variableName}}")
 endforeach()
-message("==================== End of all variables (samples/linux/v4l2test)  ====================")
+message("==================== End of all variables (EyeApp)  ====================")

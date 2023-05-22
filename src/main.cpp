@@ -32,19 +32,18 @@
 
 #include "utilbase.h"
 
-// uvc
-#include "uvc/aanduvc.h"
-// uvc/pipeline
-#include "uvc/pipeline/pipeline_gl_renderer.h"
-// v4l2/pipeline
-#include "v4l2/pipeline/pipeline_v4l2_source.h"
-
-#include "app_const.h"
-#include "window.h"
+// common
 #include "glutils.h"
+// aandusb
+#include "window.h"
+// aandusb/pipeline
+#include "pipeline/pipeline_gl_renderer.h"
+#include "pipeline/pipeline_v4l2_source.h"
+// app
+#include "app_const.h"
 
 namespace sere = serenegiant;
-namespace pipeline = serenegiant::usb::uvc::pipeline;
+namespace pipeline = serenegiant::pipeline;
 namespace v4l2 = serenegiant::v4l2::pipeline;
 
 //================================================================================
@@ -149,12 +148,18 @@ int main(int argc, const char *argv[]) {
     is_running = true;
     std::thread handler_thread(handler_thread_func);
 
+	bool first_time = true;
     for ( ; is_running ; ) {
         // ブロッキングしないように標準入力stdin(ファイルディスクリプタ0)から
         // 読み込み可能な場合のみgetcharを呼び出す
         if (can_read(0)) {
             // 何か入力するまで実行する
             const char c = getchar();
+			if (first_time) {
+				// なぜか最初に[ENTER]が来るので1つ目を読み飛ばす
+				first_time = false;
+				continue;
+			}
             switch (c) {
             }
             if (c != EOF) break;
