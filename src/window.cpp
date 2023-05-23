@@ -46,7 +46,8 @@ Window::Window(
 	const int width, const int height,
 	const char *title)
 :	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
-	aspect(640 / 480.0f)
+	aspect(640 / 480.0f),
+	on_key_event_func(nullptr)
 {
 	ENTER();
 
@@ -61,13 +62,16 @@ Window::Window(
 			EXIT();
 		}
 	
-		// ダブルバッファの入れ替えタイミングを指定
+		// ダブルバッファの入れ替えタイミングを指定, 垂直同期のタイミングを待つ
 		glfwSwapInterval(1);
 
 		// コールバック内からWindowインスタンスを参照できるようにポインタを渡しておく
 		glfwSetWindowUserPointer(window, this);
 		// ウインドウサイズが変更されたときのコールバックをセット
 		glfwSetWindowSizeCallback(window, resize);
+		// キー入力イベントコールバックをセット
+		glfwSetKeyCallback(window, key_callback);
+		// 作成したウインドウを初期化
 		resize(window, width, height);
 	}
 
@@ -105,20 +109,34 @@ void Window::swap_buffers() {
 }
 
 /*static, protected*/
-void Window::resize(GLFWwindow *window, int width, int height) {
+void Window::resize(GLFWwindow *win, int width, int height) {
     ENTER();
 
 	// フレームバッファのサイズを調べる
 	int fbWidth, fbHeight;
-	glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+	glfwGetFramebufferSize(win, &fbWidth, &fbHeight);
 	// フレームバッファ全体をビューポートに設定する
 	glViewport(0, 0, fbWidth, fbHeight);
 
 	// このインスタンスの this ポインタを得る
-	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(win));
 	if (self) {
 		// このインスタンスが保持する縦横比を更新する
 		self->aspect = width / (float)height;
+	}
+
+	EXIT();
+}
+
+/*static, protected*/
+void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, int mods) {
+	ENTER();
+	
+	// このインスタンスの this ポインタを得る
+	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(win));
+	if (self && self->on_key_event_func) {
+		// コールバックが設定されていればそれを呼び出す
+		self->on_key_event_func(key, scancode, action, mods);
 	}
 
 	EXIT();

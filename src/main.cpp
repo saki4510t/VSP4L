@@ -9,7 +9,7 @@
 #define VIDEO_WIDTH 1280
 #define VIDEO_HEIGHT 720
 
-#if 1    // set 0 if you need debug log, otherwise set 1
+#if 0    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
 	#endif
@@ -51,6 +51,33 @@ static volatile bool is_running;
 static v4l2::V4L2SourcePipelineSp source;
 static pipeline::GLRendererPipelineSp renderer;
 
+/**
+ * @brief GLFWからのキーイベントの処理ハンドラー
+ * 
+ * @param key 
+ * @param scancode 
+ * @param action 
+ * @param mods 
+ * @return int32_t 
+ */
+static int32_t handle_on_key_event(const int &key, const int &scancode, const int &action, const int &mods) {
+	ENTER();
+
+	LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d", key, scancode, glfwGetKeyName(key, scancode), action, mods);
+
+	if ((key == GLFW_KEY_ENTER)
+		||(key == GLFW_KEY_ESCAPE)) {
+		is_running = false;
+	}
+
+	RETURN(0, int32_t);
+}
+
+/**
+ * @brief 描画処理を実行
+ * 
+ * @param window 
+ */
 static void handle_draw(sere::Window &window) {
 	ENTER();
 
@@ -94,6 +121,8 @@ void handler_thread_func() {
 			LOGD("windowを初期化");
 			sere::Window window(VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, "aAndUsb-Linux sample");
 			if (is_running && window.is_valid()) {
+				// キーイベントハンドラを登録
+				window.on_key_event(handle_on_key_event);
 				LOGD("GLFWのイベントループ開始");
 				// ウィンドウが開いている間繰り返す
 				while (is_running && window) {
@@ -122,56 +151,56 @@ void handler_thread_func() {
     EXIT();
 }
 
-/**
- * 指定したファイルディスクリプタから読み込み可能かどうかをチェック
- * @param fd 読み込み可能かどうかを確認するファイルディスクリプタ
- * @param 0: 読み込みできない, 1: 読み込みできる
- */
-static int can_read(int fd) {
-    fd_set fdset;
-    struct timeval tv { .tv_sec = 0, .tv_usec = 0};
-    FD_ZERO(&fdset);
-    FD_SET(fd, &fdset);
-    return select(fd+1 , &fdset, nullptr, nullptr, &tv);
-}
+// /**
+//  * 指定したファイルディスクリプタから読み込み可能かどうかをチェック
+//  * @param fd 読み込み可能かどうかを確認するファイルディスクリプタ
+//  * @param 0: 読み込みできない, 1: 読み込みできる
+//  */
+// static int can_read(int fd) {
+//     fd_set fdset;
+//     struct timeval tv { .tv_sec = 0, .tv_usec = 0};
+//     FD_ZERO(&fdset);
+//     FD_SET(fd, &fdset);
+//     return select(fd+1 , &fdset, nullptr, nullptr, &tv);
+// }
 
 int main(int argc, const char *argv[]) {
 
 	ENTER();
 
 	LOGI("aAndUsb test app for linux.\n");
-	LOGI("Pressing [CTRL+C] or [ENTER] will finish this app\n");
+	LOGI("Pressing [ESC] or [ENTER] will finish this app\n");
 
-    // 入力した文字をすぐに引き渡す
-    system("stty -echo -icanon min 1 time 0");
+    // // 入力した文字をすぐに引き渡す
+    // system("stty -echo -icanon min 1 time 0");
 
     is_running = true;
     std::thread handler_thread(handler_thread_func);
 
 	bool first_time = true;
     for ( ; is_running ; ) {
-        // ブロッキングしないように標準入力stdin(ファイルディスクリプタ0)から
-        // 読み込み可能な場合のみgetcharを呼び出す
-        if (can_read(0)) {
-            // 何か入力するまで実行する
-            const char c = getchar();
-			if (first_time) {
-				// なぜか最初に[ENTER]が来るので1つ目を読み飛ばす
-				first_time = false;
-				continue;
-			}
-            switch (c) {
-            }
-            if (c != EOF) break;
-        }
+        // // ブロッキングしないように標準入力stdin(ファイルディスクリプタ0)から
+        // // 読み込み可能な場合のみgetcharを呼び出す
+        // if (can_read(0)) {
+        //     // 何か入力するまで実行する
+        //     const char c = getchar();
+		// 	if (first_time) {
+		// 		// なぜか最初に[ENTER]が来るので1つ目を読み飛ばす
+		// 		first_time = false;
+		// 		continue;
+		// 	}
+        //     switch (c) {
+        //     }
+        //     if (c != EOF) break;
+        // }
         usleep(300000);
     }
     is_running = false;
     if (handler_thread.joinable()) {
         handler_thread.join();
     }
-    // コンソールの設定をデフォルトに戻す
-    system("stty echo -icanon min 1 time 0");
+    // // コンソールの設定をデフォルトに戻す
+    // system("stty echo -icanon min 1 time 0");
 
 	LOGI("Finished.");
 	
