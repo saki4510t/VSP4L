@@ -115,8 +115,7 @@ void Window::resize(GLFWwindow *window, int width, int height) {
 	glViewport(0, 0, fbWidth, fbHeight);
 
 	// このインスタンスの this ポインタを得る
-	Window *self
-		= reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
 	if (self) {
 		// このインスタンスが保持する縦横比を更新する
 		self->aspect = width / (float)height;
