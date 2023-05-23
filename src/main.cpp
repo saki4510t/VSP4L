@@ -119,7 +119,7 @@ void handler_thread_func() {
 		source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
 		if (!source->start()) {
 			LOGD("windowを初期化");
-			sere::Window window(VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, "aAndUsb-Linux sample");
+			sere::Window window(VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, "BOV EyeApp");
 			if (is_running && window.is_valid()) {
 				// キーイベントハンドラを登録
 				window.on_key_event(handle_on_key_event);
