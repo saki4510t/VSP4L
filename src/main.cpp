@@ -146,6 +146,7 @@ void handler_thread_func() {
 	LOGD("GLFWスレッド終了");
 
 	source.reset();
+	renderer.reset();
     is_running = false;
 
     EXIT();
