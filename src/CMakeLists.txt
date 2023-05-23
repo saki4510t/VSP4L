@@ -83,6 +83,7 @@ add_subdirectory(${lib_src_DIR}/common)
 
 add_executable(${target}
     window.cpp
+    eye_app.cpp
     main.cpp
 )
 
