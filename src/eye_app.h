@@ -9,6 +9,7 @@
 #include "handler.h"
 #include "gloffscreen.h"
 #include "glrenderer.h"
+#include "matrix.h"
 // aandusb/pipeline
 #include "pipeline/pipeline_gl_renderer.h"
 
@@ -26,9 +27,8 @@ class LongPressCheckTask;
  * 
  */
 typedef enum {
-	KEY_MODE_BRIGHTNESS = 0,	// 輝度調整モード
-	KEY_MODE_ZOOM,				// 拡大縮小モード
-	KEY_MODE_OSD,				// OSD操作モード
+	KEY_MODE_NORMAL = 0,	// 通常モード
+	KEY_MODE_OSD,			// OSD操作モード
 } key_mode_t;
 
 /**
@@ -50,6 +50,7 @@ private:
 	const bool initialized;
 	volatile bool is_running;
 	volatile bool req_change_effect;
+	volatile bool req_change_matrix;
 	thread::Handler handler;
 	// Handlerの動作テスト用
 	std::function<void()> test_task;
@@ -60,6 +61,8 @@ private:
 	std::unordered_map<int, KeyEventSp> key_state;
 	// キーの長押し確認用ラムダ式を保持するハッシュマップ
 	std::unordered_map<int, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
+	math::Matrix mvp_matrix;
+	int zoom_ix;
 
 	/**
 	 * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
@@ -112,19 +115,12 @@ private:
 	 */
 	int32_t handle_on_key_up(const KeyEvent &event);
 	/**
-	 * @brief 輝度調整モードで短押ししたときの処理, handle_on_key_upの下請け
+	 * @brief 通常モードで短押ししたときの処理, handle_on_key_upの下請け
 	 * 
 	 * @param event 
 	 * @return int32_t 
 	 */
-	int32_t on_key_up_brightness(const KeyEvent &event);
-	/**
-	 * @brief ズームモードで短押ししたときの処理, handle_on_key_upの下請け
-	 * 
-	 * @param event 
-	 * @return int32_t 
-	 */
-	int32_t on_key_up_zoom(const KeyEvent &event);
+	int32_t on_key_up_normal(const KeyEvent &event);
 	/**
 	 * @brief OSD操作モードで短押ししたときの処理, handle_on_key_upの下請け
 	 * 
@@ -141,19 +137,12 @@ private:
 	 */
 	int32_t handle_on_long_key_pressed(const KeyEvent &event);
 	/**
-	 * @brief 輝度調整モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+	 * @brief 通常モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
 	 * 
 	 * @param event 
 	 * @return int32_t 
 	 */
-	int32_t on_long_key_pressed_brightness(const KeyEvent &event);
-	/**
-	 * @brief ズームモードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
-	 * 
-	 * @param event 
-	 * @return int32_t 
-	 */
-	int32_t on_long_key_pressed_zoom(const KeyEvent &event);
+	int32_t on_long_key_pressed_normal(const KeyEvent &event);
 	/**
 	 * @brief OSD操作モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
 	 * 
@@ -161,6 +150,19 @@ private:
 	 * @return int32_t 
 	 */
 	int32_t on_long_key_pressed_osd(const KeyEvent &event);
+
+	/**
+	 * @brief 輝度変更要求
+	 * 
+	 * @param inc_dec trueなら輝度増加、falseなら輝度減少
+	 */
+	void request_change_brightness(const bool &inc_dec);
+	/**
+	 * @brief 拡大縮小率変更要求
+	 * 
+	 * @param inc_dec trueなら拡大、falseなら縮小
+	 */
+	void request_change_scale(const bool &inc_dec);
 
 	/**
 	 * @brief Create a renderer object

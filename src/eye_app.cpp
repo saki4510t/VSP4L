@@ -87,11 +87,13 @@ EyeApp::EyeApp(const int &gl_version)
 	initialized(!Window::initialize()),
     is_running(false), req_change_effect(false),
 	effect_type(EFFECT_NON),
-	key_mode(KEY_MODE_BRIGHTNESS),
+	key_mode(KEY_MODE_NORMAL),
+	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX),
 	test_task(nullptr)
 {
     ENTER();
 
+	mvp_matrix.scale(ZOOM_FACTOR[zoom_ix]);
 #if 1
 	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
 	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
@@ -183,11 +185,22 @@ void EyeApp::renderer_thread_func() {
 				auto offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, false);
 				gl::GLRendererUp gl_renderer = nullptr;
 				effect_t current_effect = effect_type;
+				req_change_matrix = true;
+				float mat[16]{};
 				LOGD("GLFWのイベントループ開始");
 				// ウィンドウが開いている間繰り返す
 				while (is_running && window) {
 					const auto start = systemTime();
 					// 描画処理
+					if (UNLIKELY(req_change_matrix)) {
+						{
+							std::lock_guard<std::mutex> lock(state_lock);
+							req_change_matrix = false;
+							mvp_matrix.getOpenGLSubMatrix(mat);
+						}
+						renderer_pipeline->set_mvp_matrix(mat, 0);
+					}
+					glClear(GL_COLOR_BUFFER_BIT);
 					if (current_effect == EFFECT_NON) {
 						renderer_pipeline->on_draw();
 					} else {
@@ -298,6 +311,7 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
 	EXIT();
 }
 
+//--------------------------------------------------------------------------------
 /**
  * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
  * 
@@ -432,12 +446,8 @@ int32_t EyeApp::handle_on_key_up(const KeyEvent &event) {
 		if (result) {
 			// 同時押しで処理済みでなければキーモード毎の処理を行う
 			switch (current_key_mode) {
-			case KEY_MODE_BRIGHTNESS:
-				result = on_key_up_brightness(event);
-				break;
-			case KEY_MODE_ZOOM:
-				result = on_key_up_zoom(event);
-				break;
+			case KEY_MODE_NORMAL:
+				result = on_key_up_normal(event);
 			case KEY_MODE_OSD:
 				result = on_key_up_osd(event);
 				break;
@@ -454,29 +464,30 @@ int32_t EyeApp::handle_on_key_up(const KeyEvent &event) {
 }
 
 /**
- * @brief 輝度調整モードで短押ししたときの処理, handle_on_key_upの下請け
+ * @brief 通常モードで短押ししたときの処理, handle_on_key_upの下請け
  * 
  * @param event 
  * @return int32_t 
  */
-int32_t EyeApp::on_key_up_brightness(const KeyEvent &event) {
+int32_t EyeApp::on_key_up_normal(const KeyEvent &event) {
 	ENTER();
 
-	// FIXME 未実装
-
-	RETURN(0, int32_t);
-}
-
-/**
- * @brief ズームモードで短押ししたときの処理, handle_on_key_upの下請け
- * 
- * @param event 
- * @return int32_t 
- */
-int32_t EyeApp::on_key_up_zoom(const KeyEvent &event) {
-	ENTER();
-
-	// FIXME 未実装
+	const auto key = event.key;
+	switch (key) {
+	case GLFW_KEY_RIGHT:
+	case GLFW_KEY_LEFT:
+		// 輝度変更
+		request_change_brightness(key == GLFW_KEY_RIGHT);
+		break;
+	case GLFW_KEY_DOWN:
+	case GLFW_KEY_UP:
+		// 拡大縮小
+		request_change_scale(key == GLFW_KEY_UP);
+		break;
+	default:
+		LOGW("unexpected key code,%d", key);
+		break;
+	}
 
 	RETURN(0, int32_t);
 }
@@ -525,11 +536,8 @@ int32_t EyeApp::handle_on_long_key_pressed(const KeyEvent &event) {
 		if (result) {
 			// 同時押しで処理済みでなければキーモード毎の処理を行う
 			switch (current_key_mode) {
-			case KEY_MODE_BRIGHTNESS:
-				result = on_long_key_pressed_brightness(event);
-				break;
-			case KEY_MODE_ZOOM:
-				result = on_long_key_pressed_zoom(event);
+			case KEY_MODE_NORMAL:
+				result = on_long_key_pressed_normal(event);
 				break;
 			case KEY_MODE_OSD:
 				result = on_long_key_pressed_osd(event);
@@ -546,28 +554,15 @@ int32_t EyeApp::handle_on_long_key_pressed(const KeyEvent &event) {
 }
 
 /**
- * @brief 輝度調整モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+ * @brief 通常モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
  * 
  * @param event 
  * @return int32_t 
  */
-int32_t EyeApp::on_long_key_pressed_brightness(const KeyEvent &event) {
+int32_t EyeApp::on_long_key_pressed_normal(const KeyEvent &event) {
 	ENTER();
 
-	// FIXME 未実装
-
-	RETURN(0, int32_t);
-}
-
-/**
- * @brief ズームモードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
- * 
- * @param event 
- * @return int32_t 
- */
-int32_t EyeApp::on_long_key_pressed_zoom(const KeyEvent &event) {
-	ENTER();
-
+	const auto key = event.key;
 	// FIXME 未実装
 
 	RETURN(0, int32_t);
@@ -585,6 +580,45 @@ int32_t EyeApp::on_long_key_pressed_osd(const KeyEvent &event) {
 	// FIXME 未実装
 
 	RETURN(0, int32_t);
+}
+
+/**
+ * @brief 輝度変更要求
+ * 
+ * @param inc_dec trueなら輝度増加、falseなら輝度減少
+ */
+void EyeApp::request_change_brightness(const bool &inc_dec) {
+	ENTER();
+
+	// FIXME 未実装
+
+	EXIT();
+}
+
+/**
+ * @brief 拡大縮小率変更要求
+ * 
+ * @param inc_dec trueなら拡大、falseなら縮小
+ */
+void EyeApp::request_change_scale(const bool &inc_dec) {
+	ENTER();
+
+	int ix;
+	std::lock_guard<std::mutex> lock(state_lock);		
+	ix = zoom_ix + (inc_dec ? 1 : -1);
+	if (ix < 0) {
+		ix = 0;
+	} else if (ix >= NUM_ZOOM_FACTOR) {
+		ix = NUM_ZOOM_FACTOR - 1;
+	}
+	if (ix != zoom_ix) {
+		zoom_ix = ix;
+		auto factor = ZOOM_FACTOR[ix];
+		mvp_matrix.setScale(factor, factor, 1.0f);
+		req_change_matrix = true;
+	}
+
+	EXIT();
 }
 
 }   // namespace serenegiant::app
