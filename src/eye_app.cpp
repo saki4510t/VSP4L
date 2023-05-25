@@ -1,6 +1,6 @@
 #define COUNT_FRAMES (0)
-#define VIDEO_WIDTH (1280)
-#define VIDEO_HEIGHT (720)
+#define VIDEO_WIDTH (1920)
+#define VIDEO_HEIGHT (1080)
 
 #if 0    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
