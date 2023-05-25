@@ -21,7 +21,7 @@
 
 #include "window.h"
 
-namespace serenegiant {
+namespace serenegiant::app {
 
 int Window::initialize() {
 	ENTER();
@@ -141,4 +141,4 @@ void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, in
 	EXIT();
 }
 
-}	// end of namespace serenegiant
+}	// end of namespace serenegiant::app

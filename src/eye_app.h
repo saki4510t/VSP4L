@@ -14,11 +14,14 @@
 
 namespace pipeline = serenegiant::pipeline;
 
-
-namespace serenegiant {
+namespace serenegiant::app {
 class Window;
 
-namespace app {
+enum {
+	KEY_MODE_ZOOM = 0,      // 拡大縮小モード
+	KEY_MODE_BRIGHTNESS,    // 輝度調整モード
+	KEY_MODE_OSD,           // OSD操作モード
+};
 
 class EyeApp {
 private:
@@ -62,7 +65,7 @@ private:
 	 * @param window
 	 * @param renderer
 	 */
-	void handle_draw(serenegiant::Window &window, pipeline::GLRendererPipelineSp &renderer);
+	void handle_draw(Window &window, pipeline::GLRendererPipelineSp &renderer);
 	/**
 	 * @brief 描画スレッドの実行関数
 	 *
@@ -90,7 +93,6 @@ public:
 	inline bool is_initialized() const { return initialized; };
 };
 
-}   // namespace app
-}   // namespace serenegiant
+}   // namespace serenegiant::app
 
 #endif /* EYE_APP_H_ */

@@ -42,7 +42,7 @@ namespace serenegiant::app {
  */
 /*public*/
 EyeApp::EyeApp()
-:   initialized(!serenegiant::Window::initialize()),
+:   initialized(!Window::initialize()),
     is_running(false),
 	test_task(nullptr)
 {
@@ -124,7 +124,7 @@ void EyeApp::renderer_thread_func() {
 		source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
 		if (!source->start()) {
 			LOGD("windowを初期化");
-			sere::Window window(VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, "BOV EyeApp");
+			Window window(VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, "BOV EyeApp");
 			if (is_running && window.is_valid()) {
 				// キーイベントハンドラを登録
 				window.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
@@ -256,7 +256,7 @@ int32_t EyeApp::handle_on_key_up(const KeyEvent &event) {
  * @param window 
  */
 /*private*/
-void EyeApp::handle_draw(sere::Window &window, pipeline::GLRendererPipelineSp &renderer) {
+void EyeApp::handle_draw(Window &window, pipeline::GLRendererPipelineSp &renderer) {
 	ENTER();
 
 #if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)

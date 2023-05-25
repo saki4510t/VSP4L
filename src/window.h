@@ -14,7 +14,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-namespace serenegiant {
+namespace serenegiant::app {
 
 typedef std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
 
@@ -53,6 +53,6 @@ public:
 	}
 };
 
-}	// end of namespace serenegiant
+}	// end of namespace serenegiant::app
 
 #endif //AANDUSB_WINDOW_H
