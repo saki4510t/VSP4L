@@ -95,7 +95,6 @@ Window::operator bool() {
 	// イベントを確認
 //	glfwWaitEvents(); // こっちはイベントが起こるまで実行をブロックする
 	// glfwWaitEventsTimeout(0.010); // イベントが起こるかタイム・アウトするまで実行をブロック, glfw3.2以降
-	usleep(12000); // 12msec
 	glfwPollEvents(); // イベントをチェックするが実行をブロックしない
 	// ウィンドウを閉じる必要がなければ true を返す
 	return window && !glfwWindowShouldClose(window);

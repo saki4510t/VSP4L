@@ -22,6 +22,7 @@
 #include "utilbase.h"
 // common
 #include "glutils.h"
+#include "times.h"
 // aandusb
 #include "window.h"
 // aandusb/pipeline
@@ -139,10 +140,16 @@ void EyeApp::renderer_thread_func() {
 				LOGD("GLFWのイベントループ開始");
 				// ウィンドウが開いている間繰り返す
 				while (is_running && window) {
+					const auto start = systemTime();
 					// 描画処理
 					handle_draw(window, renderer);
 					// ダブルバッファーをスワップ
 					window.swap_buffers();
+					auto t = (systemTime() - start) / 1000L;
+					if (t < 12000) {
+						// 60fpsだと16.6msだけど少し余裕をみて最大12ms待機する
+						usleep(12000 - t);
+					}
 				}
 				LOGD("GLFWのイベントループ終了");
 				source.reset();

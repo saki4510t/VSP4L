@@ -16,6 +16,8 @@
 
 namespace serenegiant {
 
+typedef std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
+
 /**
  * glfwによるwindow関係の処理用ヘルパークラス
  * あらかじめglfwInitを呼び出してglfwを初期化しておくこと
@@ -24,7 +26,7 @@ class Window {
 private:
 	GLFWwindow *window;
 	GLfloat aspect;
-	std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> on_key_event_func;
+	OnKeyEventFunc on_key_event_func;
 protected:
 	static void resize(GLFWwindow *win, int width, int height);
 	static void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods);
@@ -45,7 +47,7 @@ public:
 	 * @param listener 
 	 * @return Window& 
 	 */
-	inline Window &on_key_event(std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> listener) {
+	inline Window &on_key_event(OnKeyEventFunc listener) {
 		on_key_event_func = listener;
 		return *this;
 	}
