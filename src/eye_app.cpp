@@ -128,7 +128,7 @@ void EyeApp::renderer_thread_func() {
 			if (is_running && window.is_valid()) {
 				// キーイベントハンドラを登録
 				window.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
-                    return handle_on_key_event(key, scancode, action, mods);
+                    return handle_on_key_event(KeyEvent(key, scancode, action, mods));
                 });
                 if (UNLIKELY(!renderer)) {
                     const char* versionStr = (const char*)glGetString(GL_VERSION);
@@ -178,27 +178,27 @@ void EyeApp::renderer_thread_func() {
  * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
  * 4種類だけキー処理を行う
  * 
- * @param key 
- * @param scancode 
- * @param action 
- * @param mods 
+ * @param event 
  * @return int32_t 
  */
 /*private*/
-int32_t EyeApp::handle_on_key_event(const int &key, const int &scancode, const int &action, const int &mods) {
+int32_t EyeApp::handle_on_key_event(const KeyEvent &event) {
 	ENTER();
 
 	int32_t result = 0;
 
-	LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d", key, scancode, glfwGetKeyName(key, scancode), action, mods);
+	const auto key = event.key;
+	LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d", key, event.scancode, glfwGetKeyName(key, event.scancode), event.action, event.mods);
 	if ((key >= GLFW_KEY_RIGHT) && (key <= GLFW_KEY_UP)) {
-		switch (action) {
+		switch (event.action) {
 		case GLFW_RELEASE:	// 0
-			result = handle_on_key_up(key, scancode, action, mods);
+			result = handle_on_key_up(event);
 			break;
 		case GLFW_PRESS:	// 1
+			key_state[key] = 0;
+			// pass through
 		case GLFW_REPEAT:	// 2
-			result = handle_on_key_down(key, scancode, action, mods);
+			result = handle_on_key_down(event);
 			break;
 		default:
 			break;
@@ -213,24 +213,18 @@ int32_t EyeApp::handle_on_key_event(const int &key, const int &scancode, const i
  * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
  * 4種類だけキー処理を行う
  * 
- * @param key 
- * @param scancode 
- * @param action 
- * @param mods 
+ * @param event 
  * @return int32_t 
  */
 /*private*/
-int32_t EyeApp::handle_on_key_down(const int &key, const int &scancode, const int &action, const int &mods) {
+int32_t EyeApp::handle_on_key_down(const KeyEvent &event) {
 	ENTER();
 
 	int32_t result = 0;
-	const auto ix = key - GLFW_KEY_RIGHT;	// [0,3]
-#if 0
-	if ((ix < 0) || (ix > 3)) {
-		LOGE("unexpected key code,%d", key);
-		RETURN(-1, int32_t);
-	}
-#endif
+
+	const auto key = event.key;
+	const auto state = key_state[key];
+	key_state[key] = key_state[key] + 1;
 
 	RETURN(result, int32_t);
 }
@@ -240,32 +234,18 @@ int32_t EyeApp::handle_on_key_down(const int &key, const int &scancode, const in
  * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
  * 4種類だけキー処理を行う
  * 
- * @param key 
- * @param scancode 
- * @param action 
- * @param mods 
+ * @param event 
  * @return int32_t 
  */
 /*private*/
-int32_t EyeApp::handle_on_key_up(const int &key, const int &scancode, const int &action, const int &mods) {
+int32_t EyeApp::handle_on_key_up(const KeyEvent &event) {
 	ENTER();
 
 	int32_t result = 0;
-	const auto ix = key - GLFW_KEY_RIGHT;	// [0,3]
-#if 0
-	if ((ix < 0) || (ix > 3)) {
-		LOGE("unexpected key code,%d", key);
-		RETURN(-1, int32_t);
-	}
-#endif
 
-#if 1
-    // デバッグ用にESC/ENTERでアプリを終了させる
-	if ((key == GLFW_KEY_ENTER)
-		||(key == GLFW_KEY_ESCAPE)) {
-		is_running = false;
-	}
-#endif
+	const auto key = event.key;
+	const auto state = key_state[key];
+	key_state[key] = 0;
 
 	RETURN(result, int32_t);
 }
