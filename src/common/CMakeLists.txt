@@ -21,6 +21,7 @@ add_library(objlib OBJECT
     glutils.cpp
     handler.cpp
     json_helper.cpp
+    matrix.cpp
     times.cpp
 )
 
