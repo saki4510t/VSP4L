@@ -1,6 +1,12 @@
 #define COUNT_FRAMES (0)
+// カメラ映像の幅
 #define VIDEO_WIDTH (1920)
+// カメラ映像の高さ
 #define VIDEO_HEIGHT (1080)
+// 画面の幅
+#define WINDOW_WIDTH (VIDEO_WIDTH/2)
+// 画面の高さ
+#define WINDOW_HEIGHT (VIDEO_HEIGHT/2)
 
 #if 0    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
@@ -169,7 +175,7 @@ void EyeApp::renderer_thread_func() {
 		source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
 		if (!source->start()) {
 			LOGD("windowを初期化");
-			Window window(VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, "BOV EyeApp");
+			Window window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp");
 			if (is_running && window.is_valid()) {
 				// キーイベントハンドラを登録
 				window.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
@@ -182,7 +188,7 @@ void EyeApp::renderer_thread_func() {
                 source->set_pipeline(renderer_pipeline.get());
                 renderer_pipeline->start();
 				// オフスクリーンを生成
-				auto offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, VIDEO_WIDTH / 2, VIDEO_HEIGHT / 2, false);
+				auto offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
 				gl::GLRendererUp gl_renderer = nullptr;
 				effect_t current_effect = effect_type;
 				req_change_matrix = true;
