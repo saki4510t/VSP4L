@@ -19,6 +19,7 @@ add_library(objlib OBJECT
     gltexture.cpp
     glrenderer.cpp
     glutils.cpp
+    handler.cpp
     json_helper.cpp
     times.cpp
 )
