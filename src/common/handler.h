@@ -136,12 +136,20 @@ public:
      */
     void terminate();
 
+    // /**
+    //  * @brief 指定したタスクをすぐに実行するようにキューに追加する
+    //  * 
+    //  * @param task 
+    //  */
+    // inline void post(std::unique_ptr<Runnable> task) {
+    //     post_delayed(std::move(task), 0);
+    // }
     /**
      * @brief 指定したタスクをすぐに実行するようにキューに追加する
      * 
      * @param task 
      */
-    inline void post(std::unique_ptr<Runnable> task) {
+    inline void post(std::shared_ptr<Runnable> task) {
         post_delayed(std::move(task), 0);
     }
     /**
@@ -167,7 +175,7 @@ public:
      * @param task 
      * @param delay_ms 
      */
-    void post_delayed(std::unique_ptr<Runnable> task, const nsecs_t &delay_ms);
+    void post_delayed(std::shared_ptr<Runnable> task, const nsecs_t &delay_ms);
     /**
      * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
      *        すでに実行中または実行済の場合は何もしない
@@ -175,6 +183,13 @@ public:
      * @param task 
      */
     void remove(std::unique_ptr<Runnable> task);
+    /**
+     * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
+     *        すでに実行中または実行済の場合は何もしない
+     * 
+     * @param task 
+     */
+    void remove(std::shared_ptr<Runnable> task);
     /**
      * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
      *        すでに実行中または実行済の場合は何もしない

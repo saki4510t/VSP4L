@@ -143,7 +143,7 @@ void Handler::terminate() {
  * @param task 
  * @param delay_ms 
  */
-void Handler::post_delayed(std::unique_ptr<Runnable> task, const nsecs_t &delay_ms) {
+void Handler::post_delayed(std::shared_ptr<Runnable> task, const nsecs_t &delay_ms) {
     ENTER();
 
     android::Mutex::Autolock lock(queue_lock);
@@ -165,6 +165,27 @@ void Handler::post_delayed(std::unique_ptr<Runnable> task, const nsecs_t &delay_
  * @param task 
  */
 void Handler::remove(std::unique_ptr<Runnable> task) {
+    ENTER();
+
+    android::Mutex::Autolock lock(queue_lock);
+    // 実行待ちキュー内に同じRunnableが存在すれば削除する
+    const auto value = task.get();
+    erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+        const auto v = it.second.get();
+        return v == value;
+    });
+    queue_sync.signal();
+
+    EXIT(); 
+}
+
+/**
+ * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
+ *        すでに実行中または実行済の場合は何もしない
+ * 
+ * @param task 
+ */
+void Handler::remove(std::shared_ptr<Runnable> task) {
     ENTER();
 
     android::Mutex::Autolock lock(queue_lock);
