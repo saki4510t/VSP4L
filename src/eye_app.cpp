@@ -42,9 +42,26 @@ namespace serenegiant::app {
 /*public*/
 EyeApp::EyeApp()
 :   initialized(!serenegiant::Window::initialize()),
-    is_running(false)
+    is_running(false),
+	test_task(nullptr)
 {
     ENTER();
+
+#if 1
+	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
+	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
+	test_task = [&]() {
+		LOGI("run %ld", systemTime());
+		if (test_task) {
+			handler.post_delayed(test_task, 1000);
+		}
+	};
+	LOGI("post_delayed %ld", systemTime());
+	handler.post_delayed(test_task, 10000);
+	handler.remove(test_task);
+	handler.post_delayed(test_task, 10000);
+#endif
+
     EXIT();
 }
 
@@ -56,6 +73,8 @@ EyeApp::EyeApp()
 EyeApp::~EyeApp() {
     ENTER();
 
+	test_task = nullptr;
+	handler.terminate();
     is_running = false;
 
     EXIT();
@@ -144,22 +163,36 @@ void EyeApp::handler_thread_func() {
     EXIT();
 }
 
+
+/**
+ * @brief GLFWからのキー入力イベントの処理
+ * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
+ * 4種類だけキー処理を行う
+ * 
+ * @param key 
+ * @param scancode 
+ * @param action 
+ * @param mods 
+ * @return int32_t 
+ */
 int32_t EyeApp::handle_on_key_event(const int &key, const int &scancode, const int &action, const int &mods) {
 	ENTER();
 
 	int32_t result = 0;
 
-    LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d", key, scancode, glfwGetKeyName(key, scancode), action, mods);
-	switch (action) {
-	case GLFW_RELEASE:	// 0
-		result = handle_on_key_up(key, scancode, action, mods);
-		break;
-	case GLFW_PRESS:	// 1
-	case GLFW_REPEAT:	// 2
-		result = handle_on_key_down(key, scancode, action, mods);
-		break;
-	default:
-		break;
+	LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d", key, scancode, glfwGetKeyName(key, scancode), action, mods);
+	if ((key >= GLFW_KEY_RIGHT) && (key <= GLFW_KEY_UP)) {
+		switch (action) {
+		case GLFW_RELEASE:	// 0
+			result = handle_on_key_up(key, scancode, action, mods);
+			break;
+		case GLFW_PRESS:	// 1
+		case GLFW_REPEAT:	// 2
+			result = handle_on_key_down(key, scancode, action, mods);
+			break;
+		default:
+			break;
+		}
 	}
 
 	RETURN(result, int32_t);
@@ -167,6 +200,8 @@ int32_t EyeApp::handle_on_key_event(const int &key, const int &scancode, const i
 
 /**
  * @brief handle_on_key_eventの下請け、キーが押されたとき
+ * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
+ * 4種類だけキー処理を行う
  * 
  * @param key 
  * @param scancode 
@@ -178,12 +213,21 @@ int32_t EyeApp::handle_on_key_down(const int &key, const int &scancode, const in
 	ENTER();
 
 	int32_t result = 0;
+	const auto ix = key - GLFW_KEY_RIGHT;	// [0,3]
+#if 0
+	if ((ix < 0) || (ix > 3)) {
+		LOGE("unexpected key code,%d", key);
+		RETURN(-1, int32_t);
+	}
+#endif
 
 	RETURN(result, int32_t);
 }
 
 /**
  * @brief handle_on_key_eventの下請け、キーが離されたとき
+ * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
+ * 4種類だけキー処理を行う
  * 
  * @param key 
  * @param scancode 
@@ -195,6 +239,13 @@ int32_t EyeApp::handle_on_key_up(const int &key, const int &scancode, const int 
 	ENTER();
 
 	int32_t result = 0;
+	const auto ix = key - GLFW_KEY_RIGHT;	// [0,3]
+#if 0
+	if ((ix < 0) || (ix > 3)) {
+		LOGE("unexpected key code,%d", key);
+		RETURN(-1, int32_t);
+	}
+#endif
 
 #if 1
     // デバッグ用にESC/ENTERでアプリを終了させる

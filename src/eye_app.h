@@ -3,6 +3,9 @@
 
 #include <thread>
 
+// common
+#include "handler.h"
+
 // aandusb/pipeline
 #include "pipeline/pipeline_gl_renderer.h"
 
@@ -18,6 +21,9 @@ class EyeApp {
 private:
     const bool initialized;
     volatile bool is_running;
+    thread::Handler handler;
+    // Handlerの動作テスト用
+    std::function<void()> test_task;
 
     int32_t handle_on_key_event(const int &key, const int &scancode, const int &action, const int &mods);
     int32_t handle_on_key_down(const int &key, const int &scancode, const int &action, const int &mods);
