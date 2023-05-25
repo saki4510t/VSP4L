@@ -90,8 +90,8 @@ GLRendererPipeline::GLRendererPipeline(
 	gl::setIdentityMatrix(mvp_matrix, 0);
 	set_state(PIPELINE_STATE_INITIALIZED);
 
-	LOGI("surface_texture_supported=%d", surface_texture_supported);
-	LOGI("image_reader_supported=%d", image_reader_supported);
+	LOGD("surface_texture_supported=%d", surface_texture_supported);
+	LOGD("image_reader_supported=%d", image_reader_supported);
 
 	EXIT();
 }

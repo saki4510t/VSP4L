@@ -63,7 +63,7 @@ public:
 
 	virtual ~LongPressCheckTask() {
 		ENTER();
-		LOGI("破棄された");
+		LOGD("破棄された");
 		EXIT();
 	}
 
@@ -98,12 +98,12 @@ EyeApp::EyeApp(const int &gl_version)
 	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
 	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
 	test_task = [&]() {
-		LOGI("run %ld", systemTime());
+		LOGD("run %ld", systemTime());
 		if (test_task) {
 			handler.post_delayed(test_task, 1000);
 		}
 	};
-	LOGI("post_delayed %ld", systemTime());
+	LOGD("post_delayed %ld", systemTime());
 	handler.post_delayed(test_task, 10000);
 	handler.remove(test_task);
 	handler.post_delayed(test_task, 10000);
@@ -149,7 +149,7 @@ void EyeApp::run() {
         handler_thread.join();
     }
 
-	LOGI("Finished.");
+	LOGD("Finished.");
 
     EXIT();
 }
@@ -165,7 +165,7 @@ void EyeApp::renderer_thread_func() {
 
     auto source = std::make_shared<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
 	if (source && !source->open() && !source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
-		LOGI("supported=%s", source->get_supported_size().c_str());
+		LOGV("supported=%s", source->get_supported_size().c_str());
 		source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
 		if (!source->start()) {
 			LOGD("windowを初期化");
