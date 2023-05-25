@@ -7,10 +7,12 @@
 
 // common
 #include "handler.h"
-
+#include "gloffscreen.h"
+#include "glrenderer.h"
 // aandusb/pipeline
 #include "pipeline/pipeline_gl_renderer.h"
 
+#include "const.h"
 #include "key_event.h"
 
 namespace pipeline = serenegiant::pipeline;
@@ -29,20 +31,36 @@ typedef enum {
 	KEY_MODE_OSD,				// OSD操作モード
 } key_mode_t;
 
+/**
+ * @brief 映像効果定数
+ * 
+ */
+typedef enum {
+	EFFECT_NON = 0,			// 映像効果なし
+	EFFECT_GRAY,			// グレースケール
+	EFFECT_GRAY_REVERSE,	// グレースケール反転
+	EFFECT_BIN,				// 白黒二値
+	EFFECT_BIN_REVERSE,		// 白黒二値反転
+} effect_t;
+
 class EyeApp {
 friend LongPressCheckTask;
 private:
+	const int gl_version;
 	const bool initialized;
 	volatile bool is_running;
+	volatile bool req_change_effect;
 	thread::Handler handler;
 	// Handlerの動作テスト用
 	std::function<void()> test_task;
 	mutable std::mutex state_lock;
+	effect_t effect_type;
 	key_mode_t key_mode;
 	// キーの押し下げ状態を保持するハッシュマップ
 	std::unordered_map<int, KeyEventSp> key_state;
 	// キーの長押し確認用ラムダ式を保持するハッシュマップ
 	std::unordered_map<int, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
+
 	/**
 	 * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
 	 * 
@@ -145,12 +163,18 @@ private:
 	int32_t on_long_key_pressed_osd(const KeyEvent &event);
 
 	/**
+	 * @brief Create a renderer object
+	 * 
+	 * @param effect 
+	 * @return gl::GLRendererUp 
+	 */
+	gl::GLRendererUp create_renderer(const effect_t &effect);
+	/**
 	 * @brief 描画処理を実行
 	 *
-	 * @param window
 	 * @param renderer
 	 */
-	void handle_draw(Window &window, pipeline::GLRendererPipelineSp &renderer);
+	void handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer);
 	/**
 	 * @brief 描画スレッドの実行関数
 	 *
@@ -162,7 +186,7 @@ public:
 	 * @brief コンストラクタ
 	 *
 	 */
-	EyeApp();
+	EyeApp(const int &gl_version = 300);
 	/**
 	 * @brief デストラクタ
 	 *
