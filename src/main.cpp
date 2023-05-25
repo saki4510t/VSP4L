@@ -23,6 +23,14 @@
 
 namespace app = serenegiant::app;
 
+/**
+ * @brief メイン関数
+ *        EyeAppを生成して呼び出すだけ
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, const char *argv[]) {
 
 	ENTER();

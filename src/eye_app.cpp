@@ -82,6 +82,7 @@ EyeApp::~EyeApp() {
 
 /**
  * @brief アプリを実行
+ *        実行終了までこの関数を抜けないので注意
  * 
  */
 /*public*/
@@ -89,9 +90,10 @@ void EyeApp::run() {
     ENTER();
 
     is_running = true;
-    auto handler_thread = std::thread([this] { handler_thread_func(); });
+    auto handler_thread = std::thread([this] { renderer_thread_func(); });
 
     for ( ; is_running ; ) {
+		// ここでなにかするかも
         usleep(300000);
     }
 
@@ -107,11 +109,11 @@ void EyeApp::run() {
 
 //--------------------------------------------------------------------------------
 /**
- * @brief ワーカースレッドの実行関数
+ * @brief 描画スレッドの実行関数
  * 
  */
 /*private*/
-void EyeApp::handler_thread_func() {
+void EyeApp::renderer_thread_func() {
     ENTER();
 
     pipeline::GLRendererPipelineSp renderer = nullptr;
@@ -175,6 +177,7 @@ void EyeApp::handler_thread_func() {
  * @param mods 
  * @return int32_t 
  */
+/*private*/
 int32_t EyeApp::handle_on_key_event(const int &key, const int &scancode, const int &action, const int &mods) {
 	ENTER();
 
@@ -199,7 +202,7 @@ int32_t EyeApp::handle_on_key_event(const int &key, const int &scancode, const i
 }
 
 /**
- * @brief handle_on_key_eventの下請け、キーが押されたとき
+ * @brief handle_on_key_eventの下請け、キーが押されたとき/押し続けているとき
  * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
  * 4種類だけキー処理を行う
  * 
@@ -209,6 +212,7 @@ int32_t EyeApp::handle_on_key_event(const int &key, const int &scancode, const i
  * @param mods 
  * @return int32_t 
  */
+/*private*/
 int32_t EyeApp::handle_on_key_down(const int &key, const int &scancode, const int &action, const int &mods) {
 	ENTER();
 
@@ -235,6 +239,7 @@ int32_t EyeApp::handle_on_key_down(const int &key, const int &scancode, const in
  * @param mods 
  * @return int32_t 
  */
+/*private*/
 int32_t EyeApp::handle_on_key_up(const int &key, const int &scancode, const int &action, const int &mods) {
 	ENTER();
 
@@ -263,6 +268,7 @@ int32_t EyeApp::handle_on_key_up(const int &key, const int &scancode, const int 
  * 
  * @param window 
  */
+/*private*/
 void EyeApp::handle_draw(sere::Window &window, pipeline::GLRendererPipelineSp &renderer) {
 	ENTER();
 
