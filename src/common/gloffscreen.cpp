@@ -18,6 +18,8 @@
 	#define DEBUG_GL_CHECK			// GL関数のデバッグメッセージを表示する時
 #endif
 
+#include <cstring>	// memcpy
+
 #include "utilbase.h"
 #include "gloffscreen.h"
 
@@ -175,6 +177,24 @@ int GLOffScreen::draw(GLRenderer *renderer) {
 		RETURN(0, int);
 	}
 	RETURN(-1, int);
+}
+
+/**
+ * モデルビュー変換行列を設定
+ * @param mvp_matrix
+ * @return
+ */
+/*public*/
+int GLOffScreen::set_mvp_matrix(const GLfloat *mat, const int &offset) {
+	ENTER();
+	
+	if (mat) {
+		memcpy(mMvpMatrix, &mat[offset], sizeof(GLfloat) * 16);
+	} else {
+		gl::setIdentityMatrix(mMvpMatrix, 0);
+	}
+
+	RETURN(0, int);
 }
 
 }	// namespace serenegiant::gl

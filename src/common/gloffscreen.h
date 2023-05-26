@@ -98,6 +98,12 @@ public:
 	 * @return
 	 */
 	inline const GLfloat *getMatrix() const { return mMvpMatrix; }
+	/**
+	 * モデルビュー変換行列を設定
+	 * @param mvp_matrix 要素数16以上
+	 * @return
+	 */
+	int set_mvp_matrix(const GLfloat *mvp_matrix, const int &offset = 0);
 	
 	inline GLint width() const { return mWidth; };
 	inline GLint height() const { return mHeight; };
