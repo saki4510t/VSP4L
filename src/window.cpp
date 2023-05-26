@@ -23,8 +23,14 @@
 
 namespace serenegiant::app {
 
+static void glfw_error_callback(int error, const char* description) {
+    LOGE("GLFW Error %d: %s", error, description);
+}
+
 int Window::initialize() {
 	ENTER();
+
+	glfwSetErrorCallback(glfw_error_callback);
 	// GLFW の初期化
 	if (glfwInit() == GL_FALSE) {
 		// 初期化に失敗した処理
