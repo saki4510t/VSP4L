@@ -38,13 +38,21 @@ int Window::initialize() {
 		RETURN(1, int);
 	}
 	// OpenGL Version 3.2 Core Profile を選択する XXX ここで指定するとエラーはなさそうなのに映像が表示できなくなる
+#if USE_GL3
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 //	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);	// OpenGL 3.2
 //	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 //	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);	// OpenGL3以降で前方互換プロファイルを使う
+#else
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);	// マウス等でリサイズ可能
 //	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// 終了時の処理登録
 	atexit(glfwTerminate);
+
 	RETURN(0, int);
 }
 
@@ -171,7 +179,11 @@ void Window::init_gui() {
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL2_Init();
+#if USE_GL3
+    ImGui_ImplOpenGL3_Init("#version 130");
+#else
+	ImGui_ImplOpenGL3_Init("#version 100");
+#endif
 
 	EXIT();	
 }
@@ -181,7 +193,7 @@ void Window::terminate_gui() {
 	ENTER();
 
 	// Cleanup
-	ImGui_ImplOpenGL2_Shutdown();
+	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 

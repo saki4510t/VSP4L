@@ -182,7 +182,7 @@ void EyeApp::renderer_thread_func() {
                 });
 				// カメラ映像描画用のGLRendererPipelineを生成
 				const char* versionStr = (const char*)glGetString(GL_VERSION);
-				LOGD("create and start GLRendererPipeline,%s", versionStr);
+				LOGD("GL_VERSION=%s", versionStr);
 				auto renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
                 source->set_pipeline(renderer_pipeline.get());
                 renderer_pipeline->start();
@@ -275,10 +275,10 @@ gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
 		break;
 	}
 	if (gl_version >= 300) {
-		LOGD("create GLRenderer GL/GLES3");
+		LOGD("create GLRenderer GL3");
 		return std::make_unique<gl::GLRenderer>(texture_gl3_vsh, fsh, true);
 	} else {
-		LOGD("create GLRenderer GL/GLES2");
+		LOGD("create GLRenderer GL2");
 		return std::make_unique<gl::GLRenderer>(texture_gl2_vsh, fsh, true);
 	}
 }
@@ -345,7 +345,36 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
 void EyeApp::handle_draw_gui() {
 	ENTER();
 
-	// FIXME 未実装
+	// Start the Dear ImGui frame
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	// FIXME 未実装 テストで適当に表示
+	{
+		ImGui::Begin("Test");
+		ImGui::Text("Hello from test window!");
+		if (ImGui::Button("Close Me")) {
+			LOGI("clicked!");
+		}
+		const auto fps = ImGui::GetIO().Framerate;
+		ImGui::Text("%.3f ms/frame(%.1f FPS)", 1000.0f / fps, fps);
+		ImGui::End();
+
+		// static int cnt = 0;
+		// if ((++cnt % 100) == 0) {
+		// 	MARK("cnt=%d,%.3f ms/frame(%.1f FPS)", cnt, 1000.0f / fps, fps);
+		// }
+	}
+
+	// Rendering
+	ImGui::Render();
+	// If you are using this code with non-legacy OpenGL header/contexts (which you should not, prefer using imgui_impl_opengl3.cpp!!),
+	// you may need to backup/reset/restore other state, e.g. for current shader using the commented lines below.
+	//GLint last_program;
+	//glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+	//glUseProgram(0);
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	EXIT();
 }

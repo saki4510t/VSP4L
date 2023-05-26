@@ -210,7 +210,11 @@ public:
 	 * @brief コンストラクタ
 	 *
 	 */
+#if USE_GL3
 	EyeApp(const int &gl_version = 300);
+#else
+	EyeApp(const int &gl_version = 200);
+#endif
 	/**
 	 * @brief デストラクタ
 	 *
