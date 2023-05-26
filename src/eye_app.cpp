@@ -333,7 +333,6 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
         MARK("cnt=%d", cnt);
     }
 #endif
-	// FIXME ここで拡大縮小のモデルビュー変換行列を適用する
 	offscreen->draw(renderer.get());
 
 	EXIT();
