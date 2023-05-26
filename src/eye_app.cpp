@@ -243,6 +243,7 @@ void EyeApp::renderer_thread_func() {
 				}
 				LOGD("GLFWのイベントループ終了");
 				source->stop();
+				renderer_pipeline->on_release();
 				renderer_pipeline->stop();
 				renderer_pipeline.reset();
 				offscreen.reset();
