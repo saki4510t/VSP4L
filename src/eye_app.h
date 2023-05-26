@@ -178,6 +178,11 @@ private:
 	 */
 	void handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer);
 	/**
+	 * @brief GUI(2D)描画処理を実行
+	 * 
+	 */
+	void handle_draw_gui();
+	/**
 	 * @brief 描画スレッドの実行関数
 	 *
 	 */

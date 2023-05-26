@@ -199,13 +199,15 @@ void EyeApp::renderer_thread_func() {
 					const auto start = systemTime();
 					// 描画処理
 					if (UNLIKELY(req_change_matrix)) {
-						{
+						{	// モデルビュー変換行列が変更されたとき
 							std::lock_guard<std::mutex> lock(state_lock);
 							req_change_matrix = false;
 							mvp_matrix.getOpenGLSubMatrix(mat);
 						}
+						// FIXME フリーズモードで拡大縮小するにはrenderer_pipelineにモデルビュー変換行列を当てるのはだめ
 						renderer_pipeline->set_mvp_matrix(mat, 0);
 					}
+					// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
 					glClear(GL_COLOR_BUFFER_BIT);
 					if (current_effect == EFFECT_NON) {
 						renderer_pipeline->on_draw();
@@ -229,6 +231,8 @@ void EyeApp::renderer_thread_func() {
 						// 画面へ転送
 						handle_draw(offscreen, gl_renderer);
 					}
+					// GUI(2D)描画処理を実行
+					handle_draw_gui();
 					// ダブルバッファーをスワップ
 					window.swap_buffers();
 					auto t = (systemTime() - start) / 1000L;
@@ -313,6 +317,18 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
 #endif
 	// FIXME ここで拡大縮小のモデルビュー変換行列を適用する
 	offscreen->draw(renderer.get());
+
+	EXIT();
+}
+
+/**
+ * @brief GUI(2D)描画処理を実行
+ * 
+ */
+void EyeApp::handle_draw_gui() {
+	ENTER();
+
+	// FIXME 未実装
 
 	EXIT();
 }
