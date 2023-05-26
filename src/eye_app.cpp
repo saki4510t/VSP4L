@@ -91,7 +91,7 @@ public:
 EyeApp::EyeApp(const int &gl_version)
 :   gl_version(gl_version),
 	initialized(!Window::initialize()),
-    is_running(false), req_change_effect(false),
+    is_running(false), req_change_effect(false), req_freeze(false),
 	effect_type(EFFECT_NON),
 	key_mode(KEY_MODE_NORMAL),
 	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX),
@@ -192,55 +192,38 @@ void EyeApp::renderer_thread_func() {
 				gl::GLRendererUp gl_renderer = nullptr;
 				effect_t current_effect = effect_type;
 				req_change_matrix = true;
-				float mat[16]{};
 				LOGD("GLFWのイベントループ開始");
 				// ウィンドウが開いている間繰り返す
 				while (is_running && window) {
 					const auto start = systemTime();
+					// 描画用の設定更新を適用
+					prepare_draw(offscreen, gl_renderer, current_effect);
 					// 描画処理
-					if (UNLIKELY(req_change_matrix)) {
-						{	// モデルビュー変換行列が変更されたとき
-							std::lock_guard<std::mutex> lock(state_lock);
-							req_change_matrix = false;
-							mvp_matrix.getOpenGLSubMatrix(mat);
-						}
-						// FIXME フリーズモードで拡大縮小するにはrenderer_pipelineにモデルビュー変換行列を当てるのはだめ
-						renderer_pipeline->set_mvp_matrix(mat, 0);
-					}
-					// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
-					glClear(GL_COLOR_BUFFER_BIT);
-					if (current_effect == EFFECT_NON) {
-						renderer_pipeline->on_draw();
-					} else {
+					if (!req_freeze) {
 						// オフスクリーンへ描画
 						offscreen->bind();
 						renderer_pipeline->on_draw();
 						offscreen->unbind();
-						if (UNLIKELY(req_change_effect)) {
-					 		std::lock_guard<std::mutex> lock(state_lock);		
-							req_change_effect = false;
-							if (current_effect != effect_type) {
-								current_effect = effect_type;
-								gl_renderer.reset();
-							}
-						}
-						if (UNLIKELY(!gl_renderer)) {
-							// オフスクリーンの描画用GLRendererを生成
-							gl_renderer = create_renderer(current_effect);
-						}
-						// 画面へ転送
-						handle_draw(offscreen, gl_renderer);
+					} else {
+						// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
+						renderer_pipeline->on_draw();
 					}
+					// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
+					glClear(GL_COLOR_BUFFER_BIT);
+					// 画面へ転送
+					handle_draw(offscreen, gl_renderer);
 					// GUI(2D)描画処理を実行
 					handle_draw_gui();
 					// ダブルバッファーをスワップ
 					window.swap_buffers();
-					auto t = (systemTime() - start) / 1000L;
+					// フレームレート調整
+					const auto t = (systemTime() - start) / 1000L;
 					if (t < 12000) {
 						// 60fpsだと16.6msだけど少し余裕をみて最大12ms待機する
 						usleep(12000 - t);
 					}
 				}
+
 				LOGD("GLFWのイベントループ終了");
 				source->stop();
 				renderer_pipeline->on_release();
@@ -299,6 +282,41 @@ gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
 		LOGD("create GLRenderer GL/GLES2");
 		return std::make_unique<gl::GLRenderer>(texture_gl2_vsh, fsh, true);
 	}
+}
+
+/**
+ * @brief 描画用の設定更新を適用
+ * 
+ * @param offscreen 
+ * @param gl_renderer 
+ */
+void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer, effect_t &current_effect) {
+	ENTER();
+
+	if (UNLIKELY(req_change_matrix)) {
+		float mat[16];
+		{	// モデルビュー変換行列が変更されたとき
+			std::lock_guard<std::mutex> lock(state_lock);
+			req_change_matrix = false;
+			mvp_matrix.getOpenGLSubMatrix(mat);
+		}
+		mat[5] *= -1.f;			// 上下反転
+		offscreen->set_mvp_matrix(mat, 0);
+	}
+	if (UNLIKELY(req_change_effect)) {
+		std::lock_guard<std::mutex> lock(state_lock);		
+		req_change_effect = false;
+		if (current_effect != effect_type) {
+			current_effect = effect_type;
+			renderer.reset();
+		}
+	}
+	if (UNLIKELY(!renderer)) {
+		// オフスクリーンの描画用GLRendererを生成
+		renderer = create_renderer(current_effect);
+	}
+
+	EXIT();
 }
 
 /**

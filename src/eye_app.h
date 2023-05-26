@@ -48,9 +48,15 @@ friend LongPressCheckTask;
 private:
 	const int gl_version;
 	const bool initialized;
+	// 実行中フラグ
 	volatile bool is_running;
+	// 映像効果変更要求
 	volatile bool req_change_effect;
+	// モデルビュー変換行列変更要求
 	volatile bool req_change_matrix;
+	// 映像フリーズ要求
+	volatile bool req_freeze;
+	// 非同期実行用Handler
 	thread::Handler handler;
 	// Handlerの動作テスト用
 	std::function<void()> test_task;
@@ -61,7 +67,9 @@ private:
 	std::unordered_map<int, KeyEventSp> key_state;
 	// キーの長押し確認用ラムダ式を保持するハッシュマップ
 	std::unordered_map<int, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
+	// モデルビュー変換行列
 	math::Matrix mvp_matrix;
+	// 拡大縮小インデックス[0,NUM_ZOOM_FACTOR)
 	int zoom_ix;
 
 	/**
@@ -171,6 +179,13 @@ private:
 	 * @return gl::GLRendererUp 
 	 */
 	gl::GLRendererUp create_renderer(const effect_t &effect);
+	/**
+	 * @brief 描画用の設定更新を適用
+	 * 
+	 * @param offscreen 
+	 * @param gl_renderer 
+	 */
+	void prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer, effect_t &current_effect);
 	/**
 	 * @brief 描画処理を実行
 	 *
