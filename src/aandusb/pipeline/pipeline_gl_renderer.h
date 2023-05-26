@@ -215,7 +215,7 @@ public:
 	int on_draw();
 	/**
 	 * 終了処理
-	 * イベントロープ終了時に呼び出される
+	 * イベントループ終了時に呼び出される
 	 * @return
 	 */
 	int on_release();
