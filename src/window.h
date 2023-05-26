@@ -30,7 +30,10 @@ class Window {
 private:
 	GLFWwindow *window;
 	GLfloat aspect;
+	int fb_width;
+	int fb_height;
 	OnKeyEventFunc on_key_event_func;
+
 	void init_gui();
 	void terminate_gui();
 protected:
@@ -46,6 +49,18 @@ public:
 	void swap_buffers();
 	inline bool is_valid() const { return window != nullptr; };
 	inline GLfloat get_aspect() const { return aspect; };
+	/**
+	 * @brief フレームバッファの幅を取得
+	 * 
+	 * @return int 
+	 */
+	inline int width() const { return fb_width; };
+	/**
+	 * @brief フレームバッファの高さを取得
+	 * 
+	 * @return int 
+	 */
+	inline int height() const { return fb_height; };
 
 	/**
 	 * @brief キーイベント発生時のハンドラーを登録

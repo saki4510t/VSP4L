@@ -52,7 +52,7 @@ Window::Window(
 	const int width, const int height,
 	const char *title)
 :	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
-	aspect(640 / 480.0f),
+	aspect(640 / 480.0f), fb_width(width), fb_height(height),
 	on_key_event_func(nullptr)
 {
 	ENTER();
@@ -132,6 +132,8 @@ void Window::resize(GLFWwindow *win, int width, int height) {
 	if (self) {
 		// このインスタンスが保持する縦横比を更新する
 		self->aspect = width / (float)height;
+		self->fb_width = fbWidth;
+		self->fb_height = fbHeight;
 	}
 
 	EXIT();
