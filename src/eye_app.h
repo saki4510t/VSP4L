@@ -28,6 +28,8 @@ class LongPressCheckTask;
  */
 typedef enum {
 	KEY_MODE_NORMAL = 0,	// 通常モード
+	KEY_MODE_BRIGHTNESS,	// 輝度調整モード
+	KEY_MODE_ZOOM,			// 拡大縮小モード
 	KEY_MODE_OSD,			// OSD操作モード
 } key_mode_t;
 
