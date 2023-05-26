@@ -14,6 +14,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl2.h"
+
 namespace serenegiant::app {
 
 typedef std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
@@ -27,6 +31,8 @@ private:
 	GLFWwindow *window;
 	GLfloat aspect;
 	OnKeyEventFunc on_key_event_func;
+	void init_gui();
+	void terminate_gui();
 protected:
 	static void resize(GLFWwindow *win, int width, int height);
 	static void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods);

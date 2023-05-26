@@ -79,6 +79,8 @@ Window::Window(
 		glfwSetKeyCallback(window, key_callback);
 		// 作成したウインドウを初期化
 		resize(window, width, height);
+		// IMGUIでのGUI描画用に初期化する
+		init_gui();
 	}
 
 	EXIT();
@@ -89,6 +91,7 @@ Window::~Window() {
 	ENTER();
 
 	if (window) {
+		terminate_gui();
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}
@@ -143,6 +146,40 @@ void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, in
 		// コールバックが設定されていればそれを呼び出す
 		self->on_key_event_func(key, scancode, action, mods);
 	}
+
+	EXIT();
+}
+
+/*private*/
+void Window::init_gui() {
+	ENTER();
+
+// Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    // ImGuiIO& io = ImGui::GetIO(); (void)io;
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL2_Init();
+
+	EXIT();	
+}
+
+/*private*/
+void Window::terminate_gui() {
+	ENTER();
+
+	// Cleanup
+	ImGui_ImplOpenGL2_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	EXIT();
 }
