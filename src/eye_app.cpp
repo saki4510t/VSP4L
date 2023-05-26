@@ -49,51 +49,6 @@ namespace serenegiant::app {
 #define OSD_WIDTH (WINDOW_WIDTH/4*3)
 #define OSD_HEIGHT (VIDEO_HEIGHT/4*3)
 
-// ショートタップと判定する最小押し下げ時間[ミリ秒]
-#define SHORT_PRESS_MIN_MS (20)
-// ショートタップと判定する最大押し下げ時間[ミリ秒]
-#define SHORT_PRESS_MAX_MS (300)
-// ミドルタップと判定する最小押し下げ時間[ミリ秒]
-#define MIDDLE_PRESS_MIN_MS (500)
-// ミドルタップと判定する最大押し下げ時間[ミリ秒]
-#define MIDDLE_PRESS_MAX_MS (1500)
-// ロングタップと判定する押し下げ時間[ミリ秒]
-#define LONG_PRESS_TIMEOUT_MS (2500)
-// ロングロングタップと判定する押し下げ時間[ミリ秒]
-#define LONG_LONG_PRESS_TIMEOUT_MS (6000)
-// ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
-#define MULTI_PRESS_MIN_INTERVALMS (200)
-
-//--------------------------------------------------------------------------------
-class LongPressCheckTask : public thread::Runnable {
-private:
-	EyeApp &app;			// こっちは参照を保持する
-	const KeyEvent event;	// こっちはコピーを保持する
-public:
-	LongPressCheckTask(
-		EyeApp &app,
-		const KeyEvent &event)
-	:	app(app), event(event)
-	{
-		ENTER();
-		EXIT();
-	}
-
-	virtual ~LongPressCheckTask() {
-		ENTER();
-		LOGD("破棄された");
-		EXIT();
-	}
-
-	void run() {
-		ENTER();
-
-		app.handle_on_long_key_pressed(event);
-
-		EXIT();
-	}
-};
-
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -105,13 +60,26 @@ EyeApp::EyeApp(const int &gl_version)
 	initialized(!Window::initialize()),
     is_running(false), req_change_effect(false), req_freeze(false),
 	effect_type(EFFECT_NON),
-	key_mode(KEY_MODE_NORMAL),
+	key_dispatcher(handler),
 	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX),
 	test_task(nullptr)
 {
     ENTER();
 
 	mvp_matrix.scale(ZOOM_FACTOR[zoom_ix]);
+	key_dispatcher
+		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
+			LOGD("key_mode=%d", key_mode);
+		})
+		.set_on_brightness_changed([this](const bool &inc_dec) {
+			request_change_brightness(inc_dec);
+		})
+		.set_on_scale_changed([this](const bool &inc_dec) {
+			request_change_scale(inc_dec);
+		})
+		.set_on_effect_changed([this](const effect_t &effect) {
+			request_change_effect(effect);
+		});
 #if 1
 	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
 	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
@@ -155,7 +123,7 @@ void EyeApp::run() {
     ENTER();
 
     is_running = true;
-    auto handler_thread = std::thread([this] { renderer_thread_func(); });
+    auto renderer_thread = std::thread([this] { renderer_thread_func(); });
 
     for ( ; is_running ; ) {
 		// ここでなにかするかも
@@ -163,8 +131,8 @@ void EyeApp::run() {
     }
 
     is_running = false;
-    if (handler_thread.joinable()) {
-        handler_thread.join();
+    if (renderer_thread.joinable()) {
+        renderer_thread.join();
     }
 
 	LOGD("Finished.");
@@ -191,7 +159,7 @@ void EyeApp::renderer_thread_func() {
 			if (is_running && window.is_valid()) {
 				// キーイベントハンドラを登録
 				window.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
-                    return handle_on_key_event(KeyEvent(key, scancode, action, mods));
+                    return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
                 });
 				// カメラ映像描画用のGLRendererPipelineを生成
 				const char* versionStr = (const char*)glGetString(GL_VERSION);
@@ -391,276 +359,6 @@ void EyeApp::handle_draw_gui() {
 
 //--------------------------------------------------------------------------------
 /**
- * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
- * 
- * @param event 
- */
-void EyeApp::confirm_long_press_task(const KeyEvent &event) {
-	ENTER();
-
-	const auto key = event.key;
-	if (long_key_press_tasks.find(key) == long_key_press_tasks.end()) {
-		long_key_press_tasks[key] = std::make_shared<LongPressCheckTask>(*this, event);
-	}
-
-	EXIT();
-}
-
-/**
- * @brief 短押しかどうか, 排他制御してないので上位でロックすること
- * 
- * @param key 
- * @return true 
- * @return false 
- */
-bool EyeApp::is_short_pressed(const int &key) {
-	return (key_state.find(key) != key_state.end())
-		&& (key_state[key]->state == KEY_STATE_DOWN);
-}
-
-/**
- * @brief 長押しされているかどうか, 排他制御してないので上位でロックすること
- * 
- * @param key 
- * @return true 
- * @return false 
- */
-bool EyeApp::is_long_pressed(const int &key) {
-	return (key_state.find(key) != key_state.end())
-		&& (key_state[key]->state == KEY_STATE_DOWN_LONG);
-}
-
-/**
- * @brief GLFWからのキー入力イベントの処理
- * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
- * 4種類だけキー処理を行う
- * 
- * @param event 
- * @return int32_t 
- */
-/*private*/
-int32_t EyeApp::handle_on_key_event(const KeyEvent &event) {
-	ENTER();
-
-	int32_t result = 0;
-
-	// XXX 複数キー同時押しのときに最後に押したキーに対してのみGLFW_REPEATがくるみたいなのでGLFW_REPEATは使わない
-	const auto key = event.key;
-	if ((key >= GLFW_KEY_RIGHT) && (key <= GLFW_KEY_UP)) {
-		switch (event.action) {
-		case GLFW_RELEASE:	// 0
-			result = handle_on_key_up(event);
-			break;
-		case GLFW_PRESS:	// 1
-			result = handle_on_key_down(event);
-			break;
-		case GLFW_REPEAT:	// 2
-		default:
-			break;
-		}
-	} else {
-		LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d",
-			key, event.scancode, glfwGetKeyName(key, event.scancode),
-			event.action, event.mods);
-	}
-
-	RETURN(result, int32_t);
-}
-
-/**
- * @brief handle_on_key_eventの下請け、キーが押されたとき
- * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
- * 4種類だけキー処理を行う
- * 
- * @param event 
- * @return int32_t 
- */
-/*private*/
-int32_t EyeApp::handle_on_key_down(const KeyEvent &event) {
-	ENTER();
-
-	const auto key = event.key;
-	{
- 		std::lock_guard<std::mutex> lock(state_lock);		
-		key_state[key] = std::make_shared<KeyEvent>(event);
-	}
-	confirm_long_press_task(event);
-	handler.remove(long_key_press_tasks[key]);
-	handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
-
-	RETURN(0, int32_t);
-}
-
-/**
- * @brief handle_on_key_eventの下請け、キーが離されたとき
- * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
- * 4種類だけキー処理を行う
- * 
- * @param event 
- * @return int32_t 
- */
-/*private*/
-int32_t EyeApp::handle_on_key_up(const KeyEvent &event) {
-	ENTER();
-
-	int result = -1;
-	const auto key = event.key;
-	confirm_long_press_task(event);
-	handler.remove(long_key_press_tasks[key]);
-
-	KeyEventSp state;
-	key_mode_t current_key_mode;
-	{
- 		std::lock_guard<std::mutex> lock(state_lock);		
-		current_key_mode = key_mode;
-		state = key_state[key];
-		key_state[key] = std::make_shared<KeyEvent>(event);
-	}
-	const auto duration_ms = (event.event_time_ns - state->event_time_ns) / 1000000L;
-	if ((state->state == KEY_STATE_DOWN) && (duration_ms >= SHORT_PRESS_MIN_MS)) {
-		LOGD("on_key_up,key=%d,state=%d,duration_ms=%ld", key, state->state, duration_ms);
-		// FIXME ここで同時押しの処理を行う
-
-		if (result) {
-			// 同時押しで処理済みでなければキーモード毎の処理を行う
-			switch (current_key_mode) {
-			case KEY_MODE_NORMAL:
-				result = on_key_up_normal(event);
-			case KEY_MODE_OSD:
-				result = on_key_up_osd(event);
-				break;
-			default:
-				LOGW("unknown key mode,%d", current_key_mode);
-				break;
-			}
-		}
-	} else if ((state->state == KEY_STATE_DOWN_LONG) && (duration_ms >= LONG_LONG_PRESS_TIMEOUT_MS)) {
-		// FIXME 未実装 長長押しの処理
-	}
-
-	RETURN(result, int32_t);
-}
-
-/**
- * @brief 通常モードで短押ししたときの処理, handle_on_key_upの下請け
- * 
- * @param event 
- * @return int32_t 
- */
-int32_t EyeApp::on_key_up_normal(const KeyEvent &event) {
-	ENTER();
-
-	const auto key = event.key;
-	switch (key) {
-	case GLFW_KEY_RIGHT:
-	case GLFW_KEY_LEFT:
-		// 輝度変更
-		request_change_brightness(key == GLFW_KEY_RIGHT);
-		break;
-	case GLFW_KEY_DOWN:
-	case GLFW_KEY_UP:
-		// 拡大縮小
-		request_change_scale(key == GLFW_KEY_UP);
-		break;
-	default:
-		LOGW("unexpected key code,%d", key);
-		break;
-	}
-
-	RETURN(0, int32_t);
-}
-
-/**
- * @brief OSD操作モードで短押ししたときの処理, handle_on_key_upの下請け
- * 
- * @param event 
- * @return int32_t 
- */
-int32_t EyeApp::on_key_up_osd(const KeyEvent &event) {
-	ENTER();
-
-	// FIXME 未実装
-
-	RETURN(0, int32_t);
-}
-
-//--------------------------------------------------------------------------------
-/**
- * @brief 長押し時間経過したときの処理
- * 
- * @param event 
- * @return int32_t 
- */
-int32_t EyeApp::handle_on_long_key_pressed(const KeyEvent &event) {
-	ENTER();
-
-	int result = -1;
-	const auto key = event.key;
-	bool long_pressed = false;
-	key_mode_t current_key_mode;
-	{
- 		std::lock_guard<std::mutex> lock(state_lock);
-		current_key_mode = key_mode;
-		if (key_state[key]->state == KEY_STATE_DOWN) {
-			key_state[key]->state = KEY_STATE_DOWN_LONG;
-			long_pressed = true;
-		}
-	}
-	if (long_pressed) {
-		const auto duration_ms = (event.event_time_ns - systemTime()) / 1000000L;
-		LOGD("on_long_key_pressed,key=%d,duration_ms=%ld", key, duration_ms);
-		// FIXME ここで同時押しの処理を行う
-
-		if (result) {
-			// 同時押しで処理済みでなければキーモード毎の処理を行う
-			switch (current_key_mode) {
-			case KEY_MODE_NORMAL:
-				result = on_long_key_pressed_normal(event);
-				break;
-			case KEY_MODE_OSD:
-				result = on_long_key_pressed_osd(event);
-				break;
-			default:
-				LOGW("unknown key mode,%d", current_key_mode);
-				break;
-			}
-		}
-	}
-
-
-	RETURN(result, int32_t);
-}
-
-/**
- * @brief 通常モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
- * 
- * @param event 
- * @return int32_t 
- */
-int32_t EyeApp::on_long_key_pressed_normal(const KeyEvent &event) {
-	ENTER();
-
-	const auto key = event.key;
-	// FIXME 未実装
-
-	RETURN(0, int32_t);
-}
-
-/**
- * @brief OSD操作モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
- * 
- * @param event 
- * @return int32_t 
- */
-int32_t EyeApp::on_long_key_pressed_osd(const KeyEvent &event) {
-	ENTER();
-
-	// FIXME 未実装
-
-	RETURN(0, int32_t);
-}
-
-/**
  * @brief 輝度変更要求
  * 
  * @param inc_dec trueなら輝度増加、falseなら輝度減少
@@ -695,6 +393,22 @@ void EyeApp::request_change_scale(const bool &inc_dec) {
 		mvp_matrix.setScale(factor, factor, 1.0f);
 		req_change_matrix = true;
 	}
+
+	EXIT();
+}
+
+/**
+ * @brief 映像効果変更要求
+ * 
+ * @param effect 
+ */
+void EyeApp::request_change_effect(const effect_t &effect) {
+	ENTER();
+
+	std::lock_guard<std::mutex> lock(state_lock);		
+	const bool changed = effect_type != effect;
+	effect_type = effect;
+	req_change_effect = changed;
 
 	EXIT();
 }
