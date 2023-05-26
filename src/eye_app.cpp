@@ -36,20 +36,33 @@ namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
 namespace serenegiant::app {
 
 #define COUNT_FRAMES (0)
-// カメラ映像の幅
+// カメラ映像サイズ
 #define VIDEO_WIDTH (1920)
-// カメラ映像の高さ
 #define VIDEO_HEIGHT (1080)
-// 画面の幅
+// 画面サイズ
 #define WINDOW_WIDTH (VIDEO_WIDTH/2)
-// 画面の高さ
 #define WINDOW_HEIGHT (VIDEO_HEIGHT/2)
-// 短押しと判定する最小押し下げ時間[ミリ秒]
+// 輝度・拡大縮小率等の表示サイズ
+#define MODE_WIDTH (VIDEO_WIDTH/2)
+#define MODE_HEIGHT (VIDEO_WIDTH/2)
+// OSD表示サイズ
+#define OSD_WIDTH (WINDOW_WIDTH/4*3)
+#define OSD_HEIGHT (VIDEO_HEIGHT/4*3)
+
+// ショートタップと判定する最小押し下げ時間[ミリ秒]
 #define SHORT_PRESS_MIN_MS (20)
-// 長押し時間[ミリ秒]
+// ショートタップと判定する最大押し下げ時間[ミリ秒]
+#define SHORT_PRESS_MAX_MS (300)
+// ミドルタップと判定する最小押し下げ時間[ミリ秒]
+#define MIDDLE_PRESS_MIN_MS (500)
+// ミドルタップと判定する最大押し下げ時間[ミリ秒]
+#define MIDDLE_PRESS_MAX_MS (1500)
+// ロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_PRESS_TIMEOUT_MS (2500)
-// 長長押し時間[ミリ秒]
-#define LONG_LONG_PRESS_TIMEOUT_MS (5000)
+// ロングロングタップと判定する押し下げ時間[ミリ秒]
+#define LONG_LONG_PRESS_TIMEOUT_MS (6000)
+// ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
+#define MULTI_PRESS_MIN_INTERVALMS (200)
 
 //--------------------------------------------------------------------------------
 class LongPressCheckTask : public thread::Runnable {
@@ -352,6 +365,8 @@ void EyeApp::handle_draw_gui() {
 
 	// FIXME 未実装 テストで適当に表示
 	{
+		// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す
+		// ウインドウサイズを指定するにはImGui::Beginの前にImGui::SetNextWindowSizeを呼び出す
 		ImGui::Begin("Test");
 		ImGui::Text("Hello from test window!");
 		if (ImGui::Button("Close Me")) {
@@ -369,11 +384,6 @@ void EyeApp::handle_draw_gui() {
 
 	// Rendering
 	ImGui::Render();
-	// If you are using this code with non-legacy OpenGL header/contexts (which you should not, prefer using imgui_impl_opengl3.cpp!!),
-	// you may need to backup/reset/restore other state, e.g. for current shader using the commented lines below.
-	//GLint last_program;
-	//glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-	//glUseProgram(0);
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	EXIT();
