@@ -112,6 +112,7 @@ Window::operator bool() {
 /*public*/
 void Window::swap_buffers() {
 	if (window) {
+		glfwMakeContextCurrent(window);
 		glfwSwapBuffers(window);
 	}
 }
