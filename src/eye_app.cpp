@@ -1,13 +1,3 @@
-#define COUNT_FRAMES (0)
-// カメラ映像の幅
-#define VIDEO_WIDTH (1920)
-// カメラ映像の高さ
-#define VIDEO_HEIGHT (1080)
-// 画面の幅
-#define WINDOW_WIDTH (VIDEO_WIDTH/2)
-// 画面の高さ
-#define WINDOW_HEIGHT (VIDEO_HEIGHT/2)
-
 #if 0    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
@@ -45,6 +35,15 @@ namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
 
 namespace serenegiant::app {
 
+#define COUNT_FRAMES (0)
+// カメラ映像の幅
+#define VIDEO_WIDTH (1920)
+// カメラ映像の高さ
+#define VIDEO_HEIGHT (1080)
+// 画面の幅
+#define WINDOW_WIDTH (VIDEO_WIDTH/2)
+// 画面の高さ
+#define WINDOW_HEIGHT (VIDEO_HEIGHT/2)
 // 短押しと判定する最小押し下げ時間[ミリ秒]
 #define SHORT_PRESS_MIN_MS (20)
 // 長押し時間[ミリ秒]
