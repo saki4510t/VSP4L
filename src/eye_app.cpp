@@ -133,10 +133,12 @@ void EyeApp::run() {
 	handler.post_delayed(test_task, 10000);
 #endif
 
-    for ( ; window.is_running() ; ) {
-		// ここでなにかするかも
-        usleep(300000);
+    for ( ; window.is_running() && window ; ) {
+		// GLFWのイベント処理ループ
+        usleep(30000);
     }
+
+	window.stop();
 
 	LOGD("Finished.");
 

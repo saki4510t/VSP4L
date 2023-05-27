@@ -109,7 +109,9 @@ int Window::stop() {
 	ENTER();
 
 	running = false;
-    if (renderer_thread.joinable()) {
+    if (renderer_thread.joinable()
+		&& (std::this_thread::get_id() != renderer_thread.get_id())) {
+		// デッドロックしないように描画スレッド以外から呼び出されたときのみjoinを呼び出す
         renderer_thread.join();
     }
 
@@ -188,8 +190,10 @@ void Window::renderer_thread_func() {
 	if (on_start) {
 		on_start(window);
 	}
+
 	// 描画ループ
-	for ( ; running && poll_events(); ) {
+	// メインスレッドでイベント処理しているのでここではpoll_eventsを呼び出さないように変更
+	for ( ; running /*&& poll_events()*/; ) {
 		const auto start = systemTime();
 		on_render(window);
 		// ダブルバッファーをスワップ
@@ -201,6 +205,7 @@ void Window::renderer_thread_func() {
 			usleep(12000 - t);
 		}
 	}
+
 	running = false;
 	if (on_stop) {
 		on_stop(window);
