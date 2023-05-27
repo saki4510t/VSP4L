@@ -28,256 +28,357 @@ namespace serenegiant::thread {
 
 /**
  * @brief c++のerase_ifはc++20以降なので同様の関数を自前で実装
- * 
- * @param q 
- * @param compare 
- * @return int 
+ *
+ * @param q
+ * @param compare
+ * @return int
  */
 static int erase_if(
-    std::multimap<nsecs_t, std::shared_ptr<Runnable>> &q,
-    std::function<bool(std::pair<nsecs_t, std::shared_ptr<Runnable>>)> compare) {
+	std::multimap<nsecs_t, std::shared_ptr<Runnable>> &q,
+	std::function<bool(std::pair<nsecs_t, std::shared_ptr<Runnable>>)> compare) {
 
-    auto original_size = q.size();
-    for (auto itr = q.begin(), last = q.end(); itr != last; ) {
-        if (compare(*itr)) {
-            LOGD("erase");
-            itr = q.erase(itr);
-        } else {
-            ++itr;
-        }
-    }
-    return original_size - q.size();
+	auto original_size = q.size();
+	for (auto itr = q.begin(), last = q.end(); itr != last; ) {
+		if (compare(*itr)) {
+			LOGD("erase");
+			itr = q.erase(itr);
+		} else {
+			++itr;
+		}
+	}
+	return original_size - q.size();
 }
 
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
- * 
- * @param lambda 
+ *
+ * @param lambda
  */
-Handler::RunnableLambda::RunnableLambda(RunnableLambdaType lambda)
+RunnableLambda::RunnableLambda(RunnableLambdaType lambda)
 :   lambda(lambda),
-    id(typeid(decltype(lambda)))
+	id(typeid(decltype(lambda)))
 {
-    ENTER();
+	ENTER();
 
-    LOGD("lambda_name=%s", id.name());
+	LOGD("lambda_name=%s", id.name());
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief 内包するラムダ関数を実行
  *        Runnableの純粋仮想関数を実装
- * 
+ *
  */
-void Handler::RunnableLambda::run() {
-    ENTER();
+void RunnableLambda::run() {
+	ENTER();
 
-    lambda();
+	lambda();
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief このオブジェクトが保持しているラムダ関数と指定したタスクが一致するかどうかを確認
- * 
- * @param task 
+ *
+ * @param task
  * @return true 指定したタスクと一致する場合
  * @return false 指定したタスクと一致しない場合
  */
-bool Handler::RunnableLambda::equals(RunnableLambdaType lambda) {
-    LOGD("lambda_name=%s", typeid(decltype(lambda)).name());
-    return typeid(decltype(lambda)) == id;
+bool RunnableLambda::equals(RunnableLambdaType lambda) {
+	LOGD("lambda_name=%s", typeid(decltype(lambda)).name());
+	return typeid(decltype(lambda)) == id;
+}
+
+//--------------------------------------------------------------------------------
+Looper::Looper()
+:   running(false)
+{
+	ENTER();
+	EXIT();
+}
+
+Looper::~Looper() {
+	ENTER();
+
+	quit();
+
+	EXIT();
+}
+
+void Looper::quit() {
+	ENTER();
+
+	running = false;
+	queue_sync.signal();
+
+	EXIT();
+}
+
+void Looper::insert(std::shared_ptr<Runnable> task, const nsecs_t &run_at_ns) {
+	ENTER();
+
+	android::Mutex::Autolock lock(queue_lock);
+	queue.insert(std::make_pair(run_at_ns, std::move(task)));
+	queue_sync.signal();
+
+	EXIT();
+}
+
+/**
+ * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
+ *        すでに実行中または実行済の場合は何もしない
+ *
+ * @param task
+ */
+void Looper::remove(std::unique_ptr<Runnable> task) {
+	ENTER();
+
+	android::Mutex::Autolock lock(queue_lock);
+	// 実行待ちキュー内に同じRunnableが存在すれば削除する
+	const auto value = task.get();
+	erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+		const auto v = it.second.get();
+		return v == value;
+	});
+	queue_sync.signal();
+
+	EXIT();
+}
+
+/**
+ * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
+ *        すでに実行中または実行済の場合は何もしない
+ *
+ * @param task
+ */
+void Looper::remove(std::shared_ptr<Runnable> task) {
+	ENTER();
+
+	android::Mutex::Autolock lock(queue_lock);
+	// 実行待ちキュー内に同じRunnableが存在すれば削除する
+	const auto value = task.get();
+	erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+		const auto v = it.second.get();
+		return v == value;
+	});
+	queue_sync.signal();
+
+	EXIT();
+}
+
+/**
+ * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
+ *        すでに実行中または実行済の場合は何もしない
+ *
+ * @param task
+ */
+void Looper::remove(RunnableLambdaType task) {
+	ENTER();
+
+	android::Mutex::Autolock lock(queue_lock);
+	// 実行待ちキュー内に同じRunnableLambdaTypeが存在すれば削除する
+	erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+		const auto v = dynamic_cast<RunnableLambda *>(it.second.get());
+		return v && v->equals(task);
+	});
+	queue_sync.signal();
+
+	EXIT();
+}
+
+/**
+ * @brief すべての未実行タスクをキューから取り除く
+ *
+ */
+void Looper::remove_all() {
+	ENTER();
+
+	android::Mutex::Autolock lock(queue_lock);
+	queue.clear();
+	queue_sync.signal();
+
+	EXIT();
+}
+
+void Looper::loop() {
+	ENTER();
+
+	running = true;
+	for ( ; running ; ) {
+		std::shared_ptr<Runnable> task = nullptr;
+		nsecs_t next = 0;
+		{
+			android::Mutex::Autolock lock(queue_lock);
+			auto current = systemTime();
+			if (!queue.empty()) {
+				// 実行待ちが存在するとき
+				auto begin = queue.begin();
+				next = begin->first;
+				if (next <= current) {
+					LOGD("すでに実行予定時刻を過ぎているときcurrent=%ld,next=%ld", current, next);
+					task = begin->second;
+					queue.erase(begin);
+				}
+			}
+			if (!task) {
+				LOGD("実行するタスクがない");
+				if (next > current) {
+					LOGD("waitRelative:%ld", (next - current));
+					queue_sync.waitRelative(queue_lock, next - current);
+				} else {
+					LOGD("wait:");
+					queue_sync.wait(queue_lock);
+				}
+				continue;
+			}
+		}
+		if (task) {
+			// タスクを実行
+			task->run();
+		}
+	}
+
+	MARK("finished");
+
+	EXIT();
 }
 
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
- *        自動的にワーカースレッドが起動する
+ *        Looperを指定しないときは自前でLooperとワーカースレッドを生成して遅延実行する・
+ *        Looperが指定されているときはワーカースレッドは実行しないので自前でワーカースレッド上でLooper::loopを呼び出すこと
+ * @param looper
  */
-Handler::Handler()
-:   running(false),
-    worker_thread()
+Handler::Handler(std::unique_ptr<Looper> looper)
+:   my_looper(std::move(looper)),
+	worker_thread()
 {
-    ENTER();
+	ENTER();
 
-    running = true;
-    worker_thread = std::thread([this] { worker_thread_func(); });
+	if (!my_looper) {
+		LOGD("create own Looper");
+		my_looper = std::make_unique<Looper>();
+		// ワーカースレッドを生成してLooper::loopを呼び出す
+		worker_thread = std::thread([this] { worker_thread_func(); });
+	}
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief デストラクタ
- * 
+ *
  */
 Handler::~Handler() {
-    ENTER();
+	ENTER();
 
-    terminate();
+	terminate();
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief ワーカースレッドを終了要求する
  *        一度呼び出すと再利用はできない
- * 
+ *
  */
 void Handler::terminate() {
-    ENTER();
+	ENTER();
 
-    running = false;
-    queue_sync.signal();
-    if (worker_thread.joinable()) {
-        worker_thread.join();
-    }
+	my_looper->quit();
+	if (worker_thread.joinable()) {
+		worker_thread.join();
+	}
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief 指定したタスクを指定した時間遅延実行するようにキューに追加する
- * 
- * @param task 
- * @param delay_ms 
+ *
+ * @param task
+ * @param delay_ms
  */
 void Handler::post_delayed(std::shared_ptr<Runnable> task, const nsecs_t &delay_ms) {
-    ENTER();
+	ENTER();
 
-    android::Mutex::Autolock lock(queue_lock);
-    auto t = systemTime();
-    if (delay_ms > 0) {
-        t = t + delay_ms * 1000000L;
-        LOGD("will run at %ld", t);
-    }
-    queue.insert(std::make_pair(t, std::move(task)));
-    queue_sync.signal();
+	auto t = systemTime();
+	if (delay_ms > 0) {
+		t = t + delay_ms * 1000000L;
+		LOGD("will run at %ld", t);
+	}
+	my_looper->insert(task, t);
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
  *        すでに実行中または実行済の場合は何もしない
- * 
- * @param task 
+ *
+ * @param task
  */
 void Handler::remove(std::unique_ptr<Runnable> task) {
-    ENTER();
+	ENTER();
 
-    android::Mutex::Autolock lock(queue_lock);
-    // 実行待ちキュー内に同じRunnableが存在すれば削除する
-    const auto value = task.get();
-    erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
-        const auto v = it.second.get();
-        return v == value;
-    });
-    queue_sync.signal();
+	my_looper->remove(std::move(task));
 
-    EXIT(); 
+	EXIT();
 }
 
 /**
  * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
  *        すでに実行中または実行済の場合は何もしない
- * 
- * @param task 
+ *
+ * @param task
  */
 void Handler::remove(std::shared_ptr<Runnable> task) {
-    ENTER();
+	ENTER();
 
-    android::Mutex::Autolock lock(queue_lock);
-    // 実行待ちキュー内に同じRunnableが存在すれば削除する
-    const auto value = task.get();
-    erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
-        const auto v = it.second.get();
-        return v == value;
-    });
-    queue_sync.signal();
+	my_looper->remove(task);
 
-    EXIT(); 
+	EXIT();
 }
 
 /**
  * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
  *        すでに実行中または実行済の場合は何もしない
- * 
- * @param task 
+ *
+ * @param task
  */
 void Handler::remove(RunnableLambdaType task) {
-    ENTER();
+	ENTER();
 
-    android::Mutex::Autolock lock(queue_lock);
-    // 実行待ちキュー内に同じRunnableLambdaTypeが存在すれば削除する
-    erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
-        const auto v = dynamic_cast<RunnableLambda *>(it.second.get());
-        return v && v->equals(task);
-    });
-    queue_sync.signal();
+	my_looper->remove(task);
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief すべての未実行タスクをキューから取り除く
- * 
+ *
  */
 void Handler::remove_all() {
-    ENTER();
+	ENTER();
 
-    android::Mutex::Autolock lock(queue_lock);
-    queue.clear();
-    queue_sync.signal();
+	my_looper->remove_all();
 
-    EXIT();
+	EXIT();
 }
 
 /**
  * @brief 遅延実行するためのワーカースレッド
- * 
+ *
  */
 void Handler::worker_thread_func() {
-    ENTER();
+	ENTER();
 
-    for ( ; running ; ) {
-        std::shared_ptr<Runnable> task = nullptr;
-        nsecs_t next = 0;
-        {
-            android::Mutex::Autolock lock(queue_lock);
-            auto current = systemTime();
-            if (!queue.empty()) {
-                // 実行待ちが存在するとき
-                auto begin = queue.begin();
-                next = begin->first;
-                if (next <= current) {
-                    LOGD("すでに実行予定時刻を過ぎているときcurrent=%ld,next=%ld", current, next);
-                    task = begin->second;
-                    queue.erase(begin);
-                }
-            }
-            if (!task) {
-                LOGD("実行するタスクがない");
-                if (next > current) {
-                    LOGD("waitRelative:%ld", (next - current));
-                    queue_sync.waitRelative(queue_lock, next - current);
-                } else {
-                    LOGD("wait:");
-                    queue_sync.wait(queue_lock);
-                }
-                continue;
-            }
-        }
-        if (task) {
-            // タスクを実行
-            task->run();
-        }
-    }
+	my_looper->loop();
 
-    MARK("finished");
-
-    EXIT();
+	EXIT();
 }
 
 }   // namespace serenegiant::thread
