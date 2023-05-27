@@ -204,24 +204,24 @@ void EyeApp::on_stop() {
 void EyeApp::on_render() {
     ENTER();
 
-					// 描画用の設定更新を適用
+	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
-					// 描画処理
-					if (!req_freeze) {
-						// オフスクリーンへ描画
-						offscreen->bind();
-						renderer_pipeline->on_draw();
-						offscreen->unbind();
-					} else {
-						// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
-						renderer_pipeline->on_draw();
-					}
-					// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
-					glClear(GL_COLOR_BUFFER_BIT);
-					// 画面へ転送
-					handle_draw(offscreen, gl_renderer);
-					// GUI(2D)描画処理を実行
-					handle_draw_gui();
+	// 描画処理
+	if (!req_freeze) {
+		// オフスクリーンへ描画
+		offscreen->bind();
+		renderer_pipeline->on_draw();
+		offscreen->unbind();
+	} else {
+		// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
+		renderer_pipeline->on_draw();
+	}
+	// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
+	glClear(GL_COLOR_BUFFER_BIT);
+	// 画面へ転送
+	handle_draw(offscreen, gl_renderer);
+	// GUI(2D)描画処理を実行
+	handle_draw_gui();
 
     EXIT();
 }
