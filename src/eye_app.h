@@ -30,8 +30,8 @@ private:
 	const bool initialized;
 	// 非同期実行用Handler
 	thread::Handler handler;
-	// Handlerの動作テスト用
-	std::function<void()> test_task;
+	// 一定時間後にキーモードをリセットするタスク
+	std::function<void()> reset_mode_task;
 	// GLFWでの画面表示用
 	Window window;
 	// V4L2からの映像取得用
@@ -61,6 +61,13 @@ private:
 	math::Matrix mvp_matrix;
 	// 拡大縮小インデックス[0,NUM_ZOOM_FACTOR)
 	int zoom_ix;
+
+	/**
+	 * @brief 一定時間後にキーモードをリセットする
+	 * 
+	 */
+	void reset_mode_delayed();
+
 	/**
 	 * @brief 輝度変更要求
 	 * 

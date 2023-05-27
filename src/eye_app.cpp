@@ -47,7 +47,7 @@ namespace serenegiant::app {
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
- * 
+ *
  */
 /*public*/
 EyeApp::EyeApp(const int &gl_version)
@@ -60,7 +60,7 @@ EyeApp::EyeApp(const int &gl_version)
 	effect_type(EFFECT_NON), current_effect(EFFECT_NON),
 	key_dispatcher(handler),
 	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX),
-	test_task(nullptr)
+	reset_mode_task(nullptr)
 {
     ENTER();
 
@@ -68,11 +68,14 @@ EyeApp::EyeApp(const int &gl_version)
 	key_dispatcher
 		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
 			LOGD("key_mode=%d", key_mode);
+			reset_mode_delayed();
 		})
 		.set_on_brightness_changed([this](const bool &inc_dec) {
+			reset_mode_delayed();
 			request_change_brightness(inc_dec);
 		})
 		.set_on_scale_changed([this](const bool &inc_dec) {
+			reset_mode_delayed();
 			request_change_scale(inc_dec);
 		})
 		.set_on_effect_changed([this](const effect_t &effect) {
@@ -89,19 +92,23 @@ EyeApp::EyeApp(const int &gl_version)
 		.set_on_start([this](GLFWwindow *win) { on_start(); })
 		.set_on_stop([this](GLFWwindow *win) { on_stop(); });
 
+	// 遅延実行タスクの準備
+	reset_mode_task = [this]() {
+		key_dispatcher.reset_key_mode();
+	};
+
     EXIT();
 }
 
 /**
  * @brief デストラクタ
- * 
+ *
  */
 /*public*/
 EyeApp::~EyeApp() {
     ENTER();
 
 	window.stop();
-	test_task = nullptr;
 	handler.terminate();
 
     EXIT();
@@ -110,7 +117,7 @@ EyeApp::~EyeApp() {
 /**
  * @brief アプリを実行
  *        実行終了までこの関数を抜けないので注意
- * 
+ *
  */
 /*public*/
 void EyeApp::run() {
@@ -118,7 +125,7 @@ void EyeApp::run() {
 
 	window.start([this](GLFWwindow *win) { on_render(); });
 
-#if 1
+#if 0
 	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
 	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
 	test_task = [&]() {
@@ -198,7 +205,7 @@ void EyeApp::on_stop() {
 
 /**
  * @brief 描画スレッドの実行関数
- * 
+ *
  */
 /*private,@WorkerThread*/
 void EyeApp::on_render() {
@@ -228,9 +235,9 @@ void EyeApp::on_render() {
 
 /**
  * @brief Create a renderer object
- * 
- * @param effect 
- * @return gl::GLRendererUp 
+ *
+ * @param effect
+ * @return gl::GLRendererUp
  */
 gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
 	// FIXME 今は映像効果のない転送するだけのGLRendererを生成している
@@ -264,9 +271,9 @@ gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
 
 /**
  * @brief 描画用の設定更新を適用
- * 
- * @param offscreen 
- * @param gl_renderer 
+ *
+ * @param offscreen
+ * @param gl_renderer
  */
 void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer) {
 	ENTER();
@@ -282,7 +289,7 @@ void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &render
 		offscreen->set_mvp_matrix(mat, 0);
 	}
 	if (UNLIKELY(req_change_effect)) {
-		std::lock_guard<std::mutex> lock(state_lock);		
+		std::lock_guard<std::mutex> lock(state_lock);
 		req_change_effect = false;
 		if (current_effect != effect_type) {
 			current_effect = effect_type;
@@ -299,8 +306,8 @@ void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &render
 
 /**
  * @brief 描画処理を実行
- * 
- * @param renderer 
+ *
+ * @param renderer
  */
 /*private*/
 void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer) {
@@ -319,7 +326,7 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
 
 /**
  * @brief GUI(2D)描画処理を実行
- * 
+ *
  */
 void EyeApp::handle_draw_gui() {
 	ENTER();
@@ -357,13 +364,24 @@ void EyeApp::handle_draw_gui() {
 
 //--------------------------------------------------------------------------------
 /**
+ * @brief 一定時間後にキーモードをリセットする
+ *
+ */
+void EyeApp::reset_mode_delayed() {
+	handler.remove(reset_mode_task);
+	handler.post_delayed(reset_mode_task, 5000);
+}
+
+//--------------------------------------------------------------------------------
+/**
  * @brief 輝度変更要求
- * 
+ *
  * @param inc_dec trueなら輝度増加、falseなら輝度減少
  */
 void EyeApp::request_change_brightness(const bool &inc_dec) {
 	ENTER();
 
+	LOGD("inc_dec=%d", inc_dec);
 	// FIXME 未実装
 
 	EXIT();
@@ -371,21 +389,21 @@ void EyeApp::request_change_brightness(const bool &inc_dec) {
 
 /**
  * @brief 拡大縮小率変更要求
- * 
+ *
  * @param inc_dec trueなら拡大、falseなら縮小
  */
 void EyeApp::request_change_scale(const bool &inc_dec) {
 	ENTER();
 
-	int ix;
-	std::lock_guard<std::mutex> lock(state_lock);		
-	ix = zoom_ix + (inc_dec ? 1 : -1);
+	std::lock_guard<std::mutex> lock(state_lock);
+	int ix = zoom_ix + (inc_dec ? 1 : -1);
 	if (ix < 0) {
 		ix = 0;
 	} else if (ix >= NUM_ZOOM_FACTOR) {
 		ix = NUM_ZOOM_FACTOR - 1;
 	}
 	if (ix != zoom_ix) {
+		LOGD("ix=%d", ix);
 		zoom_ix = ix;
 		auto factor = ZOOM_FACTOR[ix];
 		mvp_matrix.setScale(factor, factor, 1.0f);
@@ -397,13 +415,14 @@ void EyeApp::request_change_scale(const bool &inc_dec) {
 
 /**
  * @brief 映像効果変更要求
- * 
- * @param effect 
+ *
+ * @param effect
  */
 void EyeApp::request_change_effect(const effect_t &effect) {
 	ENTER();
 
-	std::lock_guard<std::mutex> lock(state_lock);		
+	LOGD("effect=%d", effect);
+	std::lock_guard<std::mutex> lock(state_lock);
 	const bool changed = effect_type != effect;
 	effect_type = effect;
 	req_change_effect = changed;
@@ -413,15 +432,17 @@ void EyeApp::request_change_effect(const effect_t &effect) {
 
 /**
  * @brief 映像フリーズのON/OFF切り替え要求
- * 
- * @param effect 
+ *
+ * @param effect
  */
 void EyeApp::request_change_freeze(const bool &onoff) {
 	ENTER();
 
+	LOGD("onoff=%d", onoff);
 	req_freeze = onoff;
 
 	EXIT();
 }
 
 }   // namespace serenegiant::app
+

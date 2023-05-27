@@ -42,6 +42,7 @@ private:
 	OnEffectChangedFunc on_effect_changed;
 	OnFreezeChangedFunc on_freeze_changed;
 
+	void change_key_mode(const key_mode_t &mode, const bool &force_callback = false);
 	/**
 	 * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
 	 *
@@ -49,7 +50,21 @@ private:
 	 */
 	void confirm_long_press_task(const KeyEvent &event);
 	/**
-	 * @brief 短押しかどうか
+	 * @brief 押されているキーの個数を取得, 排他制御してないので上位でロックすること
+	 * 
+	 * @return int 
+	 */
+	int num_pressed();
+	/**
+	 * @brief キーが押されているかどうか, 排他制御してないので上位でロックすること
+	 *
+	 * @param key
+	 * @return true
+	 * @return false
+	 */
+	bool is_pressed(const int &key);
+	/**
+	 * @brief 短押しかどうか, 排他制御してないので上位でロックすること
 	 *
 	 * @param key
 	 * @return true
@@ -57,7 +72,7 @@ private:
 	 */
 	bool is_short_pressed(const int &key);
 	/**
-	 * @brief 長押しされているかどうか
+	 * @brief 長押しされているかどうか, 排他制御してないので上位でロックすること
 	 *
 	 * @param key
 	 * @return true
@@ -83,21 +98,7 @@ private:
 	 * @return int32_t
 	 */
 	int32_t handle_on_key_up(const KeyEvent &event);
-	/**
-	 * @brief 通常モードで短押ししたときの処理, handle_on_key_upの下請け
-	 *
-	 * @param event
-	 * @return int32_t
-	 */
-	int32_t on_key_up_normal(const KeyEvent &event);
-	/**
-	 * @brief OSD操作モードで短押ししたときの処理, handle_on_key_upの下請け
-	 *
-	 * @param event
-	 * @return int32_t
-	 */
-	int32_t on_key_up_osd(const KeyEvent &event);
-
+	//--------------------------------------------------------------------------------
 	/**
 	 * @brief 長押し時間経過したときの処理
 	 *
@@ -105,20 +106,93 @@ private:
 	 * @return int32_t
 	 */
 	int32_t handle_on_long_key_pressed(const KeyEvent &event);
+	//--------------------------------------------------------------------------------
 	/**
-	 * @brief 通常モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+	 * @brief 通常モードでショートタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
 	 * @return int32_t
 	 */
-	int32_t on_long_key_pressed_normal(const KeyEvent &event);
+	int32_t on_tap_short_normal(const KeyEvent &event);
+	/**
+	 * @brief 輝度調整モードでショートタップしたときの処理, handle_on_key_upの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_short_brightness(const KeyEvent &event);
+	/**
+	 * @brief 拡大縮小モードでショートタップしたときの処理, handle_on_key_upの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_short_zoom(const KeyEvent &event);
+	/**
+	 * @brief OSD操作モードでショートタップしたときの処理, handle_on_key_upの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_short_osd(const KeyEvent &event);
+	//--------------------------------------------------------------------------------
+	/**
+	 * @brief 通常モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_middle_normal(const KeyEvent &event);
+	/**
+	 * @brief 輝度調整モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_middle_brightness(const KeyEvent &event);
+	/**
+	 * @brief 拡大縮小モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_middle_zoom(const KeyEvent &event);
+	/**
+	 * @brief OSD操作モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_middle_osd(const KeyEvent &event);
+	//--------------------------------------------------------------------------------
+	/**
+	 * @brief 通常モードでロングタップしたときの処理, handle_on_long_key_pressedの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_long_normal(const KeyEvent &event);
+	/**
+	 * @brief 輝度調整モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_long_brightness(const KeyEvent &event);
+	/**
+	 * @brief 拡大縮小モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+	 *
+	 * @param event
+	 * @return int32_t
+	 */
+	int32_t on_tap_long_zoom(const KeyEvent &event);
 	/**
 	 * @brief OSD操作モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
 	 *
 	 * @param event
 	 * @return int32_t
 	 */
-	int32_t on_long_key_pressed_osd(const KeyEvent &event);
+	int32_t on_tap_long_osd(const KeyEvent &event);
 protected:
 public:
 	/**
@@ -131,6 +205,12 @@ public:
 	 *
 	 */
 	~KeyDispatcher();
+
+	/**
+	 * @brief キーモードをリセット(KEY_MODE_NORMALへ戻す)
+	 * 
+	 */
+	void reset_key_mode();
 
 	/**
 	 * @brief キーモードが変更されるときのコールバックをセット
