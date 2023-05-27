@@ -71,7 +71,8 @@ KeyDispatcher::KeyDispatcher(thread::Handler &handler)
 	key_mode(KEY_MODE_NORMAL),
 	on_key_mode_changed(nullptr),
 	on_brightness_changed(nullptr),
-	on_scale_changed(nullptr)
+	on_scale_changed(nullptr),
+	on_freeze_changed(nullptr)
 {
 	ENTER();
 	EXIT();
@@ -85,62 +86,6 @@ KeyDispatcher::KeyDispatcher(thread::Handler &handler)
 KeyDispatcher::~KeyDispatcher() {
 	ENTER();
 	EXIT();
-}
-
-/**
- * @brief キーモードが変更されるときのコールバックをセット
- *
- * @param callback
- * @return KeyDispatcher&
- */
-KeyDispatcher &KeyDispatcher::set_on_key_mode_changed(OnKeyModeChangedFunc callback) {
-	ENTER();
-
-	on_key_mode_changed = callback;
-
-	RET(*this);
-}
-
-/**
- * @brief 輝度が変更されるときのコールバックをセット
- *
- * @param callback
- * @return KeyDispatcher&
- */
-KeyDispatcher &KeyDispatcher::set_on_brightness_changed(OnBrightnessChangedFunc callback) {
-	ENTER();
-
-	on_brightness_changed = callback;
-
-	RET(*this);
-}
-
-/**
- * @brief 拡大縮小率が変更されるときのコールバックをセット
- *
- * @param callback
- * @return KeyDispatcher&
- */
-KeyDispatcher &KeyDispatcher::set_on_scale_changed(OnScaleChangedFunc callback) {
-	ENTER();
-
-	on_scale_changed = callback;
-
-	RET(*this);
-}
-
-/**
- * @brief 映像効果が変更されるときのコールバックをセット
- *
- * @param callback
- * @return KeyDispatcher&
- */
-KeyDispatcher &KeyDispatcher::set_on_effect_changed(OnEffectChangedFunc callback) {
-	ENTER();
-
-	on_effect_changed = callback;
-
-	RET(*this);
 }
 
 /**

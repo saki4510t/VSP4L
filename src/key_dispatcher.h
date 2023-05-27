@@ -15,6 +15,7 @@ typedef std::function<void(const key_mode_t &/*key_mode*/)> OnKeyModeChangedFunc
 typedef std::function<void(const bool &/*inc_dec*/)> OnBrightnessChangedFunc;
 typedef std::function<void(const bool &/*inc_dec*/)> OnScaleChangedFunc;
 typedef std::function<void(const effect_t &/*effect*/)> OnEffectChangedFunc;
+typedef std::function<void(const bool &/*onoff*/)> OnFreezeChangedFunc;
 
 // privateクラスの前方参照宣言
 class LongPressCheckTask;
@@ -39,6 +40,7 @@ private:
 	OnBrightnessChangedFunc on_brightness_changed;
 	OnScaleChangedFunc on_scale_changed;
 	OnEffectChangedFunc on_effect_changed;
+	OnFreezeChangedFunc on_freeze_changed;
 
 	/**
 	 * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
@@ -136,28 +138,50 @@ public:
 	 * @param callback
 	 * @return KeyDispatcher&
 	 */
-	KeyDispatcher &set_on_key_mode_changed(OnKeyModeChangedFunc callback);
+	inline KeyDispatcher &set_on_key_mode_changed(OnKeyModeChangedFunc callback) {
+		on_key_mode_changed = callback;
+		return *this;
+	}
 	/**
 	 * @brief 輝度が変更されるときのコールバックをセット
 	 *
 	 * @param callback
 	 * @return KeyDispatcher&
 	 */
-	KeyDispatcher &set_on_brightness_changed(OnBrightnessChangedFunc callback);
+	inline KeyDispatcher &set_on_brightness_changed(OnBrightnessChangedFunc callback) {
+		on_brightness_changed = callback;
+		return *this;
+	}
 	/**
 	 * @brief 拡大縮小率が変更されるときのコールバックをセット
 	 *
 	 * @param callback
 	 * @return KeyDispatcher&
 	 */
-	KeyDispatcher &set_on_scale_changed(OnScaleChangedFunc callback);
+	inline KeyDispatcher &set_on_scale_changed(OnScaleChangedFunc callback) {
+		on_scale_changed = callback;
+		return *this;
+	}
 	/**
 	 * @brief 映像効果が変更されるときのコールバックをセット
 	 *
 	 * @param callback
 	 * @return KeyDispatcher&
 	 */
-	KeyDispatcher &set_on_effect_changed(OnEffectChangedFunc callback);
+	inline KeyDispatcher &set_on_effect_changed(OnEffectChangedFunc callback) {
+		on_effect_changed = callback;
+		return *this;
+	}
+	/**
+	 * @brief 映像フリーズが切り替わるときのコールバックをセット
+	 * 
+	 * @param callback 
+	 * @return KeyDispatcher& 
+	 */
+	inline KeyDispatcher &set_on_freeze_changed(OnFreezeChangedFunc callback) {
+		on_freeze_changed = callback;
+		return *this;
+	}
 
 	/**
 	 * @brief GLFWからのキー入力イベントの処理

@@ -63,6 +63,12 @@ private:
 	 * @param effect 
 	 */
 	void request_change_effect(const effect_t &effect);
+	/**
+	 * @brief 映像フリーズのON/OFF切り替え要求
+	 * 
+	 * @param effect 
+	 */
+	void request_change_freeze(const bool &onoff);
 
 	/**
 	 * @brief Create a renderer object

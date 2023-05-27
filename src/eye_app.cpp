@@ -79,6 +79,9 @@ EyeApp::EyeApp(const int &gl_version)
 		})
 		.set_on_effect_changed([this](const effect_t &effect) {
 			request_change_effect(effect);
+		})
+		.set_on_freeze_changed([this](const bool &onoff){
+			request_change_freeze(onoff);
 		});
 
     EXIT();
@@ -410,6 +413,19 @@ void EyeApp::request_change_effect(const effect_t &effect) {
 	const bool changed = effect_type != effect;
 	effect_type = effect;
 	req_change_effect = changed;
+
+	EXIT();
+}
+
+/**
+ * @brief 映像フリーズのON/OFF切り替え要求
+ * 
+ * @param effect 
+ */
+void EyeApp::request_change_freeze(const bool &onoff) {
+	ENTER();
+
+	req_freeze = onoff;
 
 	EXIT();
 }
