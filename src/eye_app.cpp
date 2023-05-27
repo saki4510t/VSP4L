@@ -153,27 +153,27 @@ void EyeApp::on_start() {
     source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
 	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
 		LOGE("カメラをオープンできなかった");
-		// FIXME 終了させる
+		window.stop();
 		EXIT();
 	}
-		LOGV("supported=%s", source->get_supported_size().c_str());
-		source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
+	LOGV("supported=%s", source->get_supported_size().c_str());
+	source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
 	if (source->start()) {
 		LOGE("カメラを開始できなかった");
-		// FIXME 終了させる
+		window.stop();
 		EXIT();
 	}
 
-				// カメラ映像描画用のGLRendererPipelineを生成
-				const char* versionStr = (const char*)glGetString(GL_VERSION);
-				LOGD("GL_VERSION=%s", versionStr);
+	// カメラ映像描画用のGLRendererPipelineを生成
+	const char* versionStr = (const char*)glGetString(GL_VERSION);
+	LOGD("GL_VERSION=%s", versionStr);
 	renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
-                source->set_pipeline(renderer_pipeline.get());
-                renderer_pipeline->start();
-				// オフスクリーンを生成
+	source->set_pipeline(renderer_pipeline.get());
+	renderer_pipeline->start();
+	// オフスクリーンを生成
 	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
 
-				req_change_matrix = true;
+	req_change_matrix = true;
 
 	EXIT();
 }
