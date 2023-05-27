@@ -66,6 +66,16 @@ Window::Window(const int width, const int height, const char *title)
 	on_start(nullptr), on_stop(nullptr), on_render(nullptr)
 {
 	ENTER();
+
+	if (window) {
+		// コールバック内からWindowインスタンスを参照できるようにポインタを渡しておく
+		glfwSetWindowUserPointer(window, this);
+		// ウインドウサイズが変更されたときのコールバックをセット
+		glfwSetWindowSizeCallback(window, resize);
+		// キー入力イベントコールバックをセット
+		glfwSetKeyCallback(window, key_callback);
+	}
+
 	EXIT();
 }
 
@@ -236,12 +246,6 @@ void Window::init_gl() {
 		// ダブルバッファの入れ替えタイミングを指定, 垂直同期のタイミングを待つ
 		glfwSwapInterval(1);
 
-		// コールバック内からWindowインスタンスを参照できるようにポインタを渡しておく
-		glfwSetWindowUserPointer(window, this);
-		// ウインドウサイズが変更されたときのコールバックをセット
-		glfwSetWindowSizeCallback(window, resize);
-		// キー入力イベントコールバックをセット
-		glfwSetKeyCallback(window, key_callback);
 		// 作成したウインドウを初期化
 		resize(window, width(), height());
 		// IMGUIでのGUI描画用に初期化する
