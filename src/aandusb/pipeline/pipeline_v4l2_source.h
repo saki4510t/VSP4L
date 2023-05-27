@@ -842,6 +842,7 @@ public:
 
 };
 
+typedef std::unique_ptr<V4L2SourcePipeline> V4L2SourcePipelineUp;
 typedef std::shared_ptr<V4L2SourcePipeline> V4L2SourcePipelineSp;
 
 }	// namespace serenegiant::v4l2::pipeline

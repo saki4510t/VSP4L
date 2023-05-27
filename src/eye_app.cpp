@@ -24,14 +24,9 @@
 #include "gl/rgba_fsh.h"
 // aandusb
 #include "window.h"
-// aandusb/pipeline
-#include "pipeline/pipeline_v4l2_source.h"
 // app
 #include "effect_fsh.h"
 #include "eye_app.h"
-
-namespace pipeline = serenegiant::pipeline;
-namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
 
 namespace serenegiant::app {
 
@@ -58,8 +53,11 @@ namespace serenegiant::app {
 EyeApp::EyeApp(const int &gl_version)
 :   gl_version(gl_version),
 	initialized(!Window::initialize()),
-    is_running(false), req_change_effect(false), req_freeze(false),
-	effect_type(EFFECT_NON),
+	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
+	source(nullptr), renderer_pipeline(nullptr),
+	offscreen(nullptr), gl_renderer(nullptr),
+    req_change_effect(false), req_freeze(false),
+	effect_type(EFFECT_NON), current_effect(EFFECT_NON),
 	key_dispatcher(handler),
 	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX),
 	test_task(nullptr)
@@ -83,6 +81,13 @@ EyeApp::EyeApp(const int &gl_version)
 		.set_on_freeze_changed([this](const bool &onoff){
 			request_change_freeze(onoff);
 		});
+	// キーイベントハンドラを登録
+	window
+		.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
+			return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
+		})
+		.set_on_start([this](GLFWwindow *win) { on_start(); })
+		.set_on_stop([this](GLFWwindow *win) { on_stop(); });
 
     EXIT();
 }
@@ -95,9 +100,9 @@ EyeApp::EyeApp(const int &gl_version)
 EyeApp::~EyeApp() {
     ENTER();
 
+	window.stop();
 	test_task = nullptr;
 	handler.terminate();
-    is_running = false;
 
     EXIT();
 }
@@ -111,8 +116,7 @@ EyeApp::~EyeApp() {
 void EyeApp::run() {
     ENTER();
 
-    is_running = true;
-    auto renderer_thread = std::thread([this] { renderer_thread_func(); });
+	window.start([this](GLFWwindow *win) { on_render(); });
 
 #if 1
 	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
@@ -129,14 +133,9 @@ void EyeApp::run() {
 	handler.post_delayed(test_task, 10000);
 #endif
 
-    for ( ; is_running ; ) {
+    for ( ; window.is_running() ; ) {
 		// ここでなにかするかも
         usleep(300000);
-    }
-
-    is_running = false;
-    if (renderer_thread.joinable()) {
-        renderer_thread.join();
     }
 
 	LOGD("Finished.");
@@ -145,43 +144,66 @@ void EyeApp::run() {
 }
 
 //--------------------------------------------------------------------------------
+/*private,@WorkerThread*/
+void EyeApp::on_start() {
+    ENTER();
+
+    source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
+	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
+		LOGE("カメラをオープンできなかった");
+		// FIXME 終了させる
+		EXIT();
+	}
+		LOGV("supported=%s", source->get_supported_size().c_str());
+		source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
+	if (source->start()) {
+		LOGE("カメラを開始できなかった");
+		// FIXME 終了させる
+		EXIT();
+	}
+
+				// カメラ映像描画用のGLRendererPipelineを生成
+				const char* versionStr = (const char*)glGetString(GL_VERSION);
+				LOGD("GL_VERSION=%s", versionStr);
+	renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
+                source->set_pipeline(renderer_pipeline.get());
+                renderer_pipeline->start();
+				// オフスクリーンを生成
+	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
+
+				req_change_matrix = true;
+
+	EXIT();
+}
+
+/*private,@WorkerThread*/
+void EyeApp::on_stop() {
+	ENTER();
+
+	if (source) {
+		source->stop();
+		source.reset();
+	}
+	if (renderer_pipeline) {
+		renderer_pipeline->on_release();
+		renderer_pipeline->stop();
+		renderer_pipeline.reset();
+	}
+	offscreen.reset();
+
+	EXIT();
+}
+
 /**
  * @brief 描画スレッドの実行関数
  * 
  */
-/*private*/
-void EyeApp::renderer_thread_func() {
+/*private,@WorkerThread*/
+void EyeApp::on_render() {
     ENTER();
 
-    auto source = std::make_shared<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
-	if (source && !source->open() && !source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
-		LOGV("supported=%s", source->get_supported_size().c_str());
-		source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
-		if (!source->start()) {
-			LOGD("windowを初期化");
-			Window window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp");
-			if (is_running && window.is_valid()) {
-				// キーイベントハンドラを登録
-				window.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
-                    return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
-                });
-				// カメラ映像描画用のGLRendererPipelineを生成
-				const char* versionStr = (const char*)glGetString(GL_VERSION);
-				LOGD("GL_VERSION=%s", versionStr);
-				auto renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
-                source->set_pipeline(renderer_pipeline.get());
-                renderer_pipeline->start();
-				// オフスクリーンを生成
-				auto offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
-				gl::GLRendererUp gl_renderer = nullptr;
-				effect_t current_effect = effect_type;
-				req_change_matrix = true;
-				LOGD("GLFWのイベントループ開始");
-				// ウィンドウが開いている間繰り返す
-				while (is_running && window) {
-					const auto start = systemTime();
 					// 描画用の設定更新を適用
-					prepare_draw(offscreen, gl_renderer, current_effect);
+	prepare_draw(offscreen, gl_renderer);
 					// 描画処理
 					if (!req_freeze) {
 						// オフスクリーンへ描画
@@ -198,36 +220,6 @@ void EyeApp::renderer_thread_func() {
 					handle_draw(offscreen, gl_renderer);
 					// GUI(2D)描画処理を実行
 					handle_draw_gui();
-					// ダブルバッファーをスワップ
-					window.swap_buffers();
-					// フレームレート調整
-					const auto t = (systemTime() - start) / 1000L;
-					if (t < 12000) {
-						// 60fpsだと16.6msだけど少し余裕をみて最大12ms待機する
-						usleep(12000 - t);
-					}
-				}
-
-				LOGD("GLFWのイベントループ終了");
-				source->stop();
-				renderer_pipeline->on_release();
-				renderer_pipeline->stop();
-				renderer_pipeline.reset();
-				offscreen.reset();
-				source.reset();
-			} else {
-				// ウィンドウ作成に失敗した処理
-				LOGE("Can't create GLFW window.");
-			}
-		}
-	} else {
-		LOGE("Failed to init v4l2");
-	}
-
-	LOGD("GLFWスレッド終了");
-
-	source.reset();
-    is_running = false;
 
     EXIT();
 }
@@ -274,7 +266,7 @@ gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
  * @param offscreen 
  * @param gl_renderer 
  */
-void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer, effect_t &current_effect) {
+void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer) {
 	ENTER();
 
 	if (UNLIKELY(req_change_matrix)) {

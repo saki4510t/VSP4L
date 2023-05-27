@@ -12,13 +12,15 @@
 	#undef USE_LOGALL
 #else
 //	#define USE_LOGALL
-#define USE_LOGD
-#undef LOG_NDEBUG
-#undef NDEBUG
+	#define USE_LOGD
+	#undef LOG_NDEBUG
+	#undef NDEBUG
 #endif
 
 #include "utilbase.h"
-
+// common
+#include "times.h"
+// app
 #include "window.h"
 
 namespace serenegiant::app {
@@ -56,41 +58,14 @@ int Window::initialize() {
 	RETURN(0, int);
 }
 
-Window::Window(
-	const int width, const int height,
-	const char *title)
+Window::Window(const int width, const int height, const char *title)
 :	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
+	running(false), renderer_thread(),
 	aspect(640 / 480.0f), fb_width(width), fb_height(height),
-	on_key_event_func(nullptr)
+	on_key_event_func(nullptr),
+	on_start(nullptr), on_stop(nullptr), on_render(nullptr)
 {
 	ENTER();
-
-	if (window) {
-		// 作成したウィンドウへOpenGLで描画できるようにする
-		glfwMakeContextCurrent(window);
-		// GLEW を初期化する
-		glewExperimental = GL_TRUE;
-		if (glewInit() != GLEW_OK) {
-			// GLEW の初期化に失敗した
-			LOGE("Can't initialize GLEW");
-			EXIT();
-		}
-	
-		// ダブルバッファの入れ替えタイミングを指定, 垂直同期のタイミングを待つ
-		glfwSwapInterval(1);
-
-		// コールバック内からWindowインスタンスを参照できるようにポインタを渡しておく
-		glfwSetWindowUserPointer(window, this);
-		// ウインドウサイズが変更されたときのコールバックをセット
-		glfwSetWindowSizeCallback(window, resize);
-		// キー入力イベントコールバックをセット
-		glfwSetKeyCallback(window, key_callback);
-		// 作成したウインドウを初期化
-		resize(window, width, height);
-		// IMGUIでのGUI描画用に初期化する
-		init_gui();
-	}
-
 	EXIT();
 }
 
@@ -99,7 +74,7 @@ Window::~Window() {
 	ENTER();
 
 	if (window) {
-		terminate_gui();
+		stop();
 		glfwDestroyWindow(window);
 		window = nullptr;
 	}
@@ -107,14 +82,43 @@ Window::~Window() {
 	EXIT();
 }
 
+/**
+ * @brief 描画スレッドを開始する
+ * 
+ * @return int 
+ */
+int Window::start(OnRenderFunc render_func) {
+	ENTER();
+
+	if (!running) {
+		running = true;
+		on_render = render_func;
+    	renderer_thread = std::thread([this] { renderer_thread_func(); });
+	}
+
+	RETURN(0, int);
+}
+
+/**
+ * @brief 描画スレッドを終了する
+ * 
+ * @return int 
+ */
+/*public*/
+int Window::stop() {
+	ENTER();
+
+	running = false;
+    if (renderer_thread.joinable()) {
+        renderer_thread.join();
+    }
+
+	RETURN(0, int);
+}
+
 /*public*/
 Window::operator bool() {
-	// イベントを確認
-//	glfwWaitEvents(); // こっちはイベントが起こるまで実行をブロックする
-	// glfwWaitEventsTimeout(0.010); // イベントが起こるかタイム・アウトするまで実行をブロック, glfw3.2以降
-	glfwPollEvents(); // イベントをチェックするが実行をブロックしない
-	// ウィンドウを閉じる必要がなければ true を返す
-	return window && !glfwWindowShouldClose(window);
+	return poll_events();
 }
 
 /*public*/
@@ -162,6 +166,96 @@ void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, in
 }
 
 /*private*/
+bool Window::poll_events() {
+	// イベントを確認
+//	glfwWaitEvents(); // こっちはイベントが起こるまで実行をブロックする
+	// glfwWaitEventsTimeout(0.010); // イベントが起こるかタイム・アウトするまで実行をブロック, glfw3.2以降
+	glfwPollEvents(); // イベントをチェックするが実行をブロックしない
+	// ウィンドウを閉じる必要がなければ true を返す
+	return window && !glfwWindowShouldClose(window);
+}
+
+/**
+ * @brief 描画スレッドの実行関数
+ * 
+ */
+/*private,@WorkerThread*/
+void Window::renderer_thread_func() {
+    ENTER();
+
+	init_gl();
+
+	if (on_start) {
+		on_start(window);
+	}
+	// 描画ループ
+	for ( ; running && poll_events(); ) {
+		const auto start = systemTime();
+		on_render(window);
+		// ダブルバッファーをスワップ
+		swap_buffers();
+		// フレームレート調整
+		const auto t = (systemTime() - start) / 1000L;
+		if (t < 12000) {
+			// 60fpsだと16.6msだけど少し余裕をみて最大12ms待機する
+			usleep(12000 - t);
+		}
+	}
+	running = false;
+	if (on_stop) {
+		on_stop(window);
+	}
+
+	terminate_gl();
+
+	LOGD("finished");
+
+	EXIT();
+}
+
+/*private,@WorkerThread*/
+void Window::init_gl() {
+	ENTER();
+
+	if (window) {
+		// 作成したウィンドウへOpenGLで描画できるようにする
+		glfwMakeContextCurrent(window);
+		// GLEW を初期化する
+		glewExperimental = GL_TRUE;
+		if (glewInit() != GLEW_OK) {
+			// GLEW の初期化に失敗した
+			LOGE("Can't initialize GLEW");
+			EXIT();
+		}
+	
+		// ダブルバッファの入れ替えタイミングを指定, 垂直同期のタイミングを待つ
+		glfwSwapInterval(1);
+
+		// コールバック内からWindowインスタンスを参照できるようにポインタを渡しておく
+		glfwSetWindowUserPointer(window, this);
+		// ウインドウサイズが変更されたときのコールバックをセット
+		glfwSetWindowSizeCallback(window, resize);
+		// キー入力イベントコールバックをセット
+		glfwSetKeyCallback(window, key_callback);
+		// 作成したウインドウを初期化
+		resize(window, width(), height());
+		// IMGUIでのGUI描画用に初期化する
+		init_gui();
+	}
+
+	EXIT();
+}
+
+/*private,@WorkerThread*/
+void Window::terminate_gl() {
+	ENTER();
+
+	terminate_gui();
+
+	EXIT();
+}
+
+/*private,@WorkerThread*/
 void Window::init_gui() {
 	ENTER();
 
@@ -188,7 +282,7 @@ void Window::init_gui() {
 	EXIT();	
 }
 
-/*private*/
+/*private,@WorkerThread*/
 void Window::terminate_gui() {
 	ENTER();
 

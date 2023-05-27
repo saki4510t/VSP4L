@@ -12,44 +12,60 @@
 #include "matrix.h"
 // aandusb/pipeline
 #include "pipeline/pipeline_gl_renderer.h"
+#include "pipeline/pipeline_v4l2_source.h"
 
 #include "const.h"
 #include "key_event.h"
 #include "key_dispatcher.h"
+#include "window.h"
 
 namespace pipeline = serenegiant::pipeline;
+namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
 
 namespace serenegiant::app {
-class Window;
 
 class EyeApp {
 private:
 	const int gl_version;
 	const bool initialized;
-	// 実行中フラグ
-	volatile bool is_running;
+	// 非同期実行用Handler
+	thread::Handler handler;
+	// Handlerの動作テスト用
+	std::function<void()> test_task;
+	// GLFWでの画面表示用
+	Window window;
+	// V4L2からの映像取得用
+	v4l2_pipeline::V4L2SourcePipelineUp source;
+	// 映像表示用
+	pipeline::GLRendererPipelineUp renderer_pipeline;
+	// 拡大縮小・映像効果付与・フリーズ用オフスクリーン
+	gl::GLOffScreenUp offscreen;
+	// オフスクリーン描画用
+	gl::GLRendererUp gl_renderer;
+	// 排他制御用
+	mutable std::mutex state_lock;
+	/**
+	 * @brief キー操作用
+	 * 
+	 */
+	KeyDispatcher key_dispatcher;
 	// 映像効果変更要求
 	volatile bool req_change_effect;
 	// モデルビュー変換行列変更要求
 	volatile bool req_change_matrix;
 	// 映像フリーズ要求
 	volatile bool req_freeze;
-	// 非同期実行用Handler
-	thread::Handler handler;
-	// Handlerの動作テスト用
-	std::function<void()> test_task;
-	mutable std::mutex state_lock;
 	effect_t effect_type;
-	/**
-	 * @brief キー操作用
-	 * 
-	 */
-	KeyDispatcher key_dispatcher;
+	effect_t current_effect;
 	// モデルビュー変換行列
 	math::Matrix mvp_matrix;
 	// 拡大縮小インデックス[0,NUM_ZOOM_FACTOR)
 	int zoom_ix;
-
+	/**
+	 * @brief 輝度変更要求
+	 * 
+	 * @param inc_dec 
+	 */
 	void request_change_brightness(const bool &inc_dec);
 	/**
 	 * @brief 拡大縮小率変更要求
@@ -83,7 +99,7 @@ private:
 	 * @param offscreen 
 	 * @param gl_renderer 
 	 */
-	void prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer, effect_t &current_effect);
+	void prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer);
 	/**
 	 * @brief 描画処理を実行
 	 *
@@ -96,10 +112,20 @@ private:
 	 */
 	void handle_draw_gui();
 	/**
-	 * @brief 描画スレッドの実行関数
+	 * @brief 描画開始時の追加処理, Windowのレンダリングスレッド上で実行される
 	 *
 	 */
-	void renderer_thread_func();
+	void on_start();
+	/**
+	 * @brief 描画終了時の追加処理, Windowのレンダリングスレッド上で実行される
+	 * 
+	 */
+	void on_stop();
+	/**
+	 * @brief 描画処理, Windowのレンダリングスレッド上で実行される
+	 *
+	 */
+	void on_render();
 protected:
 public:
 	/**

@@ -13,6 +13,7 @@
 
 #include <cstdlib>
 #include <functional>
+#include <thread>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -24,6 +25,9 @@
 
 namespace serenegiant::app {
 
+typedef std::function<void(GLFWwindow *win)> OnStartFunc;
+typedef std::function<void(GLFWwindow *win)> OnStopFunc;
+typedef std::function<void(GLFWwindow *win)> OnRenderFunc;
 typedef std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
 
 /**
@@ -33,25 +37,52 @@ typedef std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const i
 class Window {
 private:
 	GLFWwindow *window;
+	volatile bool running;
+	std::thread renderer_thread;
 	GLfloat aspect;
 	int fb_width;
 	int fb_height;
 	OnKeyEventFunc on_key_event_func;
+	OnStartFunc on_start;
+	OnStopFunc on_stop;
+	OnRenderFunc on_render;
 
+	void init_gl();
+	void terminate_gl();
 	void init_gui();
 	void terminate_gui();
+	bool poll_events();
+	/**
+	 * @brief 描画スレッドの実行関数
+	 *
+	 */
+	void renderer_thread_func();
 protected:
 	static void resize(GLFWwindow *win, int width, int height);
 	static void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods);
+	void swap_buffers();
 public:
 	static int initialize();
 
 	Window(const int width = 640, const int height = 480, const char *title = "aAndUsb");
 	virtual ~Window();
 
+	/**
+	 * @brief 描画スレッドを開始する
+	 * 
+	 * @return int 
+	 */
+	int start(OnRenderFunc render_func);
+	/**
+	 * @brief 描画スレッドを終了する
+	 * 
+	 * @return int 
+	 */
+	int stop();
+
 	explicit operator bool();
-	void swap_buffers();
 	inline bool is_valid() const { return window != nullptr; };
+	inline bool is_running() const { return running; };
 	inline GLfloat get_aspect() const { return aspect; };
 	/**
 	 * @brief フレームバッファの幅を取得
@@ -74,6 +105,14 @@ public:
 	 */
 	inline Window &on_key_event(OnKeyEventFunc listener) {
 		on_key_event_func = listener;
+		return *this;
+	}
+	inline Window &set_on_start(OnStartFunc callback) {
+		on_start = callback;
+		return *this;
+	}
+	inline Window &set_on_stop(OnStopFunc callback) {
+		on_stop = callback;
 		return *this;
 	}
 };
