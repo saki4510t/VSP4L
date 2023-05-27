@@ -80,20 +80,6 @@ EyeApp::EyeApp(const int &gl_version)
 		.set_on_effect_changed([this](const effect_t &effect) {
 			request_change_effect(effect);
 		});
-#if 1
-	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
-	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
-	test_task = [&]() {
-		LOGD("run %ld", systemTime());
-		if (test_task) {
-			handler.post_delayed(test_task, 1000);
-		}
-	};
-	LOGD("post_delayed %ld", systemTime());
-	handler.post_delayed(test_task, 10000);
-	handler.remove(test_task);
-	handler.post_delayed(test_task, 10000);
-#endif
 
     EXIT();
 }
@@ -124,6 +110,21 @@ void EyeApp::run() {
 
     is_running = true;
     auto renderer_thread = std::thread([this] { renderer_thread_func(); });
+
+#if 1
+	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
+	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
+	test_task = [&]() {
+		LOGD("run %ld", systemTime());
+		if (test_task) {
+			handler.post_delayed(test_task, 1000);
+		}
+	};
+	LOGD("post_delayed %ld", systemTime());
+	handler.post_delayed(test_task, 10000);
+	handler.remove(test_task);
+	handler.post_delayed(test_task, 10000);
+#endif
 
     for ( ; is_running ; ) {
 		// ここでなにかするかも
