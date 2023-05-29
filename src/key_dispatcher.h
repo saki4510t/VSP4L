@@ -7,6 +7,7 @@
 #include "handler.h"
 //
 #include "const.h"
+#include "key_state.h"
 #include "key_event.h"
 
 namespace serenegiant::app {
@@ -33,7 +34,7 @@ private:
 	key_mode_t key_mode;
 	effect_t effect;
 	// キーの押し下げ状態を保持するハッシュマップ
-	std::unordered_map<int, KeyEventSp> key_state;
+	std::unordered_map<int, KeyStateSp> key_states;
 	// キーの長押し確認用ラムダ式を保持するハッシュマップ
 	std::unordered_map<int, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
 	OnKeyModeChangedFunc on_key_mode_changed;
@@ -43,6 +44,14 @@ private:
 	OnFreezeChangedFunc on_freeze_changed;
 
 	void change_key_mode(const key_mode_t &mode, const bool &force_callback = false);
+	/**
+	 * @brief キーの状態を更新
+	 * 
+	 * @param event 
+	 * @param handled
+	 * @return KeyStateSp 更新前のキーステートのコピー
+	 */
+	KeyStateUp update(const KeyEvent &event, const bool &handled = false);
 	/**
 	 * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
 	 *
@@ -86,113 +95,113 @@ private:
 	 * 4種類だけキー処理を行う
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int
 	 */
-	int32_t handle_on_key_down(const KeyEvent &event);
+	int handle_on_key_down(const KeyEvent &event);
 	/**
 	 * @brief handle_on_key_eventの下請け、キーが離されたとき
 	 * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
 	 * 4種類だけキー処理を行う
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t handle_on_key_up(const KeyEvent &event);
+	int handle_on_key_up(const KeyEvent &event);
 	//--------------------------------------------------------------------------------
 	/**
 	 * @brief 長押し時間経過したときの処理
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int
 	 */
-	int32_t handle_on_long_key_pressed(const KeyEvent &event);
+	int handle_on_long_key_pressed(const KeyEvent &event);
 	//--------------------------------------------------------------------------------
 	/**
 	 * @brief 通常モードでショートタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_short_normal(const KeyEvent &event);
+	int on_tap_short_normal(const KeyEvent &event);
 	/**
 	 * @brief 輝度調整モードでショートタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_short_brightness(const KeyEvent &event);
+	int on_tap_short_brightness(const KeyEvent &event);
 	/**
 	 * @brief 拡大縮小モードでショートタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_short_zoom(const KeyEvent &event);
+	int on_tap_short_zoom(const KeyEvent &event);
 	/**
 	 * @brief OSD操作モードでショートタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_short_osd(const KeyEvent &event);
+	int on_tap_short_osd(const KeyEvent &event);
 	//--------------------------------------------------------------------------------
 	/**
 	 * @brief 通常モードでミドルタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_middle_normal(const KeyEvent &event);
+	int on_tap_middle_normal(const KeyEvent &event);
 	/**
 	 * @brief 輝度調整モードでミドルタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_middle_brightness(const KeyEvent &event);
+	int on_tap_middle_brightness(const KeyEvent &event);
 	/**
 	 * @brief 拡大縮小モードでミドルタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_middle_zoom(const KeyEvent &event);
+	int on_tap_middle_zoom(const KeyEvent &event);
 	/**
 	 * @brief OSD操作モードでミドルタップしたときの処理, handle_on_key_upの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_middle_osd(const KeyEvent &event);
+	int on_tap_middle_osd(const KeyEvent &event);
 	//--------------------------------------------------------------------------------
 	/**
 	 * @brief 通常モードでロングタップしたときの処理, handle_on_long_key_pressedの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_long_normal(const KeyEvent &event);
+	int on_tap_long_normal(const KeyEvent &event);
 	/**
 	 * @brief 輝度調整モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_long_brightness(const KeyEvent &event);
+	int on_tap_long_brightness(const KeyEvent &event);
 	/**
 	 * @brief 拡大縮小モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_long_zoom(const KeyEvent &event);
+	int on_tap_long_zoom(const KeyEvent &event);
 	/**
 	 * @brief OSD操作モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
-	int32_t on_tap_long_osd(const KeyEvent &event);
+	int on_tap_long_osd(const KeyEvent &event);
 protected:
 public:
 	/**
@@ -269,9 +278,9 @@ public:
 	 * 4種類だけキー処理を行う
 	 *
 	 * @param event
-	 * @return int32_t
+	 * @return int
 	 */
-	int32_t handle_on_key_event(const KeyEvent &event);
+	int handle_on_key_event(const KeyEvent &event);
 };
 
 }   // namespace serenegiant::app

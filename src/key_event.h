@@ -12,20 +12,9 @@
 
 #include <GLFW/glfw3.h>
 
-#include "times.h"
+#include "key_state.h"
 
 namespace serenegiant::app {
-
-/**
- * @brief キーの押し下げ状態定数
- * 
- */
-typedef enum {
-	KEY_STATE_HANDLED = -1,	// 処理済み
-	KEY_STATE_UP = 0,		// キーが押されていない
-	KEY_STATE_DOWN,			// キーが押された
-	KEY_STATE_DOWN_LONG,	// キーが長押しされた
-} key_state_t;
 
 class KeyEvent {
 private:
@@ -55,14 +44,14 @@ public:
 			break;
 		}
     }
-    explicit KeyEvent(const KeyEvent &src)
+    KeyEvent(const KeyEvent &src)
     :	key(src.key), scancode(src.scancode),
         action(src.action), mods(src.mods),
         event_time_ns(src.event_time_ns),
         state(src.state)
     {
     }
-    explicit KeyEvent(const KeyEvent &&src)
+    KeyEvent(const KeyEvent &&src)
     :	key(src.key), scancode(src.scancode),
         action(src.action), mods(src.mods),
         event_time_ns(src.event_time_ns),
