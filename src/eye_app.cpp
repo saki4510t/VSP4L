@@ -17,7 +17,7 @@
 #include "utilbase.h"
 // common
 #include "glutils.h"
-#include "gloffscreen.h"
+#include "image_helper.h"
 #include "times.h"
 // gl
 #include "gl/texture_vsh.h"
@@ -60,9 +60,10 @@ EyeApp::EyeApp(const int &gl_version)
     req_change_effect(false), req_freeze(false),
 	effect_type(EFFECT_NON), current_effect(EFFECT_NON),
 	key_dispatcher(handler),
-	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX),
+	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX), brightness_ix(5),
 	reset_mode_task(nullptr),
-	default_font(nullptr), large_font(nullptr)
+	default_font(nullptr), large_font(nullptr),
+	show_brightness(false), show_zoom(false), show_osd(false)
 {
     ENTER();
 
@@ -70,6 +71,24 @@ EyeApp::EyeApp(const int &gl_version)
 	key_dispatcher
 		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
 			LOGD("key_mode=%d", key_mode);
+			switch (key_mode) {
+			case KEY_MODE_BRIGHTNESS:
+				show_brightness = true;
+				show_zoom = show_osd = false;
+				break;
+			case KEY_MODE_ZOOM:
+				show_brightness = show_osd = false;
+				show_zoom = true;
+				break;
+			case KEY_MODE_OSD:
+				show_brightness = show_zoom = false;
+				show_osd = true;
+				break;
+			case KEY_MODE_NORMAL:
+			default:
+				show_brightness = show_zoom = show_osd = false;
+				break;
+			}
 			reset_mode_delayed();
 		})
 		.set_on_brightness_changed([this](const bool &inc_dec) {
@@ -217,6 +236,8 @@ void EyeApp::on_stop() {
 		renderer_pipeline.reset();
 	}
 	offscreen.reset();
+	icon_zoom.reset();
+	icon_brightness.reset();
 
 	EXIT();
 }
@@ -369,7 +390,57 @@ void EyeApp::handle_draw_gui() {
 		ImGui::End();
 	}
 #endif
-
+	if (show_brightness) {
+		if (UNLIKELY(!icon_brightness)) {
+			media::Image bitmap;
+			if (!media::read_png_from_file(bitmap, "./src/resources/ic_brightness.png")) {
+				LOGD("success load png, assign to texture");
+				//  輝度アイコンをテクスチャへ読み込む
+				icon_brightness = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE0, 192, 192);
+				icon_brightness->assignTexture(bitmap.data());
+			}
+		}
+		ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter());	// FIXME 位置がおかしい
+		ImGui::SetNextWindowBgAlpha(0.3f);
+		ImGui::Begin("Brightness", &show_brightness, ImGuiWindowFlags_NoTitleBar);
+		if (LIKELY(icon_brightness)) {
+			icon_brightness->bind();
+			ImGui::Image(reinterpret_cast <void*>(icon_brightness->getTexture()), ImVec2(192,192));// FIXME 位置がおかしい
+			icon_brightness->unbind();
+		}
+		if (LIKELY(large_font)) {
+			ImGui::PushFont(large_font);
+			ImGui::Text("%d", 50/*FIXME 今は固定値*/);
+			ImGui::PopFont();
+		}
+		ImGui::End();
+	}
+	if (show_zoom) {
+		if (UNLIKELY(!icon_zoom)) {
+			media::Image bitmap;
+			if (!media::read_png_from_file(bitmap, "./src/resources/ic_zoom.png")) {
+				LOGD("success load png, assign to texture");
+				// 拡大縮小アイコンをテクスチャへ読み込む
+				icon_zoom = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE1, 192, 192);
+				icon_zoom->assignTexture(bitmap.data());
+			}
+		}
+		ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter());	// FIXME 位置がおかしい
+		ImGui::SetNextWindowBgAlpha(0.3f);
+		ImGui::Begin("Zoom", &show_zoom, ImGuiWindowFlags_NoTitleBar);
+		if (LIKELY(icon_zoom)) {
+			icon_zoom->bind();
+			ImGui::Image(reinterpret_cast <void*>(icon_zoom->getTexture()), ImVec2(192, 192));	// FIXME 位置がおかしい
+			icon_zoom->unbind();
+		}
+		if (LIKELY(large_font)) {
+			const auto factor = ZOOM_FACTOR[zoom_ix];
+			ImGui::PushFont(large_font);
+			ImGui::Text("%3.1f", factor);
+			ImGui::PopFont();
+		}
+		ImGui::End();
+	}
 	// Rendering
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -396,8 +467,19 @@ void EyeApp::reset_mode_delayed() {
 void EyeApp::request_change_brightness(const bool &inc_dec) {
 	ENTER();
 
-	LOGD("inc_dec=%d", inc_dec);
-	// FIXME 未実装
+	std::lock_guard<std::mutex> lock(state_lock);
+	int ix = brightness_ix + (inc_dec ? 1 : -1);
+	if (ix <= 1) {
+		ix = 1;
+	} else if (ix > 10) {
+		ix = 10;
+	}
+	if (ix != brightness_ix) {
+		LOGD("ix=%d", ix);
+		brightness_ix = ix;
+		// FIXME 実際の輝度変更処理は未実装
+	}
+
 
 	EXIT();
 }

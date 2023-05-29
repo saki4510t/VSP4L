@@ -9,6 +9,7 @@
 #include "handler.h"
 #include "gloffscreen.h"
 #include "glrenderer.h"
+#include "gltexture.h"
 #include "matrix.h"
 // aandusb/pipeline
 #include "pipeline/pipeline_gl_renderer.h"
@@ -61,10 +62,20 @@ private:
 	math::Matrix mvp_matrix;
 	// 拡大縮小インデックス[0,NUM_ZOOM_FACTOR)
 	int zoom_ix;
+	// 輝度インデックス[1,10]
+	int brightness_ix;
 	// デフォルトのフォント(このポインターはImGuiIO側で管理しているので自前で破棄しちゃだめ)
 	ImFont *default_font;
 	// 大きな文字用のフォント(このポインターはImGuiIO側で管理しているので自前で破棄しちゃだめ)
 	ImFont *large_font;
+	// 輝度変更モード用
+	bool show_brightness;
+	gl::GLTextureSp icon_brightness;
+	// 拡大縮小モード用
+	bool show_zoom;
+	gl::GLTextureSp icon_zoom;
+	// OSDモード用
+	bool show_osd;
 
 	/**
 	 * @brief 一定時間後にキーモードをリセットする
