@@ -180,9 +180,9 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 		state->state = handled ? KEY_STATE_HANDLED : KEY_STATE_UP;
 		if (!handled && (sts == KEY_STATE_DOWN)) {
 			state->last_tap_time_ns = event.event_time_ns;
-			state->tap_caount = state->tap_caount + 1;
+			state->tap_count = state->tap_count + 1;
 		} else {
-			state->tap_caount = 0;
+			state->tap_count = 0;
 		}
 		break;
 	case GLFW_PRESS:	// 1

@@ -31,14 +31,14 @@ public:
 	const int key;
     nsecs_t press_time_ns;
     nsecs_t last_tap_time_ns;
-    int tap_caount;
+    int tap_count;
     key_state_t state;
 
     explicit KeyState(const int &key)
     :	key(key),
         press_time_ns(systemTime()),
         last_tap_time_ns(systemTime()),
-        tap_caount(0),
+        tap_count(0),
         state(KEY_STATE_UP)
     {
     }
@@ -47,7 +47,7 @@ public:
     :	key(src.key),
         press_time_ns(src.press_time_ns),
         last_tap_time_ns(src.last_tap_time_ns),
-        tap_caount(src.tap_caount),
+        tap_count(src.tap_count),
         state(src.state)
     {
     }
@@ -56,7 +56,7 @@ public:
     :	key(src.key),
         press_time_ns(src.press_time_ns),
         last_tap_time_ns(src.last_tap_time_ns),
-        tap_caount(src.tap_caount),
+        tap_count(src.tap_count),
         state(src.state)
     {
     }
