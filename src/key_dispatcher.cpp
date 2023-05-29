@@ -21,12 +21,8 @@ namespace serenegiant::app {
 #define SHORT_PRESS_MIN_MS (20)
 // ショートタップと判定する最大押し下げ時間[ミリ秒]
 #define SHORT_PRESS_MAX_MS (300)
-// ミドルタップと判定する最小押し下げ時間[ミリ秒]
-#define MIDDLE_PRESS_MIN_MS (500)
-// ミドルタップと判定する最大押し下げ時間[ミリ秒]
-#define MIDDLE_PRESS_MAX_MS (2000)
 // ロングタップと判定する押し下げ時間[ミリ秒]
-#define LONG_PRESS_TIMEOUT_MS (2500)
+#define LONG_PRESS_TIMEOUT_MS (1500)
 // ロングロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_LONG_PRESS_TIMEOUT_MS (6000)
 // ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
@@ -471,15 +467,9 @@ int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_
 		result = on_tap_double(current_key_mode, event);
 	}
 	if (!result) {
-		if ((duration_ms >= MIDDLE_PRESS_MIN_MS) && (duration_ms < MIDDLE_PRESS_MAX_MS)) {
-			// ミドルタップ
-			result = on_tap_middle(current_key_mode, event);
-		} else {
-			// ショートタップ, 押し下げ時間的にはロングタップ等も含むが
-			// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
-			result = on_tap_short(current_key_mode, event);
-		}
-		// FIXME 未実装 
+		// ショートタップ, 押し下げ時間的にはロングタップ等も含むが
+		// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
+		result = on_tap_short(current_key_mode, event);
 	}
 	if (result == 1/*handled*/) {
 		std::lock_guard<std::mutex> lock(state_lock);
@@ -517,7 +507,8 @@ int KeyDispatcher::handle_on_long_key_pressed(const KeyEvent &event) {
 		result = on_tap_long(current_key_mode, event);
 		if (result == 1/*handled*/) {
 			std::lock_guard<std::mutex> lock(state_lock);
-			update(event, true/*handled*/);
+			// update(event, true/*handled*/);
+			clear_key_state(key);
 		}
 	}
 
@@ -650,171 +641,6 @@ int KeyDispatcher::on_tap_short_osd(const KeyEvent &event) {
 }
 
 //--------------------------------------------------------------------------------
-// ミドルタップ
-/**
- * @brief ミドルタップしたときの処理, handle_on_key_upの下請け
- * 
- * @param current_key_mode
- * @param event 
- * @return int 
- */
-int KeyDispatcher::on_tap_middle(const key_mode_t &current_key_mode, const KeyEvent &event) {
-	ENTER();
-
-	int result = 0;
-
-	switch (current_key_mode) {
-	case KEY_MODE_NORMAL:
-		result = on_tap_middle_normal(event);
-		break;
-	case KEY_MODE_BRIGHTNESS:
-		result = on_tap_middle_brightness(event);
-		break;
-	case KEY_MODE_ZOOM:
-		result = on_tap_middle_zoom(event);
-		break;
-	case KEY_MODE_OSD:
-		result = on_tap_middle_osd(event);
-		break;
-	default:
-		LOGW("unknown key mode,%d", current_key_mode);
-		break;
-	}
-
-	RETURN(result, int);
-}
-
-/**
- * @brief 通常モードでミドルタップしたときの処理, on_tap_middleの下請け
- *
- * @param event
- * @return int 処理済みなら1、未処理なら0, エラーなら負
- */
-int KeyDispatcher::on_tap_middle_normal(const KeyEvent &event) {
-	ENTER();
-
-	int result = 0;
-	const auto n = num_pressed();
-	LOGD("num_pressed=%d", n);
-	if (!n) {
-		// 単独でキー操作したときのみ受け付ける
-		// キーアップイベントからくるので他にキーが押されていなければ0
-		const auto key = event.key;
-		switch (key) {
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
-			// 拡大縮小モードへ
-			change_key_mode(KEY_MODE_ZOOM);
-			result = 1;
-			break;
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
-			// 輝度調整モードへ
-			change_key_mode(KEY_MODE_BRIGHTNESS);
-			result = 1;
-			break;
-		default:
-			LOGW("unexpected key code,%d", key);
-			break;
-		}
-	}
-
-	RETURN(result, int);
-}
-
-/**
- * @brief 輝度調整モードでミドルタップしたときの処理, on_tap_middleの下請け
- *
- * @param event
- * @return int 処理済みなら1、未処理なら0, エラーなら負
- */
-int KeyDispatcher::on_tap_middle_brightness(const KeyEvent &event) {
-	ENTER();
-
-	int result = 0;
-	const auto n = num_pressed();
-	LOGD("num_pressed=%d", n);
-	if (!n) {
-		// 単独でキー操作したときのみ受け付ける
-		// キーアップイベントからくるので他にキーが押されていなければ0
-		const auto key = event.key;
-		switch (key) {
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
-			// 拡大縮小モードへ
-			change_key_mode(KEY_MODE_ZOOM);
-			result = 1;
-			break;
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
-			// 輝度調整モードへ
-			change_key_mode(KEY_MODE_BRIGHTNESS);
-			result = 1;
-			break;
-		default:
-			LOGW("unexpected key code,%d", key);
-			break;
-		}
-	}
-
-	RETURN(result, int);
-}
-
-/**
- * @brief 拡大縮小モードでミドルタップしたときの処理, on_tap_middleの下請け
- *
- * @param event
- * @return int 処理済みなら1、未処理なら0, エラーなら負
- */
-int KeyDispatcher::on_tap_middle_zoom(const KeyEvent &event) {
-	ENTER();
-
-	int result = 0;
-	const auto n = num_pressed();
-	LOGD("num_pressed=%d", n);
-	if (!n) {
-		// 単独でキー操作したときのみ受け付ける
-		// キーアップイベントからくるので他にキーが押されていなければ0
-		const auto key = event.key;
-		switch (key) {
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
-			// 拡大縮小モードへ
-			change_key_mode(KEY_MODE_ZOOM);
-			result = 1;
-			break;
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
-			// 輝度調整モードへ
-			change_key_mode(KEY_MODE_BRIGHTNESS);
-			result = 1;
-			break;
-		default:
-			LOGW("unexpected key code,%d", key);
-			break;
-		}
-	}
-
-	RETURN(result, int);
-}
-
-/**
- * @brief OSD操作モードでミドルタップしたときの処理, on_tap_middleの下請け
- *
- * @param event
- * @return int 処理済みなら1、未処理なら0, エラーなら負
- */
-int KeyDispatcher::on_tap_middle_osd(const KeyEvent &event) {
-	ENTER();
-
-	int result = 0;
-	const auto key = event.key;
-	// FIXME 未実装
-
-	RETURN(result, int);
-}
-
-//--------------------------------------------------------------------------------
 // ロングタップ
 /**
  * @brief ロングタップの処理, handle_on_long_key_pressedの下請け
@@ -858,8 +684,29 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 	ENTER();
 
 	int result = 0;
-	const auto key = event.key;
-	// FIXME 未実装
+	const auto n = num_pressed();
+	LOGD("num_pressed=%d", n);
+	if (n == 1) {
+		// 単独でキー操作したときのみ受け付ける
+		const auto key = event.key;
+		switch (key) {
+		case GLFW_KEY_DOWN:
+		case GLFW_KEY_UP:
+			// 拡大縮小モードへ
+			change_key_mode(KEY_MODE_ZOOM);
+			result = 1;
+			break;
+		case GLFW_KEY_RIGHT:
+		case GLFW_KEY_LEFT:
+			// 輝度調整モードへ
+			change_key_mode(KEY_MODE_BRIGHTNESS);
+			result = 1;
+			break;
+		default:
+			LOGW("unexpected key code,%d", key);
+			break;
+		}
+	}
 
 	RETURN(result, int);
 }
@@ -874,8 +721,29 @@ int KeyDispatcher::on_tap_long_brightness(const KeyEvent &event) {
 	ENTER();
 
 	int result = 0;
-	const auto key = event.key;
-	// FIXME 未実装
+	const auto n = num_pressed();
+	LOGD("num_pressed=%d", n);
+	if (n == 1) {
+		// 単独でキー操作したときのみ受け付ける
+		const auto key = event.key;
+		switch (key) {
+		case GLFW_KEY_DOWN:
+		case GLFW_KEY_UP:
+			// 拡大縮小モードへ
+			change_key_mode(KEY_MODE_ZOOM);
+			result = 1;
+			break;
+		case GLFW_KEY_RIGHT:
+		case GLFW_KEY_LEFT:
+			// 輝度調整モードへ
+			change_key_mode(KEY_MODE_BRIGHTNESS);
+			result = 1;
+			break;
+		default:
+			LOGW("unexpected key code,%d", key);
+			break;
+		}
+	}
 
 	RETURN(result, int);
 }
@@ -890,8 +758,29 @@ int KeyDispatcher::on_tap_long_zoom(const KeyEvent &event) {
 	ENTER();
 
 	int result = 0;
-	const auto key = event.key;
-	// FIXME 未実装
+	const auto n = num_pressed();
+	LOGD("num_pressed=%d", n);
+	if (n == 1) {
+		// 単独でキー操作したときのみ受け付ける
+		const auto key = event.key;
+		switch (key) {
+		case GLFW_KEY_DOWN:
+		case GLFW_KEY_UP:
+			// 拡大縮小モードへ
+			change_key_mode(KEY_MODE_ZOOM);
+			result = 1;
+			break;
+		case GLFW_KEY_RIGHT:
+		case GLFW_KEY_LEFT:
+			// 輝度調整モードへ
+			change_key_mode(KEY_MODE_BRIGHTNESS);
+			result = 1;
+			break;
+		default:
+			LOGW("unexpected key code,%d", key);
+			break;
+		}
+	}
 
 	RETURN(result, int);
 }
