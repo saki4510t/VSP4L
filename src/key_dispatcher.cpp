@@ -61,6 +61,36 @@ public:
 	}
 };
 
+class KeyUpTask : public thread::Runnable {
+private:
+	KeyDispatcher &dispatcher;	// こっちは参照を保持する
+	const KeyEvent event;		// こっちはコピーを保持する
+	const nsecs_t duration_ms;
+public:
+	KeyUpTask(
+		KeyDispatcher &dispatcher,
+		const KeyEvent &event,
+		const nsecs_t &duration_ms)
+	:	dispatcher(dispatcher), event(event), duration_ms(duration_ms)
+	{
+		ENTER();
+		EXIT();
+	}
+
+	virtual ~KeyUpTask() {
+		ENTER();
+		EXIT();
+	}
+
+	void run() {
+		ENTER();
+
+		dispatcher.handle_on_tap(event, duration_ms);
+
+		EXIT();
+	}
+};
+
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -182,15 +212,17 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 		state->state = handled ? KEY_STATE_HANDLED : KEY_STATE_UP;
 		// 前回同じキーを押したときからの経過時間を計算
 		const auto tap_interval_ms = (event.event_time_ns - state->last_tap_time_ns) / 1000000L;
+		state->last_tap_time_ns = event.event_time_ns;
 		if (!handled && (sts == KEY_STATE_DOWN)) {
-			state->last_tap_time_ns = event.event_time_ns;
 			if (tap_interval_ms <= MULTI_PRESS_MAX_INTERVALMS) {
 				// マルチタップ
 				state->tap_count = state->tap_count + 1;
 			} else {
+				LOGD("clear tap_count 1");
 				state->tap_count = 1;
 			}
 		} else {
+			LOGD("clear tap_count 0");
 			state->tap_count = 0;
 		}
 		LOGD("sts=%d,interval=%ld,tap_count=%d", sts, tap_interval_ms, state->tap_count);
@@ -210,18 +242,35 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 }
 
 /**
- * @brief キーの長押し確認用Runnableが生成されていることを確認、未生成なら新たに生成する
+ * @brief キーの長押し・マルチタップ確認用Runnableが生成されていることを確認、未生成なら新たに生成する
  *
  * @param event
  */
 /*private*/
-void KeyDispatcher::confirm_long_press_task(const KeyEvent &event) {
+void KeyDispatcher::confirm_key_task(const KeyEvent &event) {
 	ENTER();
 
 	const auto key = event.key;
 	if (long_key_press_tasks.find(key) == long_key_press_tasks.end()) {
 		long_key_press_tasks[key] = std::make_shared<LongPressCheckTask>(*this, event);
 	}
+
+	EXIT();
+}
+
+/**
+ * @brief キーアップの遅延処理用タスクがあればキャンセルする
+ * 
+ * @param key 
+ */
+void KeyDispatcher::cancel_key_up_task(const int &key) {
+	ENTER();
+
+	// キーアップの遅延処理用Runnableがあれば削除する
+	auto key_up_task = key_up_tasks[key];
+	if (key_up_task) {
+		handler.remove(key_up_task);
+	}	
 
 	EXIT();
 }
@@ -278,15 +327,14 @@ bool KeyDispatcher::is_long_pressed(const int &key) {
 }
 
 /**
- * @brief ダブルタップかどうか
+ * @brief 指定したキーのタップカウントを取得
  * 
  * @param key 
- * @return true 
- * @return false 
+ * @return int
  */
-bool KeyDispatcher::is_double_tap(const int &key) {
+int KeyDispatcher::tap_counts(const int &key) {
 	return (key_states.find(key) != key_states.end())
-		&& (key_states[key]->tap_count == 2);
+		? key_states[key]->tap_count : 0;
 }
 
 //--------------------------------------------------------------------------------
@@ -307,7 +355,10 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
  		std::lock_guard<std::mutex> lock(state_lock);
 		update(event);
 	}
-	confirm_long_press_task(event);
+	// キーアップの遅延処理用Runnableがあればキャンセルする
+	cancel_key_up_task(key);
+	// 長押し確認用Runnableを遅延実行する
+	confirm_key_task(event);
 	handler.remove(long_key_press_tasks[key]);
 	handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
 
@@ -328,7 +379,11 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	confirm_long_press_task(event);
+
+	// キーアップの遅延処理用Runnableがあればキャンセルする
+	cancel_key_up_task(key);
+	// 長押し確認用Runnableをキャンセルする
+	confirm_key_task(event);
 	handler.remove(long_key_press_tasks[key]);
 
 	KeyStateUp state;
@@ -339,24 +394,53 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 		state = update(event);
 	}
 	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
+	cancel_key_up_task(key);
 	if ((state->state == KEY_STATE_DOWN) && (duration_ms >= SHORT_PRESS_MIN_MS)) {
-		LOGD("on_key_up,key=%d,state=%d,tap_count=%d,duration_ms=%ld", key, state->state, state->tap_count, duration_ms);
-		if (is_double_tap(key)) {
-			// ダブルタップ
-			result = on_tap_double(current_key_mode, event);
+		if (current_key_mode == KEY_MODE_NORMAL) {
+			// 通常モードのみマルチタップの処理をする
+			auto key_up_task = std::make_shared<KeyUpTask>(*this, event, duration_ms);
+			long_key_press_tasks[key] = key_up_task;
+			handler.post_delayed(key_up_task, MULTI_PRESS_MAX_INTERVALMS);
+		} else {
+			// それ以外のキーモードは直接タップ処理をする
+			result = handle_on_tap(event, duration_ms);
 		}
-		if (!result) {
-			if ((duration_ms >= MIDDLE_PRESS_MIN_MS) && (duration_ms < MIDDLE_PRESS_MAX_MS)) {
-				// ミドルタップ
-				result = on_tap_middle(current_key_mode, event);
-			} else {
-				// ショートタップ, 押し下げ時間的にはロングタップ等も含むが
-				// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
-				result = on_tap_short(current_key_mode, event);
-			}
+	}
+
+	RETURN(result, int);
+}
+
+int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_ms) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	key_mode_t current_key_mode;
+	int tap_counts;
+	{
+ 		std::lock_guard<std::mutex> lock(state_lock);
+		current_key_mode = key_mode;
+		tap_counts = this->tap_counts(key);
+	}
+
+	LOGD("handle_on_tap,key=%d,duration_ms=%ld,tap_counts=%d", key, duration_ms, tap_counts);
+	if (!result && (tap_counts == 3)) {
+		// トリプルタップ
+		result = on_tap_triple(current_key_mode, event);
+	}
+	if (!result && (tap_counts == 2)) {
+		// ダブルタップ
+		result = on_tap_double(current_key_mode, event);
+	}
+	if (!result) {
+		if ((duration_ms >= MIDDLE_PRESS_MIN_MS) && (duration_ms < MIDDLE_PRESS_MAX_MS)) {
+			// ミドルタップ
+			result = on_tap_middle(current_key_mode, event);
+		} else {
+			// ショートタップ, 押し下げ時間的にはロングタップ等も含むが
+			// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
+			result = on_tap_short(current_key_mode, event);
 		}
-	} else if ((state->state == KEY_STATE_DOWN_LONG) && (duration_ms >= LONG_LONG_PRESS_TIMEOUT_MS)) {
-		// FIXME 未実装 ロングロングタップの処理
 	}
 	if (result == 1/*handled*/) {
 		std::lock_guard<std::mutex> lock(state_lock);

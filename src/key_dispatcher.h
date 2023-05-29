@@ -20,6 +20,7 @@ typedef std::function<void(const bool &/*onoff*/)> OnFreezeChangedFunc;
 
 // privateクラスの前方参照宣言
 class LongPressCheckTask;
+class KeyUpTask;
 
 /**
  * @brief キー入力を処理するためのヘルパークラス
@@ -27,6 +28,7 @@ class LongPressCheckTask;
  */
 class KeyDispatcher {
 friend LongPressCheckTask;
+friend KeyUpTask;
 private:
 	// 非同期実行用Handler
 	thread::Handler &handler;
@@ -38,6 +40,8 @@ private:
 	std::unordered_map<int, KeyStateSp> key_states;
 	// キーの長押し確認用Runnableを保持するハッシュマップ
 	std::unordered_map<int, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
+	// マルチタップ確認用Runnableを保持するハッシュマップ
+	std::unordered_map<int, std::shared_ptr<thread::Runnable>> key_up_tasks;
 	OnKeyModeChangedFunc on_key_mode_changed;
 	OnBrightnessChangedFunc on_brightness_changed;
 	OnScaleChangedFunc on_scale_changed;
@@ -54,11 +58,17 @@ private:
 	 */
 	KeyStateUp update(const KeyEvent &event, const bool &handled = false);
 	/**
-	 * @brief キーの長押し確認用Runnableが生成されていることを確認、未生成なら新たに生成する
+	 * @brief キーの長押し・マルチタップ確認用Runnableが生成されていることを確認、未生成なら新たに生成する
 	 *
 	 * @param event
 	 */
-	void confirm_long_press_task(const KeyEvent &event);
+	void confirm_key_task(const KeyEvent &event);
+	/**
+	 * @brief キーアップの遅延処理用タスクがあればキャンセルする
+	 * 
+	 * @param key 
+	 */
+	void cancel_key_up_task(const int &key);
 	/**
 	 * @brief 押されているキーの個数を取得, 排他制御してないので上位でロックすること
 	 * 
@@ -90,13 +100,12 @@ private:
 	 */
 	bool is_long_pressed(const int &key);
 	/**
-	 * @brief ダブルタップかどうか
+	 * @brief 指定したキーのタップカウントを取得
 	 * 
 	 * @param key 
-	 * @return true 
-	 * @return false 
+	 * @return int
 	 */
-	bool is_double_tap(const int &key);
+	int tap_counts(const int &key);
 	/**
 	 * @brief handle_on_key_eventの下請け、キーが押されたとき/押し続けているとき
 	 * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
@@ -115,6 +124,8 @@ private:
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int handle_on_key_up(const KeyEvent &event);
+
+	int handle_on_tap(const KeyEvent &event, const nsecs_t &duration_ms);
 	//--------------------------------------------------------------------------------
 	/**
 	 * @brief 長押し時間経過したときの処理
