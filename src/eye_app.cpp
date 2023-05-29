@@ -336,24 +336,16 @@ void EyeApp::handle_draw_gui() {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	// FIXME 未実装 テストで適当に表示
+	// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す
+	// ウインドウサイズを指定するにはImGui::Beginの前にImGui::SetNextWindowSizeを呼び出す
+#if !defined(NDEBUG)
 	{
-		// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す
-		// ウインドウサイズを指定するにはImGui::Beginの前にImGui::SetNextWindowSizeを呼び出す
-		ImGui::Begin("Test");
-		ImGui::Text("Hello from test window!");
-		if (ImGui::Button("Close Me")) {
-			LOGI("clicked!");
-		}
+		ImGui::Begin("DEBUG");
 		const auto fps = ImGui::GetIO().Framerate;
 		ImGui::Text("%.3f ms/frame(%.1f FPS)", 1000.0f / fps, fps);
 		ImGui::End();
-
-		// static int cnt = 0;
-		// if ((++cnt % 100) == 0) {
-		// 	MARK("cnt=%d,%.3f ms/frame(%.1f FPS)", cnt, 1000.0f / fps, fps);
-		// }
 	}
+#endif
 
 	// Rendering
 	ImGui::Render();
