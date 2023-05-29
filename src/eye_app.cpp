@@ -44,6 +44,7 @@ namespace serenegiant::app {
 #define OSD_WIDTH (WINDOW_WIDTH/4*3)
 #define OSD_HEIGHT (VIDEO_HEIGHT/4*3)
 
+#define ICON_FONT_SZ (108)
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -60,7 +61,8 @@ EyeApp::EyeApp(const int &gl_version)
 	effect_type(EFFECT_NON), current_effect(EFFECT_NON),
 	key_dispatcher(handler),
 	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX),
-	reset_mode_task(nullptr)
+	reset_mode_task(nullptr),
+	default_font(nullptr), large_font(nullptr)
 {
     ENTER();
 
@@ -187,6 +189,16 @@ void EyeApp::on_start() {
 	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
 
 	req_change_matrix = true;
+
+	// imguiの追加設定
+    ImGuiIO& io = ImGui::GetIO();
+	// 最初に読み込んだのがデフォルトのフォントになる
+	default_font = io.Fonts->AddFontDefault();
+	// 大きい文字用のフォント(FIXME 実働時はフォントファイルのパスを変えないといけない)
+	large_font = io.Fonts->AddFontFromFileTTF("./src/imgui/misc/fonts/DroidSans.ttf", ICON_FONT_SZ);
+	// 読み込めなければnulptrになる
+	LOGD("default_font=%p", default_font);
+	LOGD("large_font=%p", large_font);
 
 	EXIT();
 }
@@ -349,6 +361,11 @@ void EyeApp::handle_draw_gui() {
 		ImGui::Begin("DEBUG");
 		const auto fps = ImGui::GetIO().Framerate;
 		ImGui::Text("%.3f ms/frame(%.1f FPS)", 1000.0f / fps, fps);
+		if (LIKELY(large_font)) {
+			ImGui::PushFont(large_font);
+			ImGui::Text("Large");
+			ImGui::PopFont();
+		}
 		ImGui::End();
 	}
 #endif

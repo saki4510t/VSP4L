@@ -61,6 +61,10 @@ private:
 	math::Matrix mvp_matrix;
 	// 拡大縮小インデックス[0,NUM_ZOOM_FACTOR)
 	int zoom_ix;
+	// デフォルトのフォント(このポインターはImGuiIO側で管理しているので自前で破棄しちゃだめ)
+	ImFont *default_font;
+	// 大きな文字用のフォント(このポインターはImGuiIO側で管理しているので自前で破棄しちゃだめ)
+	ImFont *large_font;
 
 	/**
 	 * @brief 一定時間後にキーモードをリセットする
