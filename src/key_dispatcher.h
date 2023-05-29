@@ -17,6 +17,8 @@ typedef std::function<void(const bool &/*inc_dec*/)> OnBrightnessChangedFunc;
 typedef std::function<void(const bool &/*inc_dec*/)> OnScaleChangedFunc;
 typedef std::function<void(const effect_t &/*effect*/)> OnEffectChangedFunc;
 typedef std::function<void(const bool &/*onoff*/)> OnFreezeChangedFunc;
+typedef std::function<void(const bool &/*onoff*/)> OnOSDChangedFunc;
+typedef std::function<void(const KeyEvent &event)> OSDKeyEventFunc;
 
 // privateクラスの前方参照宣言
 class LongPressCheckTask;
@@ -36,6 +38,7 @@ private:
 	key_mode_t key_mode;
 	int effect;
 	bool freeze;
+	bool show_osd;
 	// キーの押し下げ状態を保持するハッシュマップ
 	std::unordered_map<int, KeyStateSp> key_states;
 	// キーの長押し確認用Runnableを保持するハッシュマップ
@@ -47,6 +50,8 @@ private:
 	OnScaleChangedFunc on_scale_changed;
 	OnEffectChangedFunc on_effect_changed;
 	OnFreezeChangedFunc on_freeze_changed;
+	OnOSDChangedFunc on_osd_changed;
+	OSDKeyEventFunc osd_key_event;
 
 	void change_key_mode(const key_mode_t &mode, const bool &force_callback = false);
 	/**
@@ -57,6 +62,12 @@ private:
 	 * @return KeyStateSp 更新前のキーステートのコピー
 	 */
 	KeyStateUp update(const KeyEvent &event, const bool &handled = false);
+	/**
+	 * @brief 指定したキーの状態をKEY_STATE_HANDLEDにする
+	 * 
+	 * @param key 
+	 */
+	void clear_key_state(const int &key);
 	/**
 	 * @brief キーの長押し・マルチタップ確認用Runnableが生成されていることを確認、未生成なら新たに生成する
 	 *
@@ -386,6 +397,26 @@ public:
 	 */
 	inline KeyDispatcher &set_on_freeze_changed(OnFreezeChangedFunc callback) {
 		on_freeze_changed = callback;
+		return *this;
+	}
+	/**
+	 * @brief OSD表示のON/OFFが切り替わるときのコールバックをセット
+	 * 
+	 * @param callback 
+	 * @return KeyDispatcher& 
+	 */
+	inline KeyDispatcher &set_on_osd_changed(OnOSDChangedFunc callback) {
+		on_osd_changed = callback;
+		return *this;
+	}
+	/**
+	 * @brief OSD表示中のキーイベント
+	 * 
+	 * @param callback 
+	 * @return KeyDispatcher& 
+	 */
+	inline KeyDispatcher &set_osd_key_event(OSDKeyEventFunc callback) {
+		osd_key_event = callback;
 		return *this;
 	}
 

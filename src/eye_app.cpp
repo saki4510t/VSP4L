@@ -83,6 +83,12 @@ EyeApp::EyeApp(const int &gl_version)
 		})
 		.set_on_freeze_changed([this](const bool &onoff){
 			request_change_freeze(onoff);
+		})
+		.set_on_osd_changed([this](const bool &onoff) {
+			request_change_osd(onoff);
+		})
+		.set_osd_key_event([this](const KeyEvent &event) {
+			on_osd_key(event);
 		});
 	// キーイベントハンドラを登録
 	window
@@ -432,6 +438,36 @@ void EyeApp::request_change_freeze(const bool &onoff) {
 
 	LOGD("onoff=%d", onoff);
 	req_freeze = onoff;
+
+	EXIT();
+}
+
+/**
+ * @brief OSD表示のON/OFF切り替え要求
+ * 
+ * @param onoff 
+ */
+void EyeApp::request_change_osd(const bool &onoff) {
+	ENTER();
+
+	LOGD("onoff=%d", onoff);
+	// FIXME 未実装 OSD表示の表示の切り替え
+
+	EXIT();
+}
+
+/**
+ * @brief OSD表示中のキーイベント
+ * 
+ * @param event 
+ */
+void EyeApp::on_osd_key(const KeyEvent &event) {
+	ENTER();
+
+	LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d",
+		event.key, event.scancode, glfwGetKeyName(event.key, event.scancode),
+		event.action, event.mods);
+	// FIXME 未実装 OSD表示中のキーイベント処理
 
 	EXIT();
 }

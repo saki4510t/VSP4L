@@ -100,7 +100,7 @@ public:
 KeyDispatcher::KeyDispatcher(thread::Handler &handler)
 :   handler(handler),
 	key_mode(KEY_MODE_NORMAL),
-	effect(EFFECT_NON), freeze(false),
+	effect(EFFECT_NON), freeze(false), show_osd(false),
 	on_key_mode_changed(nullptr),
 	on_brightness_changed(nullptr),
 	on_scale_changed(nullptr),
@@ -148,6 +148,11 @@ int KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 
 	// XXX 複数キー同時押しのときに最後に押したキーに対してのみGLFW_REPEATがくるみたいなのでGLFW_REPEATは使わない
 	const auto key = event.key;
+	key_mode_t current_key_mode;
+	{
+ 		std::lock_guard<std::mutex> lock(state_lock);
+		current_key_mode = key_mode;
+	}
 	if ((key >= GLFW_KEY_RIGHT) && (key <= GLFW_KEY_UP)) {
 		switch (event.action) {
 		case GLFW_RELEASE:	// 0
@@ -159,6 +164,10 @@ int KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 		case GLFW_REPEAT:	// 2
 		default:
 			break;
+		}
+		if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
+			// OSDモードのときはキーイベントをカメラモジュール側へ送る
+			osd_key_event(event);
 		}
 	} else {
 		LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d",
@@ -239,6 +248,17 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 	}
 
 	RET(prev);
+}
+
+void KeyDispatcher::clear_key_state(const int &key) {
+	ENTER();
+
+	auto &state = key_states[key];
+	if (state) {
+		state->state = KEY_STATE_HANDLED;
+	}
+
+	EXIT();
 }
 
 /**
@@ -351,16 +371,20 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 	ENTER();
 
 	const auto key = event.key;
+	key_mode_t current_key_mode;
 	{
  		std::lock_guard<std::mutex> lock(state_lock);
+		current_key_mode = key_mode;
 		update(event);
 	}
 	// キーアップの遅延処理用Runnableがあればキャンセルする
 	cancel_key_up_task(key);
-	// 長押し確認用Runnableを遅延実行する
-	confirm_key_task(event);
-	handler.remove(long_key_press_tasks[key]);
-	handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
+	if (current_key_mode != KEY_MODE_OSD) {
+		// 長押し確認用Runnableを遅延実行する
+		confirm_key_task(event);
+		handler.remove(long_key_press_tasks[key]);
+		handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
+	}
 
 	RETURN(0, int);
 }
@@ -395,7 +419,20 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	}
 	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
 	cancel_key_up_task(key);
-	if ((state->state == KEY_STATE_DOWN) && (duration_ms >= SHORT_PRESS_MIN_MS)) {
+	if ((is_long_pressed(GLFW_KEY_RIGHT) || is_long_pressed(GLFW_KEY_LEFT))
+		&& (is_long_pressed(GLFW_KEY_UP) || is_long_pressed(GLFW_KEY_DOWN))) {
+		clear_key_state(GLFW_KEY_RIGHT);
+		clear_key_state(GLFW_KEY_LEFT);
+		clear_key_state(GLFW_KEY_UP);
+		clear_key_state(GLFW_KEY_DOWN);
+		// ソフトウエアOSDの表示ON/OFFを変更する
+		show_osd = !show_osd;
+		if (on_osd_changed) {
+			on_osd_changed(show_osd);
+		}
+		result = 1;	// handled
+	}
+	if (!result && (state->state == KEY_STATE_DOWN) && (duration_ms >= SHORT_PRESS_MIN_MS)) {
 		if (current_key_mode == KEY_MODE_NORMAL) {
 			// 通常モードのみマルチタップの処理をする
 			auto key_up_task = std::make_shared<KeyUpTask>(*this, event, duration_ms);
@@ -441,6 +478,7 @@ int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_
 			// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
 			result = on_tap_short(current_key_mode, event);
 		}
+		// FIXME 未実装 
 	}
 	if (result == 1/*handled*/) {
 		std::lock_guard<std::mutex> lock(state_lock);

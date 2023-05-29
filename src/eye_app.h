@@ -89,9 +89,21 @@ private:
 	/**
 	 * @brief 映像フリーズのON/OFF切り替え要求
 	 * 
-	 * @param effect 
+	 * @param onoff 
 	 */
 	void request_change_freeze(const bool &onoff);
+	/**
+	 * @brief OSD表示のON/OFF切り替え要求
+	 * 
+	 * @param onoff 
+	 */
+	void request_change_osd(const bool &onoff);
+	/**
+	 * @brief OSD表示中のキーイベント
+	 * 
+	 * @param event 
+	 */
+	void on_osd_key(const KeyEvent &event);
 
 	/**
 	 * @brief Create a renderer object
