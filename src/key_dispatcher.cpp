@@ -914,4 +914,101 @@ int KeyDispatcher::on_tap_double_osd(const KeyEvent &event) {
 	RETURN(result, int);
 }
 
+//--------------------------------------------------------------------------------
+/**
+ * @brief トリプルタップの処理, handle_on_key_upの下請け
+ * 
+ * @param current_key_mode
+ * @param event 
+ * @return int 
+ */
+int KeyDispatcher::on_tap_triple(const key_mode_t &current_key_mode, const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	switch (current_key_mode) {
+	case KEY_MODE_NORMAL:
+		result = on_tap_triple_normal(event);
+		break;
+	case KEY_MODE_BRIGHTNESS:
+		result = on_tap_triple_brightness(event);
+		break;
+	case KEY_MODE_ZOOM:
+		result = on_tap_triple_zoom(event);
+		break;
+	case KEY_MODE_OSD:
+		result = on_tap_triple_osd(event);
+		break;
+	default:
+		LOGW("unknown key mode,%d", current_key_mode);
+		break;
+	}
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 通常モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_triple_normal(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	// FIXME 未実装
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 輝度調整モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_triple_brightness(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	// FIXME 未実装
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 拡大縮小モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_triple_zoom(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	// FIXME 未実装
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief OSD操作モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_triple_osd(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	// FIXME 未実装
+
+	RETURN(result, int);
+}
+
 }   // namespace serenegiant::app

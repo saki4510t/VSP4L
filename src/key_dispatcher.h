@@ -271,6 +271,43 @@ private:
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_double_osd(const KeyEvent &event);
+	//--------------------------------------------------------------------------------
+	/**
+	 * @brief トリプルタップの処理, handle_on_key_upの下請け
+	 * 
+	 * @param current_key_mode
+	 * @param event 
+	 * @return int 
+	 */
+	int on_tap_triple(const key_mode_t &current_key_mode, const KeyEvent &event);
+	/**
+	 * @brief 通常モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_triple_normal(const KeyEvent &event);
+	/**
+	 * @brief 輝度調整モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_triple_brightness(const KeyEvent &event);
+	/**
+	 * @brief 拡大縮小モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_triple_zoom(const KeyEvent &event);
+	/**
+	 * @brief OSD操作モードでトリプルタップしたときの処理, on_tap_tripleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_triple_osd(const KeyEvent &event);
 protected:
 public:
 	/**
