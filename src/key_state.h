@@ -28,10 +28,15 @@ typedef enum {
 class KeyState {
 private:
 public:
+    // キーコード
 	const int key;
+    // キーを押し下げたときのシステムタイム[ナノ秒]
     nsecs_t press_time_ns;
+    // 最後にキーを話したときのシステムタイム[ナノ秒]
     nsecs_t last_tap_time_ns;
+    // 連続してタップした回数
     int tap_count;
+    // キーの押し下げ状態
     key_state_t state;
 
     explicit KeyState(const int &key)
