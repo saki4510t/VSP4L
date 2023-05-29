@@ -256,6 +256,7 @@ void KeyDispatcher::clear_key_state(const int &key) {
 	auto &state = key_states[key];
 	if (state) {
 		state->state = KEY_STATE_HANDLED;
+		state->tap_count = 0;
 	}
 
 	EXIT();
