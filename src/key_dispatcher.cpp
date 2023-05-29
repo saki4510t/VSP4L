@@ -99,8 +99,10 @@ KeyDispatcher::KeyDispatcher(thread::Handler &handler)
 	effect(EFFECT_NON), freeze(false), show_osd(false),
 	on_key_mode_changed(nullptr),
 	on_brightness_changed(nullptr),
+	on_effect_changed(nullptr),
 	on_scale_changed(nullptr),
-	on_freeze_changed(nullptr)
+	on_freeze_changed(nullptr),
+	on_osd_changed(nullptr), osd_key_event(nullptr)
 {
 	ENTER();
 	EXIT();
