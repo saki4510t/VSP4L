@@ -20,6 +20,7 @@ add_library(objlib OBJECT
     glrenderer.cpp
     glutils.cpp
     handler.cpp
+    image_helper.cpp
     json_helper.cpp
     matrix.cpp
     times.cpp
