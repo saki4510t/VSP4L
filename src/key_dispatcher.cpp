@@ -30,7 +30,7 @@ namespace serenegiant::app {
 // ロングロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_LONG_PRESS_TIMEOUT_MS (6000)
 // ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
-#define MULTI_PRESS_MIN_INTERVALMS (300)
+#define MULTI_PRESS_MAX_INTERVALMS (300)
 
 //--------------------------------------------------------------------------------
 class LongPressCheckTask : public thread::Runnable {
@@ -184,7 +184,7 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 		const auto tap_interval_ms = (event.event_time_ns - state->last_tap_time_ns) / 1000000L;
 		if (!handled && (sts == KEY_STATE_DOWN)) {
 			state->last_tap_time_ns = event.event_time_ns;
-			if (tap_interval_ms <= MULTI_PRESS_MIN_INTERVALMS) {
+			if (tap_interval_ms <= MULTI_PRESS_MAX_INTERVALMS) {
 				// マルチタップ
 				state->tap_count = state->tap_count + 1;
 			} else {
