@@ -22,6 +22,7 @@ typedef enum {
 	EFFECT_GRAY_REVERSE,	// グレースケール反転
 	EFFECT_BIN,				// 白黒二値
 	EFFECT_BIN_REVERSE,		// 白黒二値反転
+	EFFECT_NUM,				// 映像効果の数
 } effect_t;
 
 /**

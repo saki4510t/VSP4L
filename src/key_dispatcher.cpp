@@ -30,7 +30,7 @@ namespace serenegiant::app {
 // ロングロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_LONG_PRESS_TIMEOUT_MS (6000)
 // ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
-#define MULTI_PRESS_MIN_INTERVALMS (200)
+#define MULTI_PRESS_MIN_INTERVALMS (300)
 
 //--------------------------------------------------------------------------------
 class LongPressCheckTask : public thread::Runnable {
@@ -70,6 +70,7 @@ public:
 KeyDispatcher::KeyDispatcher(thread::Handler &handler)
 :   handler(handler),
 	key_mode(KEY_MODE_NORMAL),
+	effect(EFFECT_NON), freeze(false),
 	on_key_mode_changed(nullptr),
 	on_brightness_changed(nullptr),
 	on_scale_changed(nullptr),
@@ -177,14 +178,24 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 
 	switch (event.action) {
 	case GLFW_RELEASE:	// 0
+	{
 		state->state = handled ? KEY_STATE_HANDLED : KEY_STATE_UP;
+		// 前回同じキーを押したときからの経過時間を計算
+		const auto tap_interval_ms = (event.event_time_ns - state->last_tap_time_ns) / 1000000L;
 		if (!handled && (sts == KEY_STATE_DOWN)) {
 			state->last_tap_time_ns = event.event_time_ns;
-			state->tap_count = state->tap_count + 1;
+			if (tap_interval_ms <= MULTI_PRESS_MIN_INTERVALMS) {
+				// マルチタップ
+				state->tap_count = state->tap_count + 1;
+			} else {
+				state->tap_count = 1;
+			}
 		} else {
 			state->tap_count = 0;
 		}
+		LOGD("sts=%d,interval=%ld,tap_count=%d", sts, tap_interval_ms, state->tap_count);
 		break;
+	}
 	case GLFW_PRESS:	// 1
 		state->press_time_ns = event.event_time_ns;
 		// pass through
@@ -266,6 +277,18 @@ bool KeyDispatcher::is_long_pressed(const int &key) {
 		&& (key_states[key]->state == KEY_STATE_DOWN_LONG);
 }
 
+/**
+ * @brief ダブルタップかどうか
+ * 
+ * @param key 
+ * @return true 
+ * @return false 
+ */
+bool KeyDispatcher::is_double_tap(const int &key) {
+	return (key_states.find(key) != key_states.end())
+		&& (key_states[key]->tap_count == 2);
+}
+
 //--------------------------------------------------------------------------------
 /**
  * @brief handle_on_key_eventの下請け、キーが押されたとき
@@ -317,45 +340,19 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	}
 	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
 	if ((state->state == KEY_STATE_DOWN) && (duration_ms >= SHORT_PRESS_MIN_MS)) {
-		LOGD("on_key_up,key=%d,state=%d,duration_ms=%ld", key, state->state, duration_ms);
-		if ((duration_ms >= MIDDLE_PRESS_MIN_MS) && (duration_ms < MIDDLE_PRESS_MAX_MS)) {
-			// ミドルタップ
-			switch (current_key_mode) {
-			case KEY_MODE_NORMAL:
-				result = on_tap_middle_normal(event);
-				break;
-			case KEY_MODE_BRIGHTNESS:
-				result = on_tap_middle_brightness(event);
-				break;
-			case KEY_MODE_ZOOM:
-				result = on_tap_middle_zoom(event);
-				break;
-			case KEY_MODE_OSD:
-				result = on_tap_middle_osd(event);
-				break;
-			default:
-				LOGW("unknown key mode,%d", current_key_mode);
-				break;
-			}
-		} else {
-			// ショートタップ, 押し下げ時間的にはロングタップ等も含むが
-			// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
-			switch (current_key_mode) {
-			case KEY_MODE_NORMAL:
-				result = on_tap_short_normal(event);
-				break;
-			case KEY_MODE_BRIGHTNESS:
-				result = on_tap_short_brightness(event);
-				break;
-			case KEY_MODE_ZOOM:
-				result = on_tap_short_zoom(event);
-				break;
-			case KEY_MODE_OSD:
-				result = on_tap_short_osd(event);
-				break;
-			default:
-				LOGW("unknown key mode,%d", current_key_mode);
-				break;
+		LOGD("on_key_up,key=%d,state=%d,tap_count=%d,duration_ms=%ld", key, state->state, state->tap_count, duration_ms);
+		if (is_double_tap(key)) {
+			// ダブルタップ
+			result = on_tap_double(current_key_mode, event);
+		}
+		if (!result) {
+			if ((duration_ms >= MIDDLE_PRESS_MIN_MS) && (duration_ms < MIDDLE_PRESS_MAX_MS)) {
+				// ミドルタップ
+				result = on_tap_middle(current_key_mode, event);
+			} else {
+				// ショートタップ, 押し下げ時間的にはロングタップ等も含むが
+				// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
+				result = on_tap_short(current_key_mode, event);
 			}
 		}
 	} else if ((state->state == KEY_STATE_DOWN_LONG) && (duration_ms >= LONG_LONG_PRESS_TIMEOUT_MS)) {
@@ -394,23 +391,7 @@ int KeyDispatcher::handle_on_long_key_pressed(const KeyEvent &event) {
 	if (long_pressed) {
 		LOGD("on_long_key_pressed,key=%d", key);
 		// 同時押しで処理済みでなければキーモード毎の処理を行う
-		switch (current_key_mode) {
-		case KEY_MODE_NORMAL:
-			result = on_tap_long_normal(event);
-			break;
-		case KEY_MODE_BRIGHTNESS:
-			result = on_tap_long_brightness(event);
-			break;
-		case KEY_MODE_ZOOM:
-			result = on_tap_long_zoom(event);
-			break;
-		case KEY_MODE_OSD:
-			result = on_tap_long_osd(event);
-			break;
-		default:
-			LOGW("unknown key mode,%d", current_key_mode);
-			break;
-		}
+		result = on_tap_long(current_key_mode, event);
 		if (result == 1/*handled*/) {
 			std::lock_guard<std::mutex> lock(state_lock);
 			update(event, true/*handled*/);
@@ -423,7 +404,39 @@ int KeyDispatcher::handle_on_long_key_pressed(const KeyEvent &event) {
 //--------------------------------------------------------------------------------
 // ショートタップ
 /**
- * @brief 通常モードでショートタップしたときの処理, handle_on_key_upの下請け
+ * @brief ショートタップしたときの処理, handle_on_key_upの下請け
+ * 
+ * @param current_key_mode
+ * @param event 
+ * @return int 
+ */
+int KeyDispatcher::on_tap_short(const key_mode_t &current_key_mode, const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	switch (current_key_mode) {
+	case KEY_MODE_NORMAL:
+		result = on_tap_short_normal(event);
+		break;
+	case KEY_MODE_BRIGHTNESS:
+		result = on_tap_short_brightness(event);
+		break;
+	case KEY_MODE_ZOOM:
+		result = on_tap_short_zoom(event);
+		break;
+	case KEY_MODE_OSD:
+		result = on_tap_short_osd(event);
+		break;
+	default:
+		LOGW("unknown key mode,%d", current_key_mode);
+		break;
+	}
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 通常モードでショートタップしたときの処理, on_tap_shortの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -438,7 +451,7 @@ int KeyDispatcher::on_tap_short_normal(const KeyEvent &event) {
 }
 
 /**
- * @brief 輝度調整モードでショートタップしたときの処理, handle_on_key_upの下請け
+ * @brief 輝度調整モードでショートタップしたときの処理, on_tap_shortの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -468,7 +481,7 @@ int KeyDispatcher::on_tap_short_brightness(const KeyEvent &event) {
 }
 
 /**
- * @brief 拡大縮小モードでショートタップしたときの処理, handle_on_key_upの下請け
+ * @brief 拡大縮小モードでショートタップしたときの処理, on_tap_shortの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -498,7 +511,7 @@ int KeyDispatcher::on_tap_short_zoom(const KeyEvent &event) {
 }
 
 /**
- * @brief OSD操作モードでショートタップしたときの処理, handle_on_key_upの下請け
+ * @brief OSD操作モードでショートタップしたときの処理, on_tap_shortの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -516,7 +529,40 @@ int KeyDispatcher::on_tap_short_osd(const KeyEvent &event) {
 //--------------------------------------------------------------------------------
 // ミドルタップ
 /**
- * @brief 通常モードでミドルタップしたときの処理, handle_on_key_upの下請け
+ * @brief ミドルタップしたときの処理, handle_on_key_upの下請け
+ * 
+ * @param current_key_mode
+ * @param event 
+ * @return int 
+ */
+int KeyDispatcher::on_tap_middle(const key_mode_t &current_key_mode, const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+
+	switch (current_key_mode) {
+	case KEY_MODE_NORMAL:
+		result = on_tap_middle_normal(event);
+		break;
+	case KEY_MODE_BRIGHTNESS:
+		result = on_tap_middle_brightness(event);
+		break;
+	case KEY_MODE_ZOOM:
+		result = on_tap_middle_zoom(event);
+		break;
+	case KEY_MODE_OSD:
+		result = on_tap_middle_osd(event);
+		break;
+	default:
+		LOGW("unknown key mode,%d", current_key_mode);
+		break;
+	}
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 通常モードでミドルタップしたときの処理, on_tap_middleの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -554,7 +600,7 @@ int KeyDispatcher::on_tap_middle_normal(const KeyEvent &event) {
 }
 
 /**
- * @brief 輝度調整モードでミドルタップしたときの処理, handle_on_key_upの下請け
+ * @brief 輝度調整モードでミドルタップしたときの処理, on_tap_middleの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -592,7 +638,7 @@ int KeyDispatcher::on_tap_middle_brightness(const KeyEvent &event) {
 }
 
 /**
- * @brief 拡大縮小モードでミドルタップしたときの処理, handle_on_key_upの下請け
+ * @brief 拡大縮小モードでミドルタップしたときの処理, on_tap_middleの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -630,7 +676,7 @@ int KeyDispatcher::on_tap_middle_zoom(const KeyEvent &event) {
 }
 
 /**
- * @brief OSD操作モードでミドルタップしたときの処理, handle_on_key_upの下請け
+ * @brief OSD操作モードでミドルタップしたときの処理, on_tap_middleの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -648,7 +694,39 @@ int KeyDispatcher::on_tap_middle_osd(const KeyEvent &event) {
 //--------------------------------------------------------------------------------
 // ロングタップ
 /**
- * @brief 通常モードでロングタップしたときの処理, handle_on_long_key_pressedの下請け
+ * @brief ロングタップの処理, handle_on_long_key_pressedの下請け
+ * 
+ * @param current_key_mode
+ * @param event 
+ * @return int 
+ */
+int KeyDispatcher::on_tap_long(const key_mode_t &current_key_mode, const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	switch (current_key_mode) {
+	case KEY_MODE_NORMAL:
+		result = on_tap_long_normal(event);
+		break;
+	case KEY_MODE_BRIGHTNESS:
+		result = on_tap_long_brightness(event);
+		break;
+	case KEY_MODE_ZOOM:
+		result = on_tap_long_zoom(event);
+		break;
+	case KEY_MODE_OSD:
+		result = on_tap_long_osd(event);
+		break;
+	default:
+		LOGW("unknown key mode,%d", current_key_mode);
+		break;
+	}
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 通常モードでロングタップしたときの処理, on_tap_longの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -664,7 +742,7 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 }
 
 /**
- * @brief 輝度調整モードでロングタップしたときの処理, handle_on_long_key_pressedの下請け
+ * @brief 輝度調整モードでロングタップしたときの処理, on_tap_longの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -680,7 +758,7 @@ int KeyDispatcher::on_tap_long_brightness(const KeyEvent &event) {
 }
 
 /**
- * @brief 拡大縮小モードでロングタップしたときの処理, handle_on_long_key_pressedの下請け
+ * @brief 拡大縮小モードでロングタップしたときの処理, on_tap_longの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -696,12 +774,137 @@ int KeyDispatcher::on_tap_long_zoom(const KeyEvent &event) {
 }
 
 /**
- * @brief OSD操作モードでロングタップしたときの処理, handle_on_long_key_pressedの下請け
+ * @brief OSD操作モードでロングタップしたときの処理, on_tap_longの下請け
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
 int KeyDispatcher::on_tap_long_osd(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	// FIXME 未実装
+
+	RETURN(result, int);
+}
+
+//--------------------------------------------------------------------------------
+// ダブルタップ
+/**
+ * @brief ダブルタップの処理, handle_on_key_upの下請け
+ * 
+ * @param current_key_mode
+ * @param event 
+ * @return int 
+ */
+int KeyDispatcher::on_tap_double(const key_mode_t &current_key_mode, const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	switch (current_key_mode) {
+	case KEY_MODE_NORMAL:
+		result = on_tap_double_normal(event);
+		break;
+	case KEY_MODE_BRIGHTNESS:
+		result = on_tap_double_brightness(event);
+		break;
+	case KEY_MODE_ZOOM:
+		result = on_tap_double_zoom(event);
+		break;
+	case KEY_MODE_OSD:
+		result = on_tap_double_osd(event);
+		break;
+	default:
+		LOGW("unknown key mode,%d", current_key_mode);
+		break;
+	}
+
+	RETURN(result, int);
+}
+/**
+ * @brief 通常モードでダブルタップしたときの処理, handle_on_key_upの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_double_normal(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto n = num_pressed();
+	LOGD("num_pressed=%d", n);
+	if (!n) {
+		// 単独でキー操作したときのみ受け付ける
+		// キーアップイベントからくるので他にキーが押されていなければ0
+		const auto key = event.key;
+		switch (key) {
+		case GLFW_KEY_RIGHT:
+		case GLFW_KEY_LEFT:
+			// 映像フリーズON/OFF
+			freeze = !freeze;
+			if (on_freeze_changed) {
+				on_freeze_changed(freeze);
+			}
+			result = 1;
+			break;
+		case GLFW_KEY_DOWN:
+		case GLFW_KEY_UP:
+			// FIXME 現在の映像効果切り替えはデバッグ用に映像効果をローテーション
+			effect = (effect + 1) % EFFECT_NUM;
+			if (on_effect_changed) {
+				on_effect_changed((effect_t)effect);
+			}
+			result = 1;
+			break;
+		default:
+			LOGW("unexpected key code,%d", key);
+			break;
+		}
+	}
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 輝度調整モードでダブルタップしたときの処理, handle_on_key_upの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_double_brightness(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	// FIXME 未実装
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief 拡大縮小モードでダブルタップしたときの処理, handle_on_key_upの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_double_zoom(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	// FIXME 未実装
+
+	RETURN(result, int);
+}
+
+/**
+ * @brief OSD操作モードでダブルタップしたときの処理, handle_on_key_upの下請け
+ *
+ * @param event
+ * @return int 処理済みなら1、未処理なら0, エラーなら負
+ */
+int KeyDispatcher::on_tap_double_osd(const KeyEvent &event) {
 	ENTER();
 
 	int result = 0;

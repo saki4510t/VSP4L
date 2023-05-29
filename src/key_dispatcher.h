@@ -32,7 +32,8 @@ private:
 	thread::Handler &handler;
 	mutable std::mutex state_lock;
 	key_mode_t key_mode;
-	effect_t effect;
+	int effect;
+	bool freeze;
 	// キーの押し下げ状態を保持するハッシュマップ
 	std::unordered_map<int, KeyStateSp> key_states;
 	// キーの長押し確認用ラムダ式を保持するハッシュマップ
@@ -88,7 +89,14 @@ private:
 	 * @return false
 	 */
 	bool is_long_pressed(const int &key);
-
+	/**
+	 * @brief ダブルタップかどうか
+	 * 
+	 * @param key 
+	 * @return true 
+	 * @return false 
+	 */
+	bool is_double_tap(const int &key);
 	/**
 	 * @brief handle_on_key_eventの下請け、キーが押されたとき/押し続けているとき
 	 * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
@@ -117,21 +125,29 @@ private:
 	int handle_on_long_key_pressed(const KeyEvent &event);
 	//--------------------------------------------------------------------------------
 	/**
-	 * @brief 通常モードでショートタップしたときの処理, handle_on_key_upの下請け
+	 * @brief ショートタップしたときの処理, handle_on_key_upの下請け
+	 * 
+	 * @param current_key_mode
+	 * @param event 
+	 * @return int 
+	 */
+	int on_tap_short(const key_mode_t &current_key_mode, const KeyEvent &event);
+	/**
+	 * @brief 通常モードでショートタップしたときの処理, on_tap_shortの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_short_normal(const KeyEvent &event);
 	/**
-	 * @brief 輝度調整モードでショートタップしたときの処理, handle_on_key_upの下請け
+	 * @brief 輝度調整モードでショートタップしたときの処理, on_tap_shortの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_short_brightness(const KeyEvent &event);
 	/**
-	 * @brief 拡大縮小モードでショートタップしたときの処理, handle_on_key_upの下請け
+	 * @brief 拡大縮小モードでショートタップしたときの処理, on_tap_shortの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -146,28 +162,36 @@ private:
 	int on_tap_short_osd(const KeyEvent &event);
 	//--------------------------------------------------------------------------------
 	/**
-	 * @brief 通常モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 * @brief ミドルタップしたときの処理, handle_on_key_upの下請け
+	 * 
+	 * @param current_key_mode
+	 * @param event 
+	 * @return int 
+	 */
+	int on_tap_middle(const key_mode_t &current_key_mode, const KeyEvent &event);
+	/**
+	 * @brief 通常モードでミドルタップしたときの処理, on_tap_middleの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_middle_normal(const KeyEvent &event);
 	/**
-	 * @brief 輝度調整モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 * @brief 輝度調整モードでミドルタップしたときの処理, on_tap_middleの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_middle_brightness(const KeyEvent &event);
 	/**
-	 * @brief 拡大縮小モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 * @brief 拡大縮小モードでミドルタップしたときの処理, on_tap_middleの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_middle_zoom(const KeyEvent &event);
 	/**
-	 * @brief OSD操作モードでミドルタップしたときの処理, handle_on_key_upの下請け
+	 * @brief OSD操作モードでミドルタップしたときの処理, on_tap_middleの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -175,33 +199,78 @@ private:
 	int on_tap_middle_osd(const KeyEvent &event);
 	//--------------------------------------------------------------------------------
 	/**
-	 * @brief 通常モードでロングタップしたときの処理, handle_on_long_key_pressedの下請け
+	 * @brief ロングタップの処理, handle_on_long_key_pressedの下請け
+	 * 
+	 * @param current_key_mode
+	 * @param event 
+	 * @return int 
+	 */
+	int on_tap_long(const key_mode_t &current_key_mode, const KeyEvent &event);
+	/**
+	 * @brief 通常モードでロングタップしたときの処理, on_tap_longの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_long_normal(const KeyEvent &event);
 	/**
-	 * @brief 輝度調整モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+	 * @brief 輝度調整モードで長押し時間経過したときの処理, on_tap_longの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_long_brightness(const KeyEvent &event);
 	/**
-	 * @brief 拡大縮小モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+	 * @brief 拡大縮小モードで長押し時間経過したときの処理, on_tap_longの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_long_zoom(const KeyEvent &event);
 	/**
-	 * @brief OSD操作モードで長押し時間経過したときの処理, handle_on_long_key_pressedの下請け
+	 * @brief OSD操作モードで長押し時間経過したときの処理, on_tap_longの下請け
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
 	 */
 	int on_tap_long_osd(const KeyEvent &event);
+	//--------------------------------------------------------------------------------
+	/**
+	 * @brief ダブルタップの処理, handle_on_key_upの下請け
+	 * 
+	 * @param current_key_mode
+	 * @param event 
+	 * @return int 
+	 */
+	int on_tap_double(const key_mode_t &current_key_mode, const KeyEvent &event);
+	/**
+	 * @brief 通常モードでダブルタップしたときの処理, on_tap_doubleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_double_normal(const KeyEvent &event);
+	/**
+	 * @brief 輝度調整モードでダブルタップしたときの処理, on_tap_doubleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_double_brightness(const KeyEvent &event);
+	/**
+	 * @brief 拡大縮小モードでダブルタップしたときの処理, on_tap_doubleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_double_zoom(const KeyEvent &event);
+	/**
+	 * @brief OSD操作モードでダブルタップしたときの処理, on_tap_doubleの下請け
+	 *
+	 * @param event
+	 * @return int 処理済みなら1、未処理なら0, エラーなら負
+	 */
+	int on_tap_double_osd(const KeyEvent &event);
 protected:
 public:
 	/**
