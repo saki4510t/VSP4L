@@ -36,7 +36,7 @@ private:
 	bool freeze;
 	// キーの押し下げ状態を保持するハッシュマップ
 	std::unordered_map<int, KeyStateSp> key_states;
-	// キーの長押し確認用ラムダ式を保持するハッシュマップ
+	// キーの長押し確認用Runnableを保持するハッシュマップ
 	std::unordered_map<int, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
 	OnKeyModeChangedFunc on_key_mode_changed;
 	OnBrightnessChangedFunc on_brightness_changed;
@@ -54,7 +54,7 @@ private:
 	 */
 	KeyStateUp update(const KeyEvent &event, const bool &handled = false);
 	/**
-	 * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
+	 * @brief キーの長押し確認用Runnableが生成されていることを確認、未生成なら新たに生成する
 	 *
 	 * @param event
 	 */

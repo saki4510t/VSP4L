@@ -210,7 +210,7 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 }
 
 /**
- * @brief キーの長押し確認用ラムダ式が生成されていることを確認、未生成なら新たに生成する
+ * @brief キーの長押し確認用Runnableが生成されていることを確認、未生成なら新たに生成する
  *
  * @param event
  */
