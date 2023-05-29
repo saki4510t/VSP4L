@@ -82,6 +82,11 @@ private:
 	 * 
 	 */
 	void reset_mode_delayed();
+	/**
+	 * @brief ウオッチドッグをリセット要求
+	 * 
+	 */
+	void reset_watchdog();
 
 	/**
 	 * @brief 輝度変更要求

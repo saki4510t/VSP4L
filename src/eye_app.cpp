@@ -43,8 +43,10 @@ namespace serenegiant::app {
 // OSD表示サイズ
 #define OSD_WIDTH (WINDOW_WIDTH/4*3)
 #define OSD_HEIGHT (VIDEO_HEIGHT/4*3)
-
+// 輝度調整モード・拡大縮小モード表示でアイコンと一緒に表示する文字のサイズ
 #define ICON_FONT_SZ (108)
+// ウオッチドッグをリセットする頻度[フレーム数]
+#define RESET_WATCHDOG_CNT (25)
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -268,6 +270,7 @@ void EyeApp::on_render() {
 	handle_draw(offscreen, gl_renderer);
 	// GUI(2D)描画処理を実行
 	handle_draw_gui();
+	reset_watchdog();
 
     EXIT();
 }
@@ -458,6 +461,16 @@ void EyeApp::reset_mode_delayed() {
 	handler.post_delayed(reset_mode_task, 5000);
 }
 
+/**
+ * @brief ウオッチドッグをリセット要求
+ * 
+ */
+void EyeApp::reset_watchdog() {
+	static uint32_t cnt = 0;
+	if ((++cnt % RESET_WATCHDOG_CNT) == 0) {
+		// FIXME 未実装 実際のウオッチドッグリセット処理
+	}
+}
 //--------------------------------------------------------------------------------
 /**
  * @brief 輝度変更要求
