@@ -417,7 +417,6 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 		state = update(event);
 	}
 	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
-	cancel_key_up_task(key);
 	if ((is_long_pressed(GLFW_KEY_RIGHT) || is_long_pressed(GLFW_KEY_LEFT))
 		&& (is_long_pressed(GLFW_KEY_UP) || is_long_pressed(GLFW_KEY_DOWN))) {
 		clear_key_state(GLFW_KEY_RIGHT);
@@ -435,7 +434,7 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 		if (current_key_mode == KEY_MODE_NORMAL) {
 			// 通常モードのみマルチタップの処理をする
 			auto key_up_task = std::make_shared<KeyUpTask>(*this, event, duration_ms);
-			long_key_press_tasks[key] = key_up_task;
+			key_up_tasks[key] = key_up_task;
 			handler.post_delayed(key_up_task, MULTI_PRESS_MAX_INTERVALMS);
 		} else {
 			// それ以外のキーモードは直接タップ処理をする
