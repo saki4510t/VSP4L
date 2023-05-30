@@ -119,9 +119,11 @@ void Looper::quit() {
 void Looper::insert(std::shared_ptr<Runnable> task, const nsecs_t &run_at_ns) {
 	ENTER();
 
-	android::Mutex::Autolock lock(queue_lock);
-	queue.insert(std::make_pair(run_at_ns, std::move(task)));
-	queue_sync.signal();
+	if (task) {
+		android::Mutex::Autolock lock(queue_lock);
+		queue.insert(std::make_pair(run_at_ns, std::move(task)));
+		queue_sync.signal();
+	}
 
 	EXIT();
 }
@@ -135,14 +137,16 @@ void Looper::insert(std::shared_ptr<Runnable> task, const nsecs_t &run_at_ns) {
 void Looper::remove(std::unique_ptr<Runnable> task) {
 	ENTER();
 
-	android::Mutex::Autolock lock(queue_lock);
-	// 実行待ちキュー内に同じRunnableが存在すれば削除する
-	const auto value = task.get();
-	erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
-		const auto v = it.second.get();
-		return v == value;
-	});
-	queue_sync.signal();
+	if (task) {
+		android::Mutex::Autolock lock(queue_lock);
+		// 実行待ちキュー内に同じRunnableが存在すれば削除する
+		const auto value = task.get();
+		erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+			const auto v = it.second.get();
+			return v == value;
+		});
+		queue_sync.signal();
+	}
 
 	EXIT();
 }
@@ -156,14 +160,16 @@ void Looper::remove(std::unique_ptr<Runnable> task) {
 void Looper::remove(std::shared_ptr<Runnable> task) {
 	ENTER();
 
-	android::Mutex::Autolock lock(queue_lock);
-	// 実行待ちキュー内に同じRunnableが存在すれば削除する
-	const auto value = task.get();
-	erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
-		const auto v = it.second.get();
-		return v == value;
-	});
-	queue_sync.signal();
+	if (task) {
+		android::Mutex::Autolock lock(queue_lock);
+		// 実行待ちキュー内に同じRunnableが存在すれば削除する
+		const auto value = task.get();
+		erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+			const auto v = it.second.get();
+			return v == value;
+		});
+		queue_sync.signal();
+	}
 
 	EXIT();
 }
@@ -177,13 +183,15 @@ void Looper::remove(std::shared_ptr<Runnable> task) {
 void Looper::remove(RunnableLambdaType task) {
 	ENTER();
 
-	android::Mutex::Autolock lock(queue_lock);
-	// 実行待ちキュー内に同じRunnableLambdaTypeが存在すれば削除する
-	erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
-		const auto v = dynamic_cast<RunnableLambda *>(it.second.get());
-		return v && v->equals(task);
-	});
-	queue_sync.signal();
+	if (task) {
+		android::Mutex::Autolock lock(queue_lock);
+		// 実行待ちキュー内に同じRunnableLambdaTypeが存在すれば削除する
+		erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+			const auto v = dynamic_cast<RunnableLambda *>(it.second.get());
+			return v && v->equals(task);
+		});
+		queue_sync.signal();
+	}
 
 	EXIT();
 }
