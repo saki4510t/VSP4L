@@ -36,7 +36,7 @@ private:
 public:
 	LongPressCheckTask(
 		KeyDispatcher &dispatcher,
-		const KeyEvent &event)
+		const KeyEvent event)
 	:	dispatcher(dispatcher), event(event)
 	{
 		ENTER();
