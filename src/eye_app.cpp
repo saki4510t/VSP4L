@@ -425,7 +425,7 @@ void EyeApp::handle_draw_gui() {
 		if (LIKELY(large_font)) {
 			ImGui::SameLine();
 			ImGui::PushFont(large_font);
-			ImGui::Text("%d", 50/*FIXME 今は固定値*/);
+			ImGui::Text("%d", brightness_ix/*FIXME 暫定値*/);
 			ImGui::PopFont();
 		}
 		ImGui::End();
