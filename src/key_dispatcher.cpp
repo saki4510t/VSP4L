@@ -96,13 +96,13 @@ public:
 KeyDispatcher::KeyDispatcher(thread::Handler &handler)
 :   handler(handler),
 	key_mode(KEY_MODE_NORMAL),
-	effect(EFFECT_NON), freeze(false), show_osd(false),
+	effect(EFFECT_NON), freeze(false),
 	on_key_mode_changed(nullptr),
 	on_brightness_changed(nullptr),
 	on_effect_changed(nullptr),
 	on_scale_changed(nullptr),
 	on_freeze_changed(nullptr),
-	on_osd_changed(nullptr), osd_key_event(nullptr)
+	osd_key_event(nullptr)
 {
 	ENTER();
 	EXIT();
@@ -125,6 +125,7 @@ KeyDispatcher::~KeyDispatcher() {
 void KeyDispatcher::reset_key_mode() {
 	ENTER();
 
+	LOGD("reset key mode %d->%d", key_mode, KEY_MODE_NORMAL);
 	change_key_mode(KEY_MODE_NORMAL);
 
 	EXIT();
@@ -180,6 +181,7 @@ int KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 void KeyDispatcher::change_key_mode(const key_mode_t &mode, const bool &force_callback) {
 	ENTER();
 
+	LOGD("change key mode %d->%d,force=%d", key_mode, mode, force_callback);
 	if ((key_mode != mode) || force_callback) {
 		key_mode = mode;
 		if (on_key_mode_changed) {
@@ -716,10 +718,7 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 		}
 		if (is_osd_toggle) {
 			// ソフトウエアOSDの表示ON/OFFを変更する
-			show_osd = !show_osd;
-			if (on_osd_changed) {
-				on_osd_changed(show_osd);
-			}
+			change_key_mode(KEY_MODE_OSD);
 			result = 1;	// handled
 		}
 	}

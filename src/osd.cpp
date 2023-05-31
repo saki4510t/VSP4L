@@ -122,11 +122,79 @@ void OSD::draw(ImFont *large_font) {
 	EXIT();
 }
 
+//--------------------------------------------------------------------------------
+/**
+ * @brief 保存して閉じる
+ * 
+ */
+/*private*/
+void OSD::save() {
+	ENTER();
+
+	// FIXME 未実装 保存処理
+	if (on_osd_close) {
+		on_osd_close();
+	}
+
+	EXIT();
+}
+
+/**
+ * @brief 保存せずに閉じる
+ * 
+ */
+/*private*/
+void OSD::cancel() {
+	ENTER();
+
+	if (on_osd_close) {
+		on_osd_close();
+	}
+
+	EXIT();
+}
+
+/**
+ * @brief 前のーページへ移動
+ * 
+ */
+/*private*/
+void OSD::prev() {
+	ENTER();
+
+	if (page > 0) {
+		page--;
+	}
+
+	EXIT();
+}
+
+/**
+ * @brief 次のページへ移動
+ * 
+ */
+/*private*/
+void OSD::next() {
+	ENTER();
+
+	if (page < PAGE_NUM - 1) {
+		page++;
+	}
+
+	EXIT();
+}
+
 /**
  * @brief 機器情報画面
  */
+/*private*/
 void OSD::draw_version() {
 	ENTER();
+
+    const auto style = ImGui::GetStyle();
+	const auto padding = style.WindowPadding.x;
+	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
+	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
 
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
@@ -153,8 +221,8 @@ void OSD::draw_version() {
 		ImGui::Spacing();
 	}
 	ImGui::EndGroup();
-	if (ImGui::Button("RETURN")) {
-		// FIXME 保存せずに閉じる
+	if (ImGui::Button("RETURN", size)) {
+		cancel();
 	}
 
 	EXIT();
@@ -164,8 +232,14 @@ void OSD::draw_version() {
  * @brief 設定画面１
  * 
  */
+/*private*/
 void OSD::draw_settings_1() {
 	ENTER();
+
+    const auto style = ImGui::GetStyle();
+	const auto padding = style.WindowPadding.x;
+	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
+	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
 
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
@@ -193,24 +267,23 @@ void OSD::draw_settings_1() {
 	}
 	ImGui::EndGroup();
 
-    const auto style = ImGui::GetStyle();
-	const auto padding = style.WindowPadding.x;
-	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
-	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
 	if (ImGui::Button("RETURN", size)) {
-		// FIXME 保存せずに閉じる
+		cancel();
 	}
+
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width + padding);
 	if (ImGui::Button("SAVE", size)) {
-		// FIXME 保存して終了
+		save();
 	}
+
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 2 + padding);
 	if (ImGui::Button("INFO", size)) {
-		// FIXME 機器情報画面へ
+		prev();
 	}
+
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 3 + padding);
 	if (ImGui::Button("NEXT", size)) {
-		// FIXME 次画面へ
+		next();
 	}
 
 	EXIT();
@@ -220,6 +293,7 @@ void OSD::draw_settings_1() {
  * @brief 調整画面1
  * 
  */
+/*private*/
 void OSD::draw_adjust_1() {
 	ENTER();
 
@@ -263,19 +337,22 @@ void OSD::draw_adjust_1() {
 	ImGui::EndGroup();
 
 	if (ImGui::Button("RETURN", size)) {
-		// FIXME 保存せずに閉じる
+		cancel();
 	}
+
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width + padding);
 	if (ImGui::Button("SAVE", size)) {
-		// FIXME 保存して終了
+		save();
 	}
+
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 2 + padding);
 	if (ImGui::Button("PREV", size)) {
-		// FIXME 機器情報画面へ
+		prev();
 	}
+
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 3 + padding);
 	if (ImGui::Button("NEXT", size)) {
-		// FIXME 次画面へ
+		next();
 	}
 
 	EXIT();

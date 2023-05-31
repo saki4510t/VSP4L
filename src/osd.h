@@ -13,9 +13,34 @@ enum {
 	PAGE_NUM,
 } osd_page_t;
 
+typedef std::function<void(void)> OnOSDCloseFunc;
+
 class OSD {
 private:
 	int page;
+
+	OnOSDCloseFunc on_osd_close;
+
+	/**
+	 * @brief 保存して閉じる
+	 * 
+	 */
+	void save();
+	/**
+	 * @brief 保存せずに閉じる
+	 * 
+	 */
+	void cancel();
+	/**
+	 * @brief 前のーページへ移動
+	 * 
+	 */
+	void prev();
+	/**
+	 * @brief 次のページへ移動
+	 * 
+	 */
+	void next();
 
 	/**
 	 * @brief 機器情報画面
@@ -56,6 +81,11 @@ public:
 	 *
 	 */
 	void draw(ImFont *large_font);
+
+	inline OSD &set_on_osd_close(OnOSDCloseFunc callback) {
+		on_osd_close = callback;
+		return *this;
+	}
 };
 
 }   // namespace serenegiant::app

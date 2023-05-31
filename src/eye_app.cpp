@@ -75,7 +75,11 @@ EyeApp::EyeApp(const int &gl_version)
 	mvp_matrix.scale(ZOOM_FACTORS[zoom_ix]);
 	key_dispatcher
 		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
-			reset_mode_delayed();
+			if (key_mode != KEY_MODE_OSD) {
+				reset_mode_delayed();
+			} else {
+				handler.remove(reset_mode_task);
+			}
 			on_key_mode_changed(key_mode);
 		})
 		.set_on_brightness_changed([this](const bool &inc_dec) {
@@ -92,9 +96,6 @@ EyeApp::EyeApp(const int &gl_version)
 		.set_on_freeze_changed([this](const bool &onoff){
 			request_change_freeze(onoff);
 		})
-		.set_on_osd_changed([this](const bool &onoff) {
-			request_change_osd(onoff);
-		})
 		.set_osd_key_event([this](const KeyEvent &event) {
 			osd.on_key(event);
 		});
@@ -105,7 +106,11 @@ EyeApp::EyeApp(const int &gl_version)
 		})
 		.set_on_start([this](GLFWwindow *win) { on_start(); })
 		.set_on_stop([this](GLFWwindow *win) { on_stop(); });
-
+	// OSD表示が終了したときのコールバック
+	osd.set_on_osd_close([this]() {
+		LOGD("on_osd_close");
+		key_dispatcher.reset_key_mode();
+	});
 	// 遅延実行タスクの準備
 	reset_mode_task = [this]() {
 		key_dispatcher.reset_key_mode();
@@ -592,20 +597,6 @@ void EyeApp::request_change_freeze(const bool &onoff) {
 
 	LOGD("onoff=%d", onoff);
 	req_freeze = onoff;
-
-	EXIT();
-}
-
-/**
- * @brief OSD表示のON/OFF切り替え要求
- * 
- * @param onoff 
- */
-void EyeApp::request_change_osd(const bool &onoff) {
-	ENTER();
-
-	LOGD("onoff=%d", onoff);
-	show_osd = onoff;
 
 	EXIT();
 }
