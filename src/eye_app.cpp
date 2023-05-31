@@ -250,6 +250,7 @@ void EyeApp::on_render() {
 		renderer_pipeline->on_draw();
 	}
 	// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
+	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
 	// 画面へ転送
 	handle_draw(offscreen, gl_renderer);
