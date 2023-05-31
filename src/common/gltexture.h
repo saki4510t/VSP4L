@@ -290,6 +290,22 @@ public:
 	 * @return
 	 */
 	inline const GLint getImageHeight() const { return mImageHeight; }
+	/**
+	 * @brief テクスチャの幅に対して実イメージが占める割合/実イメージの左下UV座標
+	 *		  デフォルトだとテクスチャサイズを2のべき乗に繰り上げるのでイメージサイズより
+	          テクスチャのほうが大きい可能性があるため左下UV座標を調整するためのヘルパー関数
+	 * 
+	 * @return GLfloat 
+	 */
+	inline GLfloat getTexScaleX() const { return mImageWidth / (GLfloat)mTexWidth; };
+	/**
+	 * @brief テクスチャの高さに対して実イメージが占める割合/実イメージの左下UV座標
+	 *		  デフォルトだとテクスチャサイズを2のべき乗に繰り上げるのでイメージサイズより
+	          テクスチャのほうが大きい可能性があるため左下UV座標を調整するためのヘルパー関数
+	 * 
+	 * @return GLfloat 
+	 */
+	inline GLfloat getTexScaleY() const { return mImageHeight / (GLfloat)mTexHeight; };
 #if __ANDROID__
 	// 自前で生成したAHardwareBufferかどうか
 	inline bool is_own_hardware_buffer() const { return own_hardware_buffer; };
