@@ -89,6 +89,12 @@ private:
 	void reset_watchdog();
 
 	/**
+	 * @brief キーモード変更時の処理
+	 * 
+	 * @param mode 
+	 */
+	void on_key_mode_changed(const key_mode_t &key_mode);
+	/**
 	 * @brief 輝度変更要求
 	 * 
 	 * @param inc_dec 

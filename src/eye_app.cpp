@@ -75,26 +75,8 @@ EyeApp::EyeApp(const int &gl_version)
 	mvp_matrix.scale(ZOOM_FACTORS[zoom_ix]);
 	key_dispatcher
 		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
-			LOGD("key_mode=%d", key_mode);
-			switch (key_mode) {
-			case KEY_MODE_BRIGHTNESS:
-				show_brightness = true;
-				show_zoom = show_osd = false;
-				break;
-			case KEY_MODE_ZOOM:
-				show_brightness = show_osd = false;
-				show_zoom = true;
-				break;
-			case KEY_MODE_OSD:
-				show_brightness = show_zoom = false;
-				show_osd = true;
-				break;
-			case KEY_MODE_NORMAL:
-			default:
-				show_brightness = show_zoom = show_osd = false;
-				break;
-			}
 			reset_mode_delayed();
+			on_key_mode_changed(key_mode);
 		})
 		.set_on_brightness_changed([this](const bool &inc_dec) {
 			reset_mode_delayed();
@@ -284,6 +266,7 @@ void EyeApp::on_render() {
  * @param effect
  * @return gl::GLRendererUp
  */
+/*private,@WorkerThread*/
 gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
 	// FIXME 今は映像効果のない転送するだけのGLRendererを生成している
 	const char *fsh = (gl_version >= 300) ? fsh = rgba_gl3_fsh : rgba_gl2_fsh;
@@ -320,6 +303,7 @@ gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
  * @param offscreen
  * @param gl_renderer
  */
+/*private,@WorkerThread*/
 void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer) {
 	ENTER();
 
@@ -354,7 +338,7 @@ void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &render
  *
  * @param renderer
  */
-/*private*/
+/*private,@WorkerThread*/
 void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer) {
 	ENTER();
 
@@ -373,6 +357,7 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
  * @brief GUI(2D)描画処理を実行
  *
  */
+/*private,@WorkerThread*/
 void EyeApp::handle_draw_gui() {
 	ENTER();
 
@@ -495,6 +480,37 @@ void EyeApp::reset_watchdog() {
 	}
 }
 //--------------------------------------------------------------------------------
+/**
+ * @brief キーモード変更時の処理
+ * 
+ * @param key_mode 
+ */
+void EyeApp::on_key_mode_changed(const key_mode_t &key_mode) {
+	ENTER();
+
+	LOGD("key_mode=%d", key_mode);
+	switch (key_mode) {
+	case KEY_MODE_BRIGHTNESS:
+		show_brightness = true;
+		show_zoom = show_osd = false;
+		break;
+	case KEY_MODE_ZOOM:
+		show_brightness = show_osd = false;
+		show_zoom = true;
+		break;
+	case KEY_MODE_OSD:
+		show_brightness = show_zoom = false;
+		show_osd = true;
+		break;
+	case KEY_MODE_NORMAL:
+	default:
+		show_brightness = show_zoom = show_osd = false;
+		break;
+	}
+
+	EXIT();
+}
+
 /**
  * @brief 輝度変更要求
  *
