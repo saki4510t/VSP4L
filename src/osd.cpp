@@ -27,7 +27,7 @@ namespace serenegiant::app {
  */
 /*public*/
 OSD::OSD()
-:	page(PAGE_VERSION)
+:	page(PAGE_SETTINGS_1)
 {
 	ENTER();
 
@@ -104,6 +104,9 @@ void OSD::draw(ImFont *large_font) {
 		case PAGE_SETTINGS_1:
 			draw_settings_1();
 			break;
+		case PAGE_ADJUST_1:
+			draw_adjust_1();
+			break;
 		default:
 			LOGD("unknown osd page,%d", page);
 			break;
@@ -128,27 +131,31 @@ void OSD::draw_version() {
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
 	{
-		ImGui::Text("MODEL");
-		ImGui::Text("VERSION");
-		ImGui::Text("SERIAL");
-		ImGui::NewLine();
-		ImGui::NewLine();
-		ImGui::NewLine();
-		ImGui::NewLine();
-		if (ImGui::Button("RETURN")) {
-			// FIXME OSDを閉じる
-		}
+		ImGui::LabelText("", "MODEL");
+		ImGui::LabelText("", "VERSION");
+		ImGui::LabelText("", "SERIAL");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::Spacing();
 	}
 	ImGui::EndGroup(); ImGui::SameLine();
 	// 値を描画(右半分)
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
 	ImGui::BeginGroup();
 	{
-		ImGui::Text("%s", MODEL);
-		ImGui::Text("%s", VERSION);
-		ImGui::Text("%s", get_serial().c_str());;
+		ImGui::LabelText("", "%s", MODEL);
+		ImGui::LabelText("", "%s", VERSION);
+		ImGui::LabelText("", "%s", get_serial().c_str());;
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::Spacing();
 	}
 	ImGui::EndGroup();
+	if (ImGui::Button("RETURN")) {
+		// FIXME 保存せずに閉じる
+	}
 
 	EXIT();
 }
@@ -160,7 +167,116 @@ void OSD::draw_version() {
 void OSD::draw_settings_1() {
 	ENTER();
 
-	// FIXME 未実装
+	// ラベルを描画(左半分)
+	ImGui::BeginGroup();
+	{
+		ImGui::LabelText("", "RESTORE_SETTINGS");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::Spacing();
+	}
+	ImGui::EndGroup(); ImGui::SameLine();
+	// 値を描画(右半分)
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
+	ImGui::BeginGroup();
+	{
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::Spacing();
+	}
+	ImGui::EndGroup();
+
+    const auto style = ImGui::GetStyle();
+	const auto padding = style.WindowPadding.x;
+	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
+	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
+	if (ImGui::Button("RETURN", size)) {
+		// FIXME 保存せずに閉じる
+	}
+	ImGui::SameLine(); ImGui::SetCursorPosX(button_width + padding);
+	if (ImGui::Button("SAVE", size)) {
+		// FIXME 保存して終了
+	}
+	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 2 + padding);
+	if (ImGui::Button("INFO", size)) {
+		// FIXME 機器情報画面へ
+	}
+	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 3 + padding);
+	if (ImGui::Button("NEXT", size)) {
+		// FIXME 次画面へ
+	}
+
+	EXIT();
+}
+
+/**
+ * @brief 調整画面1
+ * 
+ */
+void OSD::draw_adjust_1() {
+	ENTER();
+
+    const auto style = ImGui::GetStyle();
+	const auto padding = style.WindowPadding.x;
+	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
+	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
+
+	// ラベルを描画(左半分)
+	ImGui::BeginGroup();
+	{
+		ImGui::LabelText("", "BRIGHTNESS");
+		ImGui::LabelText("", "HUE");
+		ImGui::LabelText("", "SATURATION");
+		ImGui::LabelText("", "CONTRAST");
+		ImGui::LabelText("", "SHARPNESS");
+		ImGui::LabelText("", "GAMMA");
+		ImGui::Spacing();
+	}
+	ImGui::EndGroup(); ImGui::SameLine();
+	// 値を描画(右半分)
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
+	ImGui::BeginGroup();
+	{	// FIXME 未実装
+		static float brightness = 10;
+		static float hue = 20;
+		static float saturation = 30;
+		static float contrast = 40;
+		static float sharpness = 50;
+		static float gamma = 60;
+		ImGui::PushItemWidth(button_width * 2);
+		ImGui::SliderFloat("BRIGHTNESS", &brightness, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("HUE", &hue, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("SATURATION", &saturation, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("CONTRAST", &contrast, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("SHARPNESS", &sharpness, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("GAMMA", &gamma, 0.0f, 100.0f, "%.0f");
+		ImGui::Spacing();
+		ImGui::PopItemWidth();
+	}
+	ImGui::EndGroup();
+
+	if (ImGui::Button("RETURN", size)) {
+		// FIXME 保存せずに閉じる
+	}
+	ImGui::SameLine(); ImGui::SetCursorPosX(button_width + padding);
+	if (ImGui::Button("SAVE", size)) {
+		// FIXME 保存して終了
+	}
+	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 2 + padding);
+	if (ImGui::Button("PREV", size)) {
+		// FIXME 機器情報画面へ
+	}
+	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 3 + padding);
+	if (ImGui::Button("NEXT", size)) {
+		// FIXME 次画面へ
+	}
 
 	EXIT();
 }

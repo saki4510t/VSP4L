@@ -9,6 +9,7 @@ namespace serenegiant::app {
 enum {
 	PAGE_VERSION = 0,
 	PAGE_SETTINGS_1,
+	PAGE_ADJUST_1,
 	PAGE_NUM,
 } osd_page_t;
 
@@ -20,7 +21,16 @@ private:
 	 * @brief 機器情報画面
 	*/
 	void draw_version();
+	/**
+	 * @brief 設定画面1
+	 * 
+	 */
 	void draw_settings_1();
+	/**
+	 * @brief 調整画面1
+	 * 
+	 */
+	void draw_adjust_1();
 protected:
 public:
 	/**
