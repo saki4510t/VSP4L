@@ -37,18 +37,17 @@ namespace serenegiant::app {
 // 画面サイズ
 #define WINDOW_WIDTH (VIDEO_WIDTH/2)
 #define WINDOW_HEIGHT (VIDEO_HEIGHT/2)
-// 輝度・拡大縮小率等の表示サイズ
-#define MODE_WIDTH (280)
-#define MODE_HEIGHT (150)
-#define MODE_POS_X (WINDOW_WIDTH/2-MODE_WIDTH/2)
-#define MODE_POS_Y (WINDOW_HEIGHT/2-MODE_HEIGHT/2)
+// 輝度調整・拡大縮小率モード表示の背景アルファ
 #define MODE_BK_ALPHA (0.3f)
+// 輝度調整モード・拡大縮小モード表示でアイコンと一緒に表示する文字のサイズ
+#define MODE_ICON_FONT_SZ (108)
+// 輝度調整・拡大縮小率モード表示のアイコンサイズ
+#define MODE_ICON_SZ (120)
+// 輝度調整・拡大縮小率モード表示のアイコンのテクスチャサイズ
+#define MODE_ICON_TEX_SZ (192)
 // OSD表示サイズ
 #define OSD_WIDTH (WINDOW_WIDTH/4*3)
 #define OSD_HEIGHT (VIDEO_HEIGHT/4*3)
-// 輝度調整モード・拡大縮小モード表示でアイコンと一緒に表示する文字のサイズ
-#define ICON_FONT_SZ (108)
-#define ICON_SZ (120)
 // ウオッチドッグをリセットする頻度[フレーム数]
 #define RESET_WATCHDOG_CNT (25)
 //--------------------------------------------------------------------------------
@@ -220,7 +219,7 @@ void EyeApp::on_start() {
 	// 最初に読み込んだのがデフォルトのフォントになる
 	default_font = io.Fonts->AddFontDefault();
 	// 大きい文字用のフォント(FIXME 実働時はフォントファイルのパスを変えないといけない)
-	large_font = io.Fonts->AddFontFromFileTTF("./src/imgui/misc/fonts/DroidSans.ttf", ICON_FONT_SZ);
+	large_font = io.Fonts->AddFontFromFileTTF("./src/imgui/misc/fonts/DroidSans.ttf", MODE_ICON_FONT_SZ);
 	// 読み込めなければnulptrになる
 	LOGD("default_font=%p", default_font);
 	LOGD("large_font=%p", large_font);
@@ -397,10 +396,16 @@ void EyeApp::handle_draw_gui() {
 		ImGui::End();
 	}
 #endif
-	const static ImVec2 mode_pos(MODE_POS_X, MODE_POS_Y);
-	const static ImVec2 mode_size(MODE_WIDTH, MODE_HEIGHT);
-	const static ImVec2 icon_size(ICON_SZ, ICON_SZ);
+	const static ImVec2 icon_size(MODE_ICON_SZ, MODE_ICON_SZ);
 	const static ImVec2 pivot(0.5f, 0.5f);
+    const ImGuiWindowFlags window_flags
+		= ImGuiWindowFlags_NoDecoration
+		| ImGuiWindowFlags_NoMove
+		| ImGuiWindowFlags_NoTitleBar
+		| ImGuiWindowFlags_AlwaysAutoResize
+		| ImGuiWindowFlags_NoSavedSettings
+		| ImGuiWindowFlags_NoFocusOnAppearing
+		| ImGuiWindowFlags_NoNav;
 
 	if (show_brightness) {
 		if (UNLIKELY(!icon_brightness)) {
@@ -408,15 +413,13 @@ void EyeApp::handle_draw_gui() {
 			if (!media::read_png_from_file(bitmap, "./src/resources/ic_brightness.png")) {
 				LOGD("success load png, assign to texture");
 				//  輝度アイコンをテクスチャへ読み込む
-				icon_brightness = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE0, 192, 192);
+				icon_brightness = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE0, MODE_ICON_TEX_SZ, MODE_ICON_TEX_SZ);
 				icon_brightness->assignTexture(bitmap.data());
-				LOGD("pos(%f,%f),sz(%fx%f)", mode_pos.x, mode_pos.y, mode_size.x, mode_size.y);
 			}
 		}
-		ImGui::SetNextWindowPos(mode_pos);
-		ImGui::SetNextWindowContentSize(mode_size);
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, pivot);
 		ImGui::SetNextWindowBgAlpha(MODE_BK_ALPHA);
-		ImGui::Begin("Brightness", &show_brightness, ImGuiWindowFlags_NoTitleBar);
+		ImGui::Begin("Brightness", &show_brightness, window_flags);
 		if (LIKELY(icon_brightness)) {
 			icon_brightness->bind();
 			ImGui::Image(reinterpret_cast <void*>(icon_brightness->getTexture()), icon_size);// FIXME 位置がおかしい
@@ -436,15 +439,13 @@ void EyeApp::handle_draw_gui() {
 			if (!media::read_png_from_file(bitmap, "./src/resources/ic_zoom.png")) {
 				LOGD("success load png, assign to texture");
 				// 拡大縮小アイコンをテクスチャへ読み込む
-				icon_zoom = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE1, 192, 192);
+				icon_zoom = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE1, MODE_ICON_TEX_SZ, MODE_ICON_TEX_SZ);
 				icon_zoom->assignTexture(bitmap.data());
-				LOGD("pos(%f,%f),sz(%fx%f)", mode_pos.x, mode_pos.y, mode_size.x, mode_size.y);
 			}
 		}
-		ImGui::SetNextWindowPos(mode_pos);
-		ImGui::SetNextWindowContentSize(mode_size);
+        ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, pivot);
 		ImGui::SetNextWindowBgAlpha(MODE_BK_ALPHA);
-		ImGui::Begin("Zoom", &show_zoom, ImGuiWindowFlags_NoTitleBar);
+		ImGui::Begin("Zoom", &show_zoom, window_flags);
 		if (LIKELY(icon_zoom)) {
 			icon_zoom->bind();
 			ImGui::Image(reinterpret_cast <void*>(icon_zoom->getTexture()), icon_size);	// FIXME 位置がおかしい
