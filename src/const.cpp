@@ -2,10 +2,21 @@
 #include "const.h"
 
 /**
+ * @brief モデル文字列
+ * 
+ */
+const char *MODEL = "BOV01";
+/**
+ * @brief バージョン文字列
+ * 
+ */
+const char *VERSION = "v0.0.0";
+
+/**
  * @brief 拡大縮小倍率
  * 
  */
-float ZOOM_FACTORS[] = {
+const float ZOOM_FACTORS[] = {
 	0.2f,	// 0
 	0.3f,	// 1
 	0.4f,	// 2
@@ -27,6 +38,24 @@ float ZOOM_FACTORS[] = {
 	4.0f,	// 18
 };
 
+/**
+ * @brief 拡大縮小率配列の要素数
+ * 
+ */
 const int NUM_ZOOM_FACTORS = NUM_ARRAY_ELEMENTS(ZOOM_FACTORS);
 
+/**
+ * @brief デフォルトの拡大縮小率のインデックス
+ * 
+ */
 const int DEFAULT_ZOOM_IX = 8;
+
+/**
+ * @brief シリアル番号を取得
+ * 
+ * @return std::string 
+ */
+std::string get_serial() {
+	// FIXME 未実装
+	return "0123456789";
+}

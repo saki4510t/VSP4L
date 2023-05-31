@@ -1,6 +1,19 @@
 #ifndef CONST_H_
 #define CONST_H_
 
+#include <string>
+
+/**
+ * @brief モデル文字列
+ * 
+ */
+extern const char *MODEL;
+/**
+ * @brief バージョン文字列
+ * 
+ */
+extern const char *VERSION;
+
 /**
  * @brief キー操作モード定数
  * 
@@ -26,12 +39,12 @@ typedef enum {
 } effect_t;
 
 /**
- * @brief 拡大縮小倍率
+ * @brief 拡大縮小倍率配列
  * 
  */
-extern float ZOOM_FACTORS[];
+extern const float ZOOM_FACTORS[];
 /**
- * @brief 拡大縮小倍率の数
+ * @brief 拡大縮小倍率の要素数
  * 
  */
 extern const int NUM_ZOOM_FACTORS;
@@ -40,5 +53,12 @@ extern const int NUM_ZOOM_FACTORS;
  * 
  */
 extern const int DEFAULT_ZOOM_IX;
+
+/**
+ * @brief シリアル番号を取得
+ * 
+ * @return std::string 
+ */
+std::string get_serial();
 
 #endif
