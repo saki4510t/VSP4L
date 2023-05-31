@@ -2,12 +2,22 @@
 #define OSD_H_
 
 #include "key_event.h"
+#include "window.h"
 
 namespace serenegiant::app {
+
+enum {
+	PAGE_VERSION = 0,
+	PAGE_SETTINGS_1,
+	PAGE_NUM,
+} osd_page_t;
 
 class OSD {
 private:
 	int page;
+
+	void draw_version(const ImVec4 &rect);
+	void draw_settings_1(const ImVec4 &rect);
 protected:
 public:
 	/**

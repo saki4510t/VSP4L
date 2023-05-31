@@ -45,9 +45,6 @@ namespace serenegiant::app {
 #define MODE_ICON_SZ (120)
 // 輝度調整・拡大縮小率モード表示のアイコンのテクスチャサイズ
 #define MODE_ICON_TEX_SZ (192)
-// OSD表示サイズ
-#define OSD_WIDTH (WINDOW_WIDTH/4*3)
-#define OSD_HEIGHT (VIDEO_HEIGHT/4*3)
 // ウオッチドッグをリセットする頻度[フレーム数]
 #define RESET_WATCHDOG_CNT (25)
 //--------------------------------------------------------------------------------
@@ -375,11 +372,6 @@ void EyeApp::handle_draw_gui() {
 		ImGui::Begin("DEBUG");
 		const auto fps = ImGui::GetIO().Framerate;
 		ImGui::Text("%.3f ms/frame(%.1f FPS)", 1000.0f / fps, fps);
-		if (LIKELY(large_font)) {
-			ImGui::PushFont(large_font);
-			ImGui::Text("Large");
-			ImGui::PopFont();
-		}
 		ImGui::End();
 	}
 	// static bool show_demo = true;
@@ -608,7 +600,7 @@ void EyeApp::request_change_osd(const bool &onoff) {
 	ENTER();
 
 	LOGD("onoff=%d", onoff);
-	// FIXME 未実装 OSD表示の表示の切り替え
+	show_osd = onoff;
 
 	EXIT();
 }
