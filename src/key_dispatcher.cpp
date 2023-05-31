@@ -420,19 +420,6 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 		state = update(event);
 	}
 	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
-	if ((is_long_pressed(GLFW_KEY_RIGHT) || is_long_pressed(GLFW_KEY_LEFT))
-		&& (is_long_pressed(GLFW_KEY_UP) || is_long_pressed(GLFW_KEY_DOWN))) {
-		clear_key_state(GLFW_KEY_RIGHT);
-		clear_key_state(GLFW_KEY_LEFT);
-		clear_key_state(GLFW_KEY_UP);
-		clear_key_state(GLFW_KEY_DOWN);
-		// ソフトウエアOSDの表示ON/OFFを変更する
-		show_osd = !show_osd;
-		if (on_osd_changed) {
-			on_osd_changed(show_osd);
-		}
-		result = 1;	// handled
-	}
 	if (!result && (state->state == KEY_STATE_DOWN) && (duration_ms >= SHORT_PRESS_MIN_MS)) {
 		if (current_key_mode == KEY_MODE_NORMAL) {
 			// 通常モードのみマルチタップの処理をする
@@ -712,6 +699,28 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 		default:
 			LOGW("unexpected key code,%d", key);
 			break;
+		}
+	} else if (n == 2) {
+		bool is_osd_toggle;
+		{
+	 		std::lock_guard<std::mutex> lock(state_lock);
+			is_osd_toggle
+				= (is_long_pressed(GLFW_KEY_RIGHT) || is_long_pressed(GLFW_KEY_LEFT))
+				&& (is_long_pressed(GLFW_KEY_UP) || is_long_pressed(GLFW_KEY_DOWN));
+			if (is_osd_toggle) {
+				clear_key_state(GLFW_KEY_RIGHT);
+				clear_key_state(GLFW_KEY_LEFT);
+				clear_key_state(GLFW_KEY_UP);
+				clear_key_state(GLFW_KEY_DOWN);
+			}
+		}
+		if (is_osd_toggle) {
+			// ソフトウエアOSDの表示ON/OFFを変更する
+			show_osd = !show_osd;
+			if (on_osd_changed) {
+				on_osd_changed(show_osd);
+			}
+			result = 1;	// handled
 		}
 	}
 
