@@ -504,7 +504,6 @@ int KeyDispatcher::handle_on_long_key_pressed(const KeyEvent &event) {
 	}
 	if (long_pressed) {
 		LOGD("on_long_key_pressed,key=%d", key);
-		// 同時押しで処理済みでなければキーモード毎の処理を行う
 		result = on_tap_long(current_key_mode, event);
 		if (result == 1/*handled*/) {
 			std::lock_guard<std::mutex> lock(state_lock);
