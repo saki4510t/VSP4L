@@ -192,7 +192,7 @@ void KeyDispatcher::change_key_mode(const key_mode_t &mode, const bool &force_ca
 }
 
 /**
- * @brief キーの状態を更新
+ * @brief キーの状態を更新, 排他制御してないので上位でロックすること
  * 
  * @param event 
  * @param handled
@@ -251,10 +251,13 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 void KeyDispatcher::clear_key_state(const int &key) {
 	ENTER();
 
-	auto &state = key_states[key];
-	if (state) {
-		state->state = KEY_STATE_HANDLED;
-		state->tap_count = 0;
+	if (LIKELY(key_states.find(key) != key_states.end())) {
+		// XXX 直接インデックスアクセスすると空エントリーができてしまうのでcontainsでチェック必須
+		auto &state = key_states[key];
+		if (state) {
+			state->state = KEY_STATE_HANDLED;
+			state->tap_count = 0;
+		}
 	}
 
 	EXIT();
@@ -346,7 +349,7 @@ bool KeyDispatcher::is_long_pressed(const int &key) {
 }
 
 /**
- * @brief 指定したキーのタップカウントを取得
+ * @brief 指定したキーのタップカウントを取得, 排他制御してないので上位でロックすること
  * 
  * @param key 
  * @return int
@@ -684,7 +687,11 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 	ENTER();
 
 	int result = 0;
-	const auto n = num_pressed();
+	int n;
+	{
+ 		std::lock_guard<std::mutex> lock(state_lock);
+		n = num_pressed();
+	}
 	LOGD("num_pressed=%d", n);
 	if (n == 1) {
 		// 単独でキー操作したときのみ受け付ける

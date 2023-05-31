@@ -55,7 +55,7 @@ private:
 
 	void change_key_mode(const key_mode_t &mode, const bool &force_callback = false);
 	/**
-	 * @brief キーの状態を更新
+	 * @brief キーの状態を更新, 排他制御してないので上位でロックすること
 	 * 
 	 * @param event 
 	 * @param handled
@@ -111,7 +111,7 @@ private:
 	 */
 	bool is_long_pressed(const int &key);
 	/**
-	 * @brief 指定したキーのタップカウントを取得
+	 * @brief 指定したキーのタップカウントを取得, 排他制御してないので上位でロックすること
 	 * 
 	 * @param key 
 	 * @return int
