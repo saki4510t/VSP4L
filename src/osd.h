@@ -16,8 +16,11 @@ class OSD {
 private:
 	int page;
 
-	void draw_version(const ImVec4 &rect);
-	void draw_settings_1(const ImVec4 &rect);
+	/**
+	 * @brief 機器情報画面
+	*/
+	void draw_version();
+	void draw_settings_1();
 protected:
 public:
 	/**
@@ -42,7 +45,7 @@ public:
 	 * @brief OSD表示の描画処理
 	 *
 	 */
-	void draw();
+	void draw(ImFont *large_font);
 };
 
 }   // namespace serenegiant::app

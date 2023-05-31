@@ -47,6 +47,8 @@ namespace serenegiant::app {
 #define MODE_ICON_TEX_SZ (192)
 // ウオッチドッグをリセットする頻度[フレーム数]
 #define RESET_WATCHDOG_CNT (25)
+// カレントパスの取得用バッファサイズ
+#define PATH_SIZE (512)
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -194,6 +196,9 @@ void EyeApp::on_start() {
 
 	req_change_matrix = true;
 
+	char current_path[PATH_SIZE];
+    getcwd(current_path, PATH_SIZE);
+	LOGD("current=%s", current_path);
 	// imguiの追加設定
     ImGuiIO& io = ImGui::GetIO();
 	// 最初に読み込んだのがデフォルトのフォントになる
@@ -447,7 +452,7 @@ void EyeApp::handle_draw_gui() {
 		ImGui::End();
 	}
 	if (show_osd) {
-		osd.draw();
+		osd.draw(large_font);
 	}
 
 	// Rendering
