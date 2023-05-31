@@ -60,7 +60,7 @@ private:
 	effect_t current_effect;
 	// モデルビュー変換行列
 	math::Matrix mvp_matrix;
-	// 拡大縮小インデックス[0,NUM_ZOOM_FACTOR)
+	// 拡大縮小インデックス[0,NUM_ZOOM_FACTORS)
 	int zoom_ix;
 	// 輝度インデックス[1,10]
 	int brightness_ix;

@@ -5,7 +5,7 @@
  * @brief 拡大縮小倍率
  * 
  */
-float ZOOM_FACTOR[] = {
+float ZOOM_FACTORS[] = {
 	0.2f,	// 0
 	0.3f,	// 1
 	0.4f,	// 2
@@ -27,6 +27,6 @@ float ZOOM_FACTOR[] = {
 	4.0f,	// 18
 };
 
-const int NUM_ZOOM_FACTOR = NUM_ARRAY_ELEMENTS(ZOOM_FACTOR);
+const int NUM_ZOOM_FACTORS = NUM_ARRAY_ELEMENTS(ZOOM_FACTORS);
 
 const int DEFAULT_ZOOM_IX = 8;

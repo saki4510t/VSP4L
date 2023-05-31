@@ -29,12 +29,12 @@ typedef enum {
  * @brief 拡大縮小倍率
  * 
  */
-extern float ZOOM_FACTOR[];
+extern float ZOOM_FACTORS[];
 /**
  * @brief 拡大縮小倍率の数
  * 
  */
-extern const int NUM_ZOOM_FACTOR;
+extern const int NUM_ZOOM_FACTORS;
 /**
  * @brief デフォルトの拡大縮小率のインデックス
  * 

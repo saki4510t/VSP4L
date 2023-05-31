@@ -72,7 +72,7 @@ EyeApp::EyeApp(const int &gl_version)
 {
     ENTER();
 
-	mvp_matrix.scale(ZOOM_FACTOR[zoom_ix]);
+	mvp_matrix.scale(ZOOM_FACTORS[zoom_ix]);
 	key_dispatcher
 		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
 			LOGD("key_mode=%d", key_mode);
@@ -453,7 +453,7 @@ void EyeApp::handle_draw_gui() {
 		}
 		if (LIKELY(large_font)) {
 			ImGui::SameLine();
-			const auto factor = ZOOM_FACTOR[zoom_ix];
+			const auto factor = ZOOM_FACTORS[zoom_ix];
 			ImGui::PushFont(large_font);
 			ImGui::Text("%3.1f", factor);
 			ImGui::PopFont();
@@ -525,13 +525,13 @@ void EyeApp::request_change_scale(const bool &inc_dec) {
 	int ix = zoom_ix + (inc_dec ? 1 : -1);
 	if (ix < 0) {
 		ix = 0;
-	} else if (ix >= NUM_ZOOM_FACTOR) {
-		ix = NUM_ZOOM_FACTOR - 1;
+	} else if (ix >= NUM_ZOOM_FACTORS) {
+		ix = NUM_ZOOM_FACTORS - 1;
 	}
 	if (ix != zoom_ix) {
 		LOGD("ix=%d", ix);
 		zoom_ix = ix;
-		auto factor = ZOOM_FACTOR[ix];
+		auto factor = ZOOM_FACTORS[ix];
 		mvp_matrix.setScale(factor, factor, 1.0f);
 		req_change_matrix = true;
 	}
