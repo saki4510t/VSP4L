@@ -63,7 +63,7 @@ EyeApp::EyeApp(const int &gl_version)
 	source(nullptr), renderer_pipeline(nullptr),
 	offscreen(nullptr), gl_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
-	effect_type(EFFECT_NON), current_effect(EFFECT_NON),
+	req_effect_type(EFFECT_NON), current_effect(req_effect_type),
 	key_dispatcher(handler),
 	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX), brightness_ix(5),
 	reset_mode_task(nullptr),
@@ -336,8 +336,8 @@ void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &render
 	if (UNLIKELY(req_change_effect)) {
 		std::lock_guard<std::mutex> lock(state_lock);
 		req_change_effect = false;
-		if (current_effect != effect_type) {
-			current_effect = effect_type;
+		if (current_effect != req_effect_type) {
+			current_effect = req_effect_type;
 			renderer.reset();
 		}
 	}
@@ -549,8 +549,8 @@ void EyeApp::request_change_effect(const effect_t &effect) {
 
 	LOGD("effect=%d", effect);
 	std::lock_guard<std::mutex> lock(state_lock);
-	const bool changed = effect_type != effect;
-	effect_type = effect;
+	const bool changed = req_effect_type != effect;
+	req_effect_type = effect;
 	req_change_effect = changed;
 
 	EXIT();

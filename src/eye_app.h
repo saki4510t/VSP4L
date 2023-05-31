@@ -56,7 +56,7 @@ private:
 	volatile bool req_change_matrix;
 	// 映像フリーズ要求
 	volatile bool req_freeze;
-	effect_t effect_type;
+	effect_t req_effect_type;
 	effect_t current_effect;
 	// モデルビュー変換行列
 	math::Matrix mvp_matrix;
