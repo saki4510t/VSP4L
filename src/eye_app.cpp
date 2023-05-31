@@ -395,10 +395,13 @@ void EyeApp::handle_draw_gui() {
 		}
 		ImGui::End();
 	}
+	// static bool show_demo = true;
+	// ImGui::ShowDemoWindow(&show_demo);
 #endif
 	const static ImVec2 icon_size(MODE_ICON_SZ, MODE_ICON_SZ);
 	const static ImVec2 pivot(0.5f, 0.5f);
-    const ImGuiWindowFlags window_flags
+	const static ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left
+    const static ImGuiWindowFlags window_flags
 		= ImGuiWindowFlags_NoDecoration
 		| ImGuiWindowFlags_NoMove
 		| ImGuiWindowFlags_NoTitleBar
@@ -421,8 +424,10 @@ void EyeApp::handle_draw_gui() {
 		ImGui::SetNextWindowBgAlpha(MODE_BK_ALPHA);
 		ImGui::Begin("Brightness", &show_brightness, window_flags);
 		if (LIKELY(icon_brightness)) {
+			// デフォルトだとテクスチャサイズを2のべき乗に繰り上げるのでイメージサイズよりテクスチャのほうが大きい可能性があるため左下UV座標を調整
+			const ImVec2 uv_max = ImVec2(icon_brightness->getTexScaleX(), icon_brightness->getTexScaleY());	// Lower-right
 			icon_brightness->bind();
-			ImGui::Image(reinterpret_cast <void*>(icon_brightness->getTexture()), icon_size);// FIXME 位置がおかしい
+			ImGui::Image(reinterpret_cast <void*>(icon_brightness->getTexture()), icon_size, uv_min, uv_max);
 			icon_brightness->unbind();
 		}
 		if (LIKELY(large_font)) {
@@ -447,8 +452,10 @@ void EyeApp::handle_draw_gui() {
 		ImGui::SetNextWindowBgAlpha(MODE_BK_ALPHA);
 		ImGui::Begin("Zoom", &show_zoom, window_flags);
 		if (LIKELY(icon_zoom)) {
+			// デフォルトだとテクスチャサイズを2のべき乗に繰り上げるのでイメージサイズよりテクスチャのほうが大きい可能性があるため左下UV座標を調整
+			const ImVec2 uv_max = ImVec2(icon_zoom->getTexScaleX(), icon_zoom->getTexScaleY());	// Lower-right
 			icon_zoom->bind();
-			ImGui::Image(reinterpret_cast <void*>(icon_zoom->getTexture()), icon_size);	// FIXME 位置がおかしい
+			ImGui::Image(reinterpret_cast <void*>(icon_zoom->getTexture()), icon_size, uv_min, uv_max);
 			icon_zoom->unbind();
 		}
 		if (LIKELY(large_font)) {
