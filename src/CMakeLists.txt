@@ -84,10 +84,11 @@ add_subdirectory(${lib_src_DIR}/common)
 
 add_executable(${target}
     const.cpp
-    window.cpp
-    key_dispatcher.cpp
     eye_app.cpp
+    key_dispatcher.cpp
     main.cpp
+    osd.cpp
+    window.cpp
 )
 
 # ターゲットアプリのビルド設定

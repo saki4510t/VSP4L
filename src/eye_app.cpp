@@ -68,7 +68,8 @@ EyeApp::EyeApp(const int &gl_version)
 	mvp_matrix(), zoom_ix(DEFAULT_ZOOM_IX), brightness_ix(5),
 	reset_mode_task(nullptr),
 	default_font(nullptr), large_font(nullptr),
-	show_brightness(false), show_zoom(false), show_osd(false)
+	show_brightness(false), show_zoom(false),
+	show_osd(false), osd()
 {
     ENTER();
 
@@ -96,7 +97,7 @@ EyeApp::EyeApp(const int &gl_version)
 			request_change_osd(onoff);
 		})
 		.set_osd_key_event([this](const KeyEvent &event) {
-			on_osd_key(event);
+			osd.on_key(event);
 		});
 	// キーイベントハンドラを登録
 	window
@@ -453,6 +454,10 @@ void EyeApp::handle_draw_gui() {
 		}
 		ImGui::End();
 	}
+	if (show_osd) {
+		osd.draw();
+	}
+
 	// Rendering
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -604,22 +609,6 @@ void EyeApp::request_change_osd(const bool &onoff) {
 
 	LOGD("onoff=%d", onoff);
 	// FIXME 未実装 OSD表示の表示の切り替え
-
-	EXIT();
-}
-
-/**
- * @brief OSD表示中のキーイベント
- * 
- * @param event 
- */
-void EyeApp::on_osd_key(const KeyEvent &event) {
-	ENTER();
-
-	LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d",
-		event.key, event.scancode, glfwGetKeyName(event.key, event.scancode),
-		event.action, event.mods);
-	// FIXME 未実装 OSD表示中のキーイベント処理
 
 	EXIT();
 }

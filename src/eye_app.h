@@ -18,6 +18,7 @@
 #include "const.h"
 #include "key_event.h"
 #include "key_dispatcher.h"
+#include "osd.h"
 #include "window.h"
 
 namespace pipeline = serenegiant::pipeline;
@@ -76,6 +77,7 @@ private:
 	gl::GLTextureSp icon_zoom;
 	// OSDモード用
 	bool show_osd;
+	OSD osd;
 
 	/**
 	 * @brief 一定時間後にキーモードをリセットする
@@ -124,12 +126,6 @@ private:
 	 * @param onoff 
 	 */
 	void request_change_osd(const bool &onoff);
-	/**
-	 * @brief OSD表示中のキーイベント
-	 * 
-	 * @param event 
-	 */
-	void on_osd_key(const KeyEvent &event);
 
 	/**
 	 * @brief Create a renderer object
