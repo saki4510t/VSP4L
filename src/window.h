@@ -23,14 +23,15 @@
 #include "imgui_impl_opengl3.h"		// フラグメントシェーダー等を使う場合はこっち
 // #include "imgui_impl_opengl2.h"	// これは昔の固定パイプラインを使うときのバックエンド
 
+#include "key_event.h"
+
 namespace serenegiant::app {
 
 typedef std::function<void(GLFWwindow *win)> OnStartFunc;
 typedef std::function<void(GLFWwindow *win)> OnStopFunc;
 typedef std::function<void(GLFWwindow *win)> OnRenderFunc;
-// FIXME OnKeyEventFuncは返り値をKeyEventにしたほうがキーコードを
-//       上書きしやすいかもしれない(複数キー同時押しをENTERに割り当てるなど)
-typedef std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
+// 複数キー同時押しをENTERに割り当てるなどキーイベントを上書きできるようにKeyEventを返す
+typedef std::function<KeyEvent(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
 
 /**
  * glfwによるwindow関係の処理用ヘルパークラス

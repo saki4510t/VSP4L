@@ -170,15 +170,12 @@ void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, in
 	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(win));
 	if (self && self->on_key_event_func) {
 		// コールバックが設定されていればそれを呼び出す
-		self->on_key_event_func(key, scancode, action, mods);
-#if 0
-		// ここでprev_key_callbackを呼び出せばimgui自体のキーコールバックが呼ばれる
-		// いまはimgui自体のキーコールバックの代わりにOSDクラスでほぼ等価な処理を
-		// 行えるようにprev_key_callbackを呼び出さない
-		if (self->prev_key_callback) {
-			self->prev_key_callback(self->window, key, scancode, action, mods);
+		const auto event = self->on_key_event_func(key, scancode, action, mods);
+		if ((event.key != GLFW_KEY_UNKNOWN) && self->prev_key_callback) {
+			// ここでprev_key_callbackを呼び出せばimgui自体のキーコールバックが呼ばれる
+			// キーが有効な場合のみprev_key_callbackを呼び出す
+			self->prev_key_callback(self->window, event.key, event.scancode, event.action, event.mods);
 		}
-#endif
 	}
 
 	EXIT();

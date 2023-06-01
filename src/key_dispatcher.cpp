@@ -137,10 +137,10 @@ void KeyDispatcher::reset_key_mode() {
  * 4種類だけキー処理を行う
  *
  * @param event
- * @return int
+ * @return KeyEvent
  */
 /*public*/
-int KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
+KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 	ENTER();
 
 	int result = 0;
@@ -172,9 +172,15 @@ int KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 	if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
 		// OSDモードのときは未処理のすべてのキーイベントをOSDクラスへ送る
 		osd_key_event(event);
+		result = 1;
+	}
+	if (result/*handled*/) {
+		// 処理済みならkeyをGLFW_KEY_UNKNOWNに変更して返す
+		RET(KeyEvent(GLFW_KEY_UNKNOWN, event.scancode, event.action, event.mods));
+	} else {
+		RET(event);
 	}
 
-	RETURN(result, int);
 }
 
 //--------------------------------------------------------------------------------

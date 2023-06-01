@@ -376,9 +376,9 @@ public:
 	 * 4種類だけキー処理を行う
 	 *
 	 * @param event
-	 * @return int
+	 * @return KeyEvent
 	 */
-	int handle_on_key_event(const KeyEvent &event);
+	KeyEvent handle_on_key_event(const KeyEvent &event);
 };
 
 }   // namespace serenegiant::app
