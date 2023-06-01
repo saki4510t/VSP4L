@@ -13,6 +13,12 @@ const char *MODEL = "BOV01";
 const char *VERSION = "v0.0.0";
 
 /**
+ * @brief レンズ補正係数
+ * 
+ */
+const float LENSE_FACTOR = 1.0f;
+
+/**
  * @brief 拡大縮小倍率
  * 
  */

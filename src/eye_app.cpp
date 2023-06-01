@@ -570,7 +570,7 @@ void EyeApp::request_change_scale(const bool &inc_dec) {
 		LOGD("ix=%d", ix);
 		zoom_ix = ix;
 		auto factor = ZOOM_FACTORS[ix];
-		mvp_matrix.setScale(factor, factor, 1.0f);
+		mvp_matrix.setScale(factor, LENSE_FACTOR * factor, 1.0f);
 		req_change_matrix = true;
 	}
 

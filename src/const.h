@@ -53,6 +53,12 @@ typedef enum {
 } exp_mode_t;
 
 /**
+ * @brief レンズ補正係数
+ * 
+ */
+extern const float LENSE_FACTOR;
+
+/**
  * @brief 拡大縮小倍率配列
  * 
  */
