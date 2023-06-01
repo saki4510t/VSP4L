@@ -98,6 +98,9 @@ EyeApp::EyeApp(const int &gl_version)
 		.set_on_freeze_changed([this](const bool &onoff){
 			request_change_freeze(onoff);
 		})
+		.set_exp_mode_changed([this](const exp_mode_t &exp_mode) {
+			request_change_exp_mode(exp_mode);
+		})
 		.set_osd_key_event([this](const KeyEvent &event) {
 			osd.on_key(event);
 		});
@@ -601,6 +604,20 @@ void EyeApp::request_change_freeze(const bool &onoff) {
 
 	LOGD("onoff=%d", onoff);
 	req_freeze = onoff;
+
+	EXIT();
+}
+
+/**
+ * @brief 測光モード切替要求
+ * 
+ * @param exp_mode 
+ */
+void EyeApp::request_change_exp_mode(const exp_mode_t &exp_mode) {
+	ENTER();
+
+	LOGD("exp_mode=%d", exp_mode);
+	// FIXME 実際の測光モード切り替え処理は未実装
 
 	EXIT();
 }

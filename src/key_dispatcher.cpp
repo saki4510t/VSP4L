@@ -990,8 +990,34 @@ int KeyDispatcher::on_tap_triple_normal(const KeyEvent &event) {
 	ENTER();
 
 	int result = 0;
-	const auto key = event.key;
-	// FIXME 未実装
+	const auto n = num_pressed();
+	LOGD("num_pressed=%d", n);
+	if (!n) {
+		// 単独でキー操作したときのみ受け付ける
+		// キーアップイベントからくるので他にキーが押されていなければ0
+		const auto key = event.key;
+		switch (key) {
+		case GLFW_KEY_RIGHT:
+		case GLFW_KEY_LEFT:
+			// 測光モードを平均測光へ
+			if (on_exp_mode_changed) {
+				on_exp_mode_changed(EXP_MODE_AVERAGE);
+			}
+			result = 1;
+			break;
+		case GLFW_KEY_DOWN:
+		case GLFW_KEY_UP:
+			// 測光モードを中央測光へ
+			if (on_exp_mode_changed) {
+				on_exp_mode_changed(EXP_MODE_CENTER);
+			}
+			result = 1;
+			break;
+		default:
+			LOGW("unexpected key code,%d", key);
+			break;
+		}
+	}
 
 	RETURN(result, int);
 }

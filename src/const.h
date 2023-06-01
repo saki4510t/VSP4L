@@ -44,6 +44,15 @@ typedef enum {
 } effect_t;
 
 /**
+ * @brief 測光モード
+ * 
+ */
+typedef enum {
+	EXP_MODE_AVERAGE = 0,	// 平均測光
+	EXP_MODE_CENTER,		// 中央測光
+} exp_mode_t;
+
+/**
  * @brief 拡大縮小倍率配列
  * 
  */

@@ -17,6 +17,7 @@ typedef std::function<void(const bool &/*inc_dec*/)> OnBrightnessChangedFunc;
 typedef std::function<void(const bool &/*inc_dec*/)> OnScaleChangedFunc;
 typedef std::function<void(const effect_t &/*effect*/)> OnEffectChangedFunc;
 typedef std::function<void(const bool &/*onoff*/)> OnFreezeChangedFunc;
+typedef std::function<void(const exp_mode_t &/*exp_mode*/)> OnExposureModeChangedFunc;
 typedef std::function<void(const KeyEvent &event)> OSDKeyEventFunc;
 
 // privateクラスの前方参照宣言
@@ -48,6 +49,7 @@ private:
 	OnScaleChangedFunc on_scale_changed;
 	OnEffectChangedFunc on_effect_changed;
 	OnFreezeChangedFunc on_freeze_changed;
+	OnExposureModeChangedFunc on_exp_mode_changed;
 	OSDKeyEventFunc osd_key_event;
 
 	void change_key_mode(const key_mode_t &mode, const bool &force_callback = false);
@@ -357,6 +359,16 @@ public:
 	 */
 	inline KeyDispatcher &set_on_freeze_changed(OnFreezeChangedFunc callback) {
 		on_freeze_changed = callback;
+		return *this;
+	}
+	/**
+	 * @brief 測光モードが切り替わるときのコールバックをセット
+	 * 
+	 * @param callback 
+	 * @return KeyDispatcher& 
+	 */
+	inline KeyDispatcher &set_exp_mode_changed(OnExposureModeChangedFunc callback) {
+		on_exp_mode_changed = callback;
 		return *this;
 	}
 	/**

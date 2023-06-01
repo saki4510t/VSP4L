@@ -124,6 +124,12 @@ private:
 	 * @param onoff 
 	 */
 	void request_change_freeze(const bool &onoff);
+	/**
+	 * @brief 測光モード切替要求
+	 * 
+	 * @param exp_mode 
+	 */
+	void request_change_exp_mode(const exp_mode_t &exp_mode);
 
 	/**
 	 * @brief Create a renderer object

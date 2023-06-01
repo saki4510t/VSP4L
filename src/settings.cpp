@@ -22,82 +22,82 @@ namespace serenegiant::app {
 
 AppSettings::AppSettings()
 {
-    ENTER();
-    EXIT();
+	ENTER();
+	EXIT();
 }
 
 AppSettings::~AppSettings() {
-    ENTER();
-    EXIT();
+	ENTER();
+	EXIT();
 }
 
 //--------------------------------------------------------------------------------
 CameraSettings::CameraSettings()
 {
-    ENTER();
-    EXIT();
+	ENTER();
+	EXIT();
 }
 
 CameraSettings::~CameraSettings() {
-    ENTER();
-    EXIT();
+	ENTER();
+	EXIT();
 }
 
 //--------------------------------------------------------------------------------
 /**
  * @brief アプリ設定を保存
- * 
- * @param settings 
- * @return int 
+ *
+ * @param settings
+ * @return int
  */
 int save(const AppSettings &settings) {
-    ENTER();
+	ENTER();
 
-    // FIXME 未実装
+	// FIXME 未実装
 
-    RETURN(0, int);
+	RETURN(0, int);
 }
 
 /**
  * @brief アプリ設定を読み込み
- * 
- * @param settings 
- * @return int 
+ *
+ * @param settings
+ * @return int
  */
 int load(AppSettings &settings) {
-    ENTER();
+	ENTER();
 
-    // FIXME 未実装
+	// FIXME 未実装
 
-    RETURN(0, int);
+	RETURN(0, int);
 }
 
 /**
  * @brief カメラ設定を保存
- * 
- * @param settings 
- * @return int 
+ *
+ * @param settings
+ * @return int
  */
 int save(const CameraSettings &settings) {
-    ENTER();
+	ENTER();
 
-    // FIXME 未実装
+	// FIXME 未実装
 
-    RETURN(0, int);
+	RETURN(0, int);
 }
 
 /**
  * @brief カメラ設定を読み込み
- * 
- * @param settings 
- * @return int 
+ *
+ * @param settings
+ * @return int
  */
 int load(CameraSettings &settings) {
-    ENTER();
+	ENTER();
 
-    // FIXME 未実装
+	// FIXME 未実装
 
-    RETURN(0, int);
+	RETURN(0, int);
 }
 
 }   // namespace serenegiant::app
