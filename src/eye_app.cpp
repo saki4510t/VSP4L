@@ -58,6 +58,7 @@ namespace serenegiant::app {
 EyeApp::EyeApp(const int &gl_version)
 :   gl_version(gl_version),
 	initialized(!Window::initialize()),
+	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
 	source(nullptr), renderer_pipeline(nullptr),
 	offscreen(nullptr), gl_renderer(nullptr),
@@ -72,6 +73,7 @@ EyeApp::EyeApp(const int &gl_version)
 {
     ENTER();
 
+	load(app_settings);
 	mvp_matrix.scale(ZOOM_FACTORS[zoom_ix]);
 	key_dispatcher
 		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
@@ -176,6 +178,7 @@ void EyeApp::run() {
 void EyeApp::on_start() {
     ENTER();
 
+	load(camera_settings);
     source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
 	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
 		LOGE("カメラをオープンできなかった");

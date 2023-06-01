@@ -3,6 +3,7 @@
 
 #include "const.h"
 #include "key_event.h"
+#include "settings.h"
 #include "window.h"
 
 namespace serenegiant::app {
@@ -19,6 +20,8 @@ typedef std::function<void(void)> OnOSDCloseFunc;
 class OSD {
 private:
 	int page;
+	AppSettings app_settings;
+	CameraSettings camera_settings;
 
 	OnOSDCloseFunc on_osd_close;
 

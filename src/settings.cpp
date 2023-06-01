@@ -43,4 +43,61 @@ CameraSettings::~CameraSettings() {
     EXIT();
 }
 
+//--------------------------------------------------------------------------------
+/**
+ * @brief アプリ設定を保存
+ * 
+ * @param settings 
+ * @return int 
+ */
+int save(const AppSettings &settings) {
+    ENTER();
+
+    // FIXME 未実装
+
+    RETURN(0, int);
+}
+
+/**
+ * @brief アプリ設定を読み込み
+ * 
+ * @param settings 
+ * @return int 
+ */
+int load(AppSettings &settings) {
+    ENTER();
+
+    // FIXME 未実装
+
+    RETURN(0, int);
+}
+
+/**
+ * @brief カメラ設定を保存
+ * 
+ * @param settings 
+ * @return int 
+ */
+int save(const CameraSettings &settings) {
+    ENTER();
+
+    // FIXME 未実装
+
+    RETURN(0, int);
+}
+
+/**
+ * @brief カメラ設定を読み込み
+ * 
+ * @param settings 
+ * @return int 
+ */
+int load(CameraSettings &settings) {
+    ENTER();
+
+    // FIXME 未実装
+
+    RETURN(0, int);
+}
+
 }   // namespace serenegiant::app

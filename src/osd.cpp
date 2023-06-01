@@ -33,7 +33,8 @@ static ImGuiKey ImGui_ImplGlfw_KeyToImGuiKey(const int &key);
  */
 /*public*/
 OSD::OSD()
-:	page(DEFAULE_PAGE)
+:	page(DEFAULE_PAGE),
+	app_settings(), camera_settings()
 {
 	ENTER();
 
@@ -66,6 +67,8 @@ void OSD::prepare() {
 	page = DEFAULE_PAGE;
 
 	// FIXME 未実装 設定値を読み込む等
+	load(app_settings);
+	load(camera_settings);
 
 	EXIT();
 }
@@ -154,6 +157,9 @@ void OSD::save() {
 	ENTER();
 
 	// FIXME 未実装 保存処理
+	serenegiant::app::save(app_settings);
+	serenegiant::app::save(camera_settings);
+
 	if (on_osd_close) {
 		on_osd_close();
 	}

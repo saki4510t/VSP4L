@@ -19,6 +19,7 @@
 #include "key_event.h"
 #include "key_dispatcher.h"
 #include "osd.h"
+#include "settings.h"
 #include "window.h"
 
 namespace pipeline = serenegiant::pipeline;
@@ -30,6 +31,9 @@ class EyeApp {
 private:
 	const int gl_version;
 	const bool initialized;
+	AppSettings app_settings;
+	CameraSettings camera_settings;
+
 	// 非同期実行用Handler
 	thread::Handler handler;
 	// 一定時間後にキーモードをリセットするタスク
