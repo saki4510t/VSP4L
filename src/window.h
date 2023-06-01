@@ -28,8 +28,7 @@
 
 namespace serenegiant::app {
 
-typedef std::function<void(GLFWwindow *win)> OnStartFunc;
-typedef std::function<void(GLFWwindow *win)> OnStopFunc;
+typedef std::function<void(GLFWwindow *win)> LifeCycletEventFunc;
 typedef std::function<void(GLFWwindow *win)> OnRenderFunc;
 // 複数キー同時押しをENTERに割り当てるなどキーイベントを上書きできるようにKeyEventを返す
 typedef std::function<KeyEvent(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
@@ -48,8 +47,8 @@ private:
 	int fb_height;
 	GLFWkeyfun prev_key_callback;
 	OnKeyEventFunc on_key_event_func;
-	OnStartFunc on_start;
-	OnStopFunc on_stop;
+	LifeCycletEventFunc on_start;
+	LifeCycletEventFunc on_stop;
 	OnRenderFunc on_render;
 
 	void init_gl();
@@ -74,14 +73,14 @@ public:
 
 	/**
 	 * @brief 描画スレッドを開始する
-	 * 
-	 * @return int 
+	 *
+	 * @return int
 	 */
 	int start(OnRenderFunc render_func);
 	/**
 	 * @brief 描画スレッドを終了する
-	 * 
-	 * @return int 
+	 *
+	 * @return int
 	 */
 	int stop();
 
@@ -91,32 +90,32 @@ public:
 	inline GLfloat get_aspect() const { return aspect; };
 	/**
 	 * @brief フレームバッファの幅を取得
-	 * 
-	 * @return int 
+	 *
+	 * @return int
 	 */
 	inline int width() const { return fb_width; };
 	/**
 	 * @brief フレームバッファの高さを取得
-	 * 
-	 * @return int 
+	 *
+	 * @return int
 	 */
 	inline int height() const { return fb_height; };
 
 	/**
 	 * @brief キーイベント発生時のハンドラーを登録
-	 * 
-	 * @param listener 
-	 * @return Window& 
+	 *
+	 * @param listener
+	 * @return Window&
 	 */
 	inline Window &on_key_event(OnKeyEventFunc listener) {
 		on_key_event_func = listener;
 		return *this;
 	}
-	inline Window &set_on_start(OnStartFunc callback) {
+	inline Window &set_on_start(LifeCycletEventFunc callback) {
 		on_start = callback;
 		return *this;
 	}
-	inline Window &set_on_stop(OnStopFunc callback) {
+	inline Window &set_on_stop(LifeCycletEventFunc callback) {
 		on_stop = callback;
 		return *this;
 	}
