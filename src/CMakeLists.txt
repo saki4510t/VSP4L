@@ -88,6 +88,7 @@ add_executable(${target}
     key_dispatcher.cpp
     main.cpp
     osd.cpp
+    settings.cpp
     window.cpp
 )
 
