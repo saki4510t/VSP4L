@@ -1,7 +1,12 @@
 #ifndef CONST_H_
 #define CONST_H_
 
+#include <unistd.h>
+#include <inttypes.h>
+#include <cinttypes>
+#include <stdint.h>
 #include <string>
+#include <memory>
 
 /**
  * @brief モデル文字列

@@ -8,11 +8,10 @@
 #ifndef KEY_EVENT_H_
 #define KEY_EVENT_H_
 
-#include <memory>
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "const.h"
 #include "key_state.h"
 
 namespace serenegiant::app {

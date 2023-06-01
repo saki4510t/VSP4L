@@ -1,6 +1,7 @@
 #ifndef OSD_H_
 #define OSD_H_
 
+#include "const.h"
 #include "key_event.h"
 #include "window.h"
 

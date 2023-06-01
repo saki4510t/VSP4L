@@ -1,6 +1,8 @@
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
 
+#include "const.h"
+
 namespace serenegiant::app {
 
 /**

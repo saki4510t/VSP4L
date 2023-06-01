@@ -8,8 +8,7 @@
 #ifndef KEY_STATE_H_
 #define KEY_STATE_H_
 
-#include <memory>
-
+#include "const.h"
 #include "times.h"
 
 namespace serenegiant::app {
