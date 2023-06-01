@@ -56,6 +56,18 @@ private:
 	 * 
 	 */
 	void draw_adjust_1();
+
+	/**
+	 * @brief デフォルトのボタン幅を取得
+	 * 
+	 * @return float 
+	 */
+	float get_button_width();
+	/**
+	 * @brief デフォルトのボタンを描画する
+	 * 
+	 */
+	void draw_buttons_default();
 protected:
 public:
 	/**
@@ -68,6 +80,12 @@ public:
 	 *
 	 */
 	~OSD();
+
+	/**
+	 * @brief OSD表示の準備
+	 * 
+	 */
+	void prepare();
 
 	/**
 	 * @brief OSD表示中のキー入力

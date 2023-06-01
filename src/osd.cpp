@@ -20,6 +20,8 @@ namespace serenegiant::app {
 // 輝度調整・拡大縮小率モード表示の背景アルファ
 #define OSD_BK_ALPHA (0.5f)
 #define OSD_FRAME_PADDING (30)
+// デフォルトの表示ページ
+#define DEFAULE_PAGE (PAGE_SETTINGS_1)
 
 // 前方参照宣言
 static int ImGui_ImplGlfw_TranslateUntranslatedKey(int key, int scancode);
@@ -31,7 +33,7 @@ static ImGuiKey ImGui_ImplGlfw_KeyToImGuiKey(const int &key);
  */
 /*public*/
 OSD::OSD()
-:	page(PAGE_SETTINGS_1)
+:	page(DEFAULE_PAGE)
 {
 	ENTER();
 
@@ -49,6 +51,21 @@ OSD::~OSD() {
 	ENTER();
 
 	// FIXME 未実装
+
+	EXIT();
+}
+
+/**
+ * @brief OSD表示の準備
+ * 
+ */
+void OSD::prepare() {
+	ENTER();
+
+	// とりあえずデフォルトの表示ページに変更するだけ
+	page = DEFAULE_PAGE;
+
+	// FIXME 未実装 設定値を読み込む等
 
 	EXIT();
 }
@@ -189,6 +206,7 @@ void OSD::next() {
 	EXIT();
 }
 
+//--------------------------------------------------------------------------------
 /**
  * @brief 機器情報画面
  */
@@ -196,9 +214,7 @@ void OSD::next() {
 void OSD::draw_version() {
 	ENTER();
 
-    const auto style = ImGui::GetStyle();
-	const auto padding = style.WindowPadding.x;
-	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
+	const auto button_width = get_button_width();
 	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
 
 	// ラベルを描画(左半分)
@@ -226,7 +242,8 @@ void OSD::draw_version() {
 		ImGui::Spacing();
 	}
 	ImGui::EndGroup();
-	if (ImGui::Button("RETURN", size)) {
+
+	if (ImGui::Button("CANCEL", size)) {
 		cancel();
 	}
 
@@ -241,10 +258,7 @@ void OSD::draw_version() {
 void OSD::draw_settings_1() {
 	ENTER();
 
-    const auto style = ImGui::GetStyle();
-	const auto padding = style.WindowPadding.x;
-	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
-	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
+	const auto button_width = get_button_width();
 
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
@@ -272,24 +286,7 @@ void OSD::draw_settings_1() {
 	}
 	ImGui::EndGroup();
 
-	if (ImGui::Button("RETURN", size)) {
-		cancel();
-	}
-
-	ImGui::SameLine(); ImGui::SetCursorPosX(button_width + padding);
-	if (ImGui::Button("SAVE", size)) {
-		save();
-	}
-
-	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 2 + padding);
-	if (ImGui::Button("INFO", size)) {
-		prev();
-	}
-
-	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 3 + padding);
-	if (ImGui::Button("NEXT", size)) {
-		next();
-	}
+	draw_buttons_default();
 
 	EXIT();
 }
@@ -302,10 +299,7 @@ void OSD::draw_settings_1() {
 void OSD::draw_adjust_1() {
 	ENTER();
 
-    const auto style = ImGui::GetStyle();
-	const auto padding = style.WindowPadding.x;
-	const auto button_width = (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
-	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
+	const auto button_width = get_button_width();
 
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
@@ -341,7 +335,36 @@ void OSD::draw_adjust_1() {
 	}
 	ImGui::EndGroup();
 
-	if (ImGui::Button("RETURN", size)) {
+	draw_buttons_default();
+
+	EXIT();
+}
+
+//--------------------------------------------------------------------------------
+/**
+ * @brief デフォルトのボタン幅を取得
+ * 
+ * @return float 
+ */
+float OSD::get_button_width() {
+    const auto style = ImGui::GetStyle();
+	const auto padding = style.WindowPadding.x;
+	return (ImGui::GetWindowWidth() - padding * 2) / 4.0f;
+}
+
+/**
+ * @brief デフォルトのボタンを描画する
+ * 
+ */
+void OSD::draw_buttons_default() {
+	ENTER();
+
+    const auto style = ImGui::GetStyle();
+	const auto padding = style.WindowPadding.x;
+	const auto button_width	=(ImGui::GetWindowWidth() - padding * 2) / 4.0f;
+	const auto size = ImVec2(button_width - 8/*ちょっとだけスペースが開くように*/, 0);
+
+	if (ImGui::Button("CANCEL", size)) {
 		cancel();
 	}
 

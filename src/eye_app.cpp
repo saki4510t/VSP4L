@@ -508,6 +508,7 @@ void EyeApp::on_key_mode_changed(const key_mode_t &key_mode) {
 		break;
 	case KEY_MODE_OSD:
 		show_brightness = show_zoom = false;
+		osd.prepare();
 		show_osd = true;
 		break;
 	case KEY_MODE_NORMAL:
