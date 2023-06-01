@@ -62,6 +62,7 @@ Window::Window(const int width, const int height, const char *title)
 :	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
 	running(false), renderer_thread(),
 	aspect(640 / 480.0f), fb_width(width), fb_height(height),
+	prev_key_callback(nullptr),
 	on_key_event_func(nullptr),
 	on_start(nullptr), on_stop(nullptr), on_render(nullptr)
 {
@@ -72,8 +73,6 @@ Window::Window(const int width, const int height, const char *title)
 		glfwSetWindowUserPointer(window, this);
 		// ウインドウサイズが変更されたときのコールバックをセット
 		glfwSetWindowSizeCallback(window, resize);
-		// キー入力イベントコールバックをセット
-		glfwSetKeyCallback(window, key_callback);
 	}
 
 	EXIT();
@@ -172,6 +171,14 @@ void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, in
 	if (self && self->on_key_event_func) {
 		// コールバックが設定されていればそれを呼び出す
 		self->on_key_event_func(key, scancode, action, mods);
+#if 0
+		// ここでprev_key_callbackを呼び出せばimgui自体のキーコールバックが呼ばれる
+		// いまはimgui自体のキーコールバックの代わりにOSDクラスでほぼ等価な処理を
+		// 行えるようにprev_key_callbackを呼び出さない
+		if (self->prev_key_callback) {
+			self->prev_key_callback(self->window, key, scancode, action, mods);
+		}
+#endif
 	}
 
 	EXIT();
@@ -250,6 +257,12 @@ void Window::init_gl() {
 		resize(window, width(), height());
 		// IMGUIでのGUI描画用に初期化する
 		init_gui();
+
+		// XXX init_gui(imguiの初期化後)にキーイベントコールバックをセットすることで
+		//     imguiのキーコールバックを無効にする
+		// キー入力イベントコールバックをセット
+		prev_key_callback = glfwSetKeyCallback(window, key_callback);
+		LOGD("prev_key_callback=%p", prev_key_callback);
 	}
 
 	EXIT();
@@ -258,6 +271,11 @@ void Window::init_gl() {
 /*private,@WorkerThread*/
 void Window::terminate_gl() {
 	ENTER();
+
+	if (prev_key_callback) {
+		// 念のためにもとに戻しておく
+		glfwSetKeyCallback(window, prev_key_callback);
+	}
 
 	terminate_gui();
 
@@ -272,8 +290,8 @@ void Window::init_gui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.IniFilename = nullptr;	// 設定ファイルへの読み書きを行わない
 
     // Setup Dear ImGui style

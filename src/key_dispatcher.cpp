@@ -164,14 +164,14 @@ int KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 		default:
 			break;
 		}
-		if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
-			// OSDモードのときはキーイベントをカメラモジュール側へ送る
-			osd_key_event(event);
-		}
 	} else {
 		LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d",
 			key, event.scancode, glfwGetKeyName(key, event.scancode),
 			event.action, event.mods);
+	}
+	if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
+		// OSDモードのときは未処理のすべてのキーイベントをOSDクラスへ送る
+		osd_key_event(event);
 	}
 
 	RETURN(result, int);

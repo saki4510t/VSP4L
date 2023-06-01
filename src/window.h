@@ -28,6 +28,8 @@ namespace serenegiant::app {
 typedef std::function<void(GLFWwindow *win)> OnStartFunc;
 typedef std::function<void(GLFWwindow *win)> OnStopFunc;
 typedef std::function<void(GLFWwindow *win)> OnRenderFunc;
+// FIXME OnKeyEventFuncは返り値をKeyEventにしたほうがキーコードを
+//       上書きしやすいかもしれない(複数キー同時押しをENTERに割り当てるなど)
 typedef std::function<int32_t(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
 
 /**
@@ -42,6 +44,7 @@ private:
 	GLfloat aspect;
 	int fb_width;
 	int fb_height;
+	GLFWkeyfun prev_key_callback;
 	OnKeyEventFunc on_key_event_func;
 	OnStartFunc on_start;
 	OnStopFunc on_stop;
