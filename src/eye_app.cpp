@@ -116,9 +116,19 @@ EyeApp::EyeApp(const int &gl_version)
 		.set_on_pause([this](GLFWwindow *win) { on_pause(); })
 		.set_on_stop([this](GLFWwindow *win) { on_stop(); });
 	// OSD表示が終了したときのコールバック
-	osd.set_on_osd_close([this]() {
-		LOGD("on_osd_close");
+	osd.set_on_osd_close([this](const bool &changed) {
+		LOGD("on_osd_close, changed=%d", changed);
+		if (changed) {
+			// FIXME 未実装 設定を再ロードして適用する
+		} else {
+			// 一時的に変更されたかもしれないので元の設定に戻す
+			apply_settings(camera_settings);
+		}
 		key_dispatcher.reset_key_mode();
+	})
+	.set_on_camera_settings_changed([this](const CameraSettings &settings) {
+		// 一時的に設定を適用する
+		apply_settings(settings);
 	});
 	// 遅延実行タスクの準備
 	reset_mode_task = [this]() {
@@ -235,6 +245,9 @@ void EyeApp::on_resume() {
 		window.stop();
 		EXIT();
 	}
+
+	// カメラ設定を適用
+	apply_settings(camera_settings);
 
 	// カメラ映像描画用のGLRendererPipelineを生成
 	const char* versionStr = (const char*)glGetString(GL_VERSION);
@@ -540,6 +553,21 @@ void EyeApp::update_state() {
 
 	LOGV("%ld", systemTime());
 	// FIXME 未実装
+
+	EXIT();
+}
+
+/**
+ * @brief カメラ設定を適用する
+ * 
+ * @param settings 
+ */
+void EyeApp::apply_settings(const CameraSettings &settings) {
+	ENTER();
+
+	if (LIKELY(source)) {
+		// FIXME 未実装
+	}
 
 	EXIT();
 }

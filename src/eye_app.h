@@ -100,6 +100,12 @@ private:
 	 * 
 	 */
 	void update_state();
+	/**
+	 * @brief カメラ設定を適用する
+	 * 
+	 * @param settings 
+	 */
+	void apply_settings(const CameraSettings &settings);
 
 	/**
 	 * @brief キーモード変更時の処理

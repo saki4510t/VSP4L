@@ -21,6 +21,7 @@
 namespace serenegiant::app {
 
 AppSettings::AppSettings()
+:	modified(false)
 {
 	ENTER();
 	EXIT();
@@ -33,6 +34,7 @@ AppSettings::~AppSettings() {
 
 //--------------------------------------------------------------------------------
 CameraSettings::CameraSettings()
+:	modified(false)
 {
 	ENTER();
 	EXIT();

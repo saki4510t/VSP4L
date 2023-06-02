@@ -15,7 +15,8 @@ enum {
 	PAGE_NUM,
 } osd_page_t;
 
-typedef std::function<void(void)> OnOSDCloseFunc;
+typedef std::function<void(const bool &/*changed*/)> OnOSDCloseFunc;
+typedef std::function<void(const CameraSettings &/*settings*/)> OnCameraSettingsChanged;
 
 class OSD {
 private:
@@ -24,6 +25,7 @@ private:
 	CameraSettings camera_settings;
 
 	OnOSDCloseFunc on_osd_close;
+	OnCameraSettingsChanged on_camera_settings_changed;
 
 	/**
 	 * @brief 保存して閉じる
@@ -106,6 +108,10 @@ public:
 
 	inline OSD &set_on_osd_close(OnOSDCloseFunc callback) {
 		on_osd_close = callback;
+		return *this;
+	}
+	inline OSD &set_on_camera_settings_changed(OnCameraSettingsChanged callback) {
+		on_camera_settings_changed = callback;
 		return *this;
 	}
 };

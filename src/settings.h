@@ -11,10 +11,16 @@ namespace serenegiant::app {
  */
 class AppSettings {
 private:
+	bool modified;
 protected:
 public:
 	AppSettings();
 	~AppSettings();
+
+	inline bool is_modified() const { return modified; };
+	inline void set_modified(const bool &m) {
+		modified = m;
+	};
 };
 
 /**
@@ -23,10 +29,16 @@ public:
  */
 class CameraSettings {
 private:
+	bool modified;
 protected:
 public:
 	CameraSettings();
 	~CameraSettings();
+
+	inline bool is_modified() const { return modified; };
+	inline void set_modified(const bool &m) {
+		modified = m;
+	};
 };
 
 //--------------------------------------------------------------------------------

@@ -156,12 +156,14 @@ void OSD::draw(ImFont *large_font) {
 void OSD::save() {
 	ENTER();
 
+	const auto changed = app_settings.is_modified() || camera_settings.is_modified();
+	// FIXME 変更されているかどうか
 	// FIXME 未実装 保存処理
 	serenegiant::app::save(app_settings);
 	serenegiant::app::save(camera_settings);
 
 	if (on_osd_close) {
-		on_osd_close();
+		on_osd_close(changed);
 	}
 
 	EXIT();
@@ -176,7 +178,7 @@ void OSD::cancel() {
 	ENTER();
 
 	if (on_osd_close) {
-		on_osd_close();
+		on_osd_close(false);
 	}
 
 	EXIT();
