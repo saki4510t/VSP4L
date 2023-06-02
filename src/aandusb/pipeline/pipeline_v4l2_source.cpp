@@ -252,6 +252,74 @@ static inline int xioctl(int fd, int request, void *arg) {
 }
 
 #ifndef LOG_NDEBUG
+static const char *ctrl_type_string(const uint32_t &type) {
+	switch (type) {
+	case V4L2_CTRL_TYPE_INTEGER:		// 1,
+		return "V4L2_CTRL_TYPE_INTEGER";
+	case V4L2_CTRL_TYPE_BOOLEAN:		// 2,
+		return "V4L2_CTRL_TYPE_BOOLEAN";
+	case V4L2_CTRL_TYPE_MENU:			// 3,
+		return "V4L2_CTRL_TYPE_MENU";
+	case V4L2_CTRL_TYPE_BUTTON:			// 4,
+		return "V4L2_CTRL_TYPE_BUTTON";
+	case V4L2_CTRL_TYPE_INTEGER64:		// 5,
+		return "V4L2_CTRL_TYPE_INTEGER64";
+	case V4L2_CTRL_TYPE_CTRL_CLASS:		// 6,
+		return "V4L2_CTRL_TYPE_CTRL_CLASS";
+	case V4L2_CTRL_TYPE_STRING:			// 7,
+		return "V4L2_CTRL_TYPE_STRING";
+	case V4L2_CTRL_TYPE_BITMASK:		// 8,
+		return "V4L2_CTRL_TYPE_BITMASK";
+	case V4L2_CTRL_TYPE_INTEGER_MENU:	// 9,
+		return "V4L2_CTRL_TYPE_INTEGER_MENU";
+
+	/* Compound types are >= 0x0100 */
+	// case V4L2_CTRL_COMPOUND_TYPES:		// 0x0100,
+	// 	return "V4L2_CTRL_COMPOUND_TYPES";
+	case V4L2_CTRL_TYPE_U8:				// 0x0100,
+		return "V4L2_CTRL_TYPE_U8";
+	case V4L2_CTRL_TYPE_U16:			// 0x0101,
+		return "V4L2_CTRL_TYPE_U16";
+	case V4L2_CTRL_TYPE_U32:			// 0x0102,
+		return "V4L2_CTRL_TYPE_U32";
+	case V4L2_CTRL_TYPE_AREA:			// 0x0106,
+		return "V4L2_CTRL_TYPE_AREA";
+
+	case V4L2_CTRL_TYPE_HDR10_CLL_INFO:	// 0x0110,
+		return "V4L2_CTRL_TYPE_HDR10_CLL_INFO";
+	case V4L2_CTRL_TYPE_HDR10_MASTERING_DISPLAY:	// 0x0111,
+		return "V4L2_CTRL_TYPE_HDR10_MASTERING_DISPLAY";
+
+	case V4L2_CTRL_TYPE_H264_SPS:		// 0x0200,
+		return "V4L2_CTRL_TYPE_H264_SPS";
+	case V4L2_CTRL_TYPE_H264_PPS:		// 0x0201,
+		return "V4L2_CTRL_TYPE_H264_PPS";
+	case V4L2_CTRL_TYPE_H264_SCALING_MATRIX:	// 0x0202,
+		return "V4L2_CTRL_TYPE_H264_SCALING_MATRIX";
+	case V4L2_CTRL_TYPE_H264_SLICE_PARAMS:		// 0x0203,
+		return "V4L2_CTRL_TYPE_H264_SLICE_PARAMS";
+	case V4L2_CTRL_TYPE_H264_DECODE_PARAMS:		// 0x0204,
+		return "V4L2_CTRL_TYPE_H264_DECODE_PARAMS";
+	case V4L2_CTRL_TYPE_H264_PRED_WEIGHTS:		// 0x0205,
+		return "V4L2_CTRL_TYPE_H264_PRED_WEIGHTS";
+
+	case V4L2_CTRL_TYPE_FWHT_PARAMS:	// 0x0220,
+		return "V4L2_CTRL_TYPE_FWHT_PARAMS";
+
+	case V4L2_CTRL_TYPE_VP8_FRAME:		// 0x0240,
+		return "V4L2_CTRL_TYPE_VP8_FRAME";
+
+	case V4L2_CTRL_TYPE_MPEG2_QUANTISATION:	// 0x0250,
+		return "V4L2_CTRL_TYPE_MPEG2_QUANTISATION";
+	case V4L2_CTRL_TYPE_MPEG2_SEQUENCE:		// 0x0251,
+		return "V4L2_CTRL_TYPE_MPEG2_SEQUENCE";
+	case V4L2_CTRL_TYPE_MPEG2_PICTURE:		// 0x0252,
+		return "V4L2_CTRL_TYPE_MPEG2_PICTURE";
+	default:
+		return "UNKNOWN V4L2_CTRL_TYPE";
+	}
+}
+
 /**
  * コントロール機能がメニュータイプの場合の設定項目値をログ出力する
  * @param fd
@@ -281,8 +349,9 @@ static void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
 	if (query.type == V4L2_CTRL_TYPE_MENU) {
 		list_menu_ctrl(fd, query);
 	} else {
-		MARK("  type=0x%04x,min=%d,max=%d,step=%d,default=%d,flags=0x%08x",
-			query.type,
+		MARK("  type=0x%04x/%s",
+			query.type, ctrl_type_string(query.type));
+		MARK("  min=%d,max=%d,step=%d,default=%d,flags=0x%08x",
 			query.minimum, query.maximum,
 			query.step, query.default_value, query.flags);
 	}
