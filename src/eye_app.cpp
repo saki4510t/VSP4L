@@ -538,7 +538,7 @@ void EyeApp::reset_watchdog() {
 void EyeApp::update_state() {
 	ENTER();
 
-	LOGD("%ld", systemTime());
+	LOGV("%ld", systemTime());
 	// FIXME 未実装
 
 	EXIT();
