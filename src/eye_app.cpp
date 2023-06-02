@@ -183,6 +183,26 @@ void EyeApp::run() {
 void EyeApp::on_start() {
     ENTER();
 
+	char current_path[PATH_SIZE];
+    getcwd(current_path, PATH_SIZE);
+	LOGD("current=%s", current_path);
+	// imguiの追加設定
+    ImGuiIO& io = ImGui::GetIO();
+	// 最初に読み込んだのがデフォルトのフォントになる
+	default_font = io.Fonts->AddFontDefault();
+	// 大きい文字用のフォント(FIXME 実働時はフォントファイルのパスを変えないといけない)
+	large_font = io.Fonts->AddFontFromFileTTF("./src/imgui/misc/fonts/DroidSans.ttf", MODE_ICON_FONT_SZ);
+	// 読み込めなければnulptrになる
+	LOGD("default_font=%p", default_font);
+	LOGD("large_font=%p", large_font);
+
+	EXIT();
+}
+
+/*private,@WorkerThread*/
+void EyeApp::on_resume() {
+	ENTER();
+
 	load(camera_settings);
     source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
 	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
@@ -209,36 +229,11 @@ void EyeApp::on_start() {
 
 	req_change_matrix = true;
 
-	char current_path[PATH_SIZE];
-    getcwd(current_path, PATH_SIZE);
-	LOGD("current=%s", current_path);
-	// imguiの追加設定
-    ImGuiIO& io = ImGui::GetIO();
-	// 最初に読み込んだのがデフォルトのフォントになる
-	default_font = io.Fonts->AddFontDefault();
-	// 大きい文字用のフォント(FIXME 実働時はフォントファイルのパスを変えないといけない)
-	large_font = io.Fonts->AddFontFromFileTTF("./src/imgui/misc/fonts/DroidSans.ttf", MODE_ICON_FONT_SZ);
-	// 読み込めなければnulptrになる
-	LOGD("default_font=%p", default_font);
-	LOGD("large_font=%p", large_font);
-
-	EXIT();
-}
-
-/*private,@WorkerThread*/
-void EyeApp::on_resume() {
-	ENTER();
 	EXIT();
 }
 
 /*private,@WorkerThread*/
 void EyeApp::on_pause() {
-	ENTER();
-	EXIT();
-}
-
-/*private,@WorkerThread*/
-void EyeApp::on_stop() {
 	ENTER();
 
 	if (source) {
@@ -251,6 +246,14 @@ void EyeApp::on_stop() {
 		renderer_pipeline.reset();
 	}
 	offscreen.reset();
+
+	EXIT();
+}
+
+/*private,@WorkerThread*/
+void EyeApp::on_stop() {
+	ENTER();
+
 	icon_zoom.reset();
 	icon_brightness.reset();
 
@@ -264,6 +267,8 @@ void EyeApp::on_stop() {
 /*private,@WorkerThread*/
 void EyeApp::on_render() {
     ENTER();
+
+	if (UNLIKELY(!source || !renderer_pipeline || !offscreen)) return;
 
 	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
