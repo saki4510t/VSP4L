@@ -756,9 +756,6 @@ int KeyDispatcher::on_tap_long_brightness(const KeyEvent &event) {
 			break;
 		case GLFW_KEY_RIGHT:
 		case GLFW_KEY_LEFT:
-			// 輝度調整モードへ
-			change_key_mode(KEY_MODE_BRIGHTNESS);
-			result = 1;
 			break;
 		default:
 			LOGW("unexpected key code,%d", key);
@@ -787,9 +784,6 @@ int KeyDispatcher::on_tap_long_zoom(const KeyEvent &event) {
 		switch (key) {
 		case GLFW_KEY_DOWN:
 		case GLFW_KEY_UP:
-			// 拡大縮小モードへ
-			change_key_mode(KEY_MODE_ZOOM);
-			result = 1;
 			break;
 		case GLFW_KEY_RIGHT:
 		case GLFW_KEY_LEFT:
