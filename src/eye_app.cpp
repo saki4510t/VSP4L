@@ -49,6 +49,8 @@ namespace serenegiant::app {
 #define RESET_WATCHDOG_CNT (25)
 // カレントパスの取得用バッファサイズ
 #define PATH_SIZE (512)
+// ステータスの更新間隔(LED点滅の最小間隔), とりあえず1秒にしておく
+#define UPDATE_STATE_INTERVAL_MS (1000)
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -122,6 +124,12 @@ EyeApp::EyeApp(const int &gl_version)
 	reset_mode_task = [this]() {
 		key_dispatcher.reset_key_mode();
 	};
+	update_state_task = [this]() {
+		if (update_state_task) {
+			handler.post_delayed(update_state_task, UPDATE_STATE_INTERVAL_MS);
+		}
+		update_state();
+	};
 
     EXIT();
 }
@@ -165,12 +173,22 @@ void EyeApp::run() {
 	handler.remove(test_task);
 	handler.post_delayed(test_task, 10000);
 #endif
+	// ステータス更新開始
+	handler.post(update_state_task);
 
+	// GLFWのイベント処理ループ
     for ( ; window.is_running() && window ; ) {
-		// GLFWのイベント処理ループ
-        usleep(30000);
+        usleep(30000);	//　30ms
+		// FIXME ここで装着検知センサーの読み込みを行い未装着ならpauseさせる
+		const auto attached = true;	// FIXME 未実装
+		if (attached && !window.is_resumed()) {
+			window.resume();
+		} else if (!attached) {
+			window.pause();
+		}
     }
 
+	handler.remove_all();
 	window.stop();
 
 	LOGD("Finished.");
@@ -504,7 +522,7 @@ void EyeApp::reset_mode_delayed() {
 
 /**
  * @brief ウオッチドッグをリセット要求
- * 
+ *
  */
 void EyeApp::reset_watchdog() {
 	static uint32_t cnt = 0;
@@ -512,11 +530,25 @@ void EyeApp::reset_watchdog() {
 		// FIXME 未実装 実際のウオッチドッグリセット処理
 	}
 }
+
+/**
+ * @brief ステータス(LED点滅等)を更新
+ *
+ */
+void EyeApp::update_state() {
+	ENTER();
+
+	LOGD("%ld", systemTime());
+	// FIXME 未実装
+
+	EXIT();
+}
+
 //--------------------------------------------------------------------------------
 /**
  * @brief キーモード変更時の処理
- * 
- * @param key_mode 
+ *
+ * @param key_mode
  */
 void EyeApp::on_key_mode_changed(const key_mode_t &key_mode) {
 	ENTER();
@@ -629,8 +661,8 @@ void EyeApp::request_change_freeze(const bool &onoff) {
 
 /**
  * @brief 測光モード切替要求
- * 
- * @param exp_mode 
+ *
+ * @param exp_mode
  */
 void EyeApp::request_change_exp_mode(const exp_mode_t &exp_mode) {
 	ENTER();

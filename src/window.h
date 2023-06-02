@@ -115,6 +115,7 @@ public:
 	explicit operator bool();
 	inline bool is_valid() const { return window != nullptr; };
 	inline bool is_running() const { return running; };
+	inline bool is_resumed() const { return resumed; };
 	inline GLfloat get_aspect() const { return aspect; };
 	/**
 	 * @brief フレームバッファの幅を取得

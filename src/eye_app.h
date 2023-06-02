@@ -38,6 +38,8 @@ private:
 	thread::Handler handler;
 	// 一定時間後にキーモードをリセットするタスク
 	std::function<void()> reset_mode_task;
+	// 一定時間毎にステータス(LED点滅等)を更新するタスク
+	std::function<void()> update_state_task;
 	// GLFWでの画面表示用
 	Window window;
 	// V4L2からの映像取得用
@@ -93,6 +95,11 @@ private:
 	 * 
 	 */
 	void reset_watchdog();
+	/**
+	 * @brief ステータス(LED点滅等)を更新
+	 * 
+	 */
+	void update_state();
 
 	/**
 	 * @brief キーモード変更時の処理
