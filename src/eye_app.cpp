@@ -110,6 +110,8 @@ EyeApp::EyeApp(const int &gl_version)
 			return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
 		})
 		.set_on_start([this](GLFWwindow *win) { on_start(); })
+		.set_on_resume([this](GLFWwindow *win) { on_resume(); })
+		.set_on_pause([this](GLFWwindow *win) { on_pause(); })
 		.set_on_stop([this](GLFWwindow *win) { on_stop(); });
 	// OSD表示が終了したときのコールバック
 	osd.set_on_osd_close([this]() {
@@ -220,6 +222,18 @@ void EyeApp::on_start() {
 	LOGD("default_font=%p", default_font);
 	LOGD("large_font=%p", large_font);
 
+	EXIT();
+}
+
+/*private,@WorkerThread*/
+void EyeApp::on_resume() {
+	ENTER();
+	EXIT();
+}
+
+/*private,@WorkerThread*/
+void EyeApp::on_pause() {
+	ENTER();
 	EXIT();
 }
 

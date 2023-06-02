@@ -156,11 +156,22 @@ private:
 	 * 
 	 */
 	void handle_draw_gui();
+	
 	/**
 	 * @brief 描画開始時の追加処理, Windowのレンダリングスレッド上で実行される
 	 *
 	 */
 	void on_start();
+	/**
+	 * @brief 画面が表示されたときの追加処理, Windowのレンダリングスレッド上で実行される
+	 * 
+	 */
+	void on_resume();
+	/**
+	 * @brief 画面が消灯するときの追加処理, Windowのレンダリングスレッド上で実行される
+	 * 
+	 */
+	void on_pause();
 	/**
 	 * @brief 描画終了時の追加処理, Windowのレンダリングスレッド上で実行される
 	 * 

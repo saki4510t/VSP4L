@@ -11,8 +11,10 @@
 // Open GL3を使うかどうか, 1: GL3を使う, 0: 使わない(GL2を使う)
 #define USE_GL3 (0)
 
+#include <condition_variable>
 #include <cstdlib>
 #include <functional>
+#include <mutex>
 #include <thread>
 
 #include <GL/glew.h>
@@ -36,11 +38,23 @@ typedef std::function<KeyEvent(const int&/*key*/, const int&/*scancode*/, const 
 /**
  * glfwによるwindow関係の処理用ヘルパークラス
  * あらかじめglfwInitを呼び出してglfwを初期化しておくこと
+ * ライフサイクル：
+ * Window::initialize
+ * 	→コンストラクタ
+ * 	　→start→on_start
+ *	　　→on_resume→
+ *	　　　→on_render→
+ *	　　←on_pause←pause←
+ *	  ←on_stop←stop←
+ * 	　デストラクタ←	
  */
 class Window {
 private:
 	GLFWwindow *window;
 	volatile bool running;
+	volatile bool resumed;
+	mutable std::mutex state_lock;
+	std::condition_variable state_cond;
 	std::thread renderer_thread;
 	GLfloat aspect;
 	int fb_width;
@@ -48,6 +62,8 @@ private:
 	GLFWkeyfun prev_key_callback;
 	OnKeyEventFunc on_key_event_func;
 	LifeCycletEventFunc on_start;
+	LifeCycletEventFunc on_resume;
+	LifeCycletEventFunc on_pause;
 	LifeCycletEventFunc on_stop;
 	OnRenderFunc on_render;
 
@@ -77,6 +93,18 @@ public:
 	 * @return int
 	 */
 	int start(OnRenderFunc render_func);
+	/**
+	 * @brief 描画開始(startを呼んだときは自動的に呼ばれる)
+	 * 
+	 * @return int 
+	 */
+	int resume();
+	/**
+	 * @brief 描画待機(stopを呼んだときは自動的に呼ばれる)
+	 * 
+	 * @return int 
+	 */
+	int pause();
 	/**
 	 * @brief 描画スレッドを終了する
 	 *
@@ -113,6 +141,14 @@ public:
 	}
 	inline Window &set_on_start(LifeCycletEventFunc callback) {
 		on_start = callback;
+		return *this;
+	}
+	inline Window &set_on_resume(LifeCycletEventFunc callback) {
+		on_resume = callback;
+		return *this;
+	}
+	inline Window &set_on_pause(LifeCycletEventFunc callback) {
+		on_pause = callback;
 		return *this;
 	}
 	inline Window &set_on_stop(LifeCycletEventFunc callback) {
