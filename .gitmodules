@@ -4,3 +4,6 @@
 [submodule "src/rapidjson"]
 	path = src/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "src/libyuv"]
+	path = src/libyuv
+	url = https://github.com/saki4510t/libyuv.git
