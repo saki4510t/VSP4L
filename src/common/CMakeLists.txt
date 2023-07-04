@@ -55,6 +55,7 @@ target_link_libraries(common_static PRIVATE
     ${HARDWARE_BUFFER_NDK_LIB}
     ${LIBGLEW_LIBRARIES}
     ${LIBGL_LIBRARIES}
+    ${LIBGLES_LIBRARIES}
 )
 
 target_link_libraries(common_static PUBLIC

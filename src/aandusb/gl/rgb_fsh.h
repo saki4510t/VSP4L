@@ -10,7 +10,7 @@
 
 // rgbのテクスチャを描画するフラグメントシェーダー
 
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *rgb_gl2_fsh =
 R"SHADER(#version 100
 

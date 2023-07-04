@@ -11,7 +11,7 @@
 // ハードウエアバッファのYUV420sp(NV12)のセミプレーンのデータを
 // EGLClientBuffer, eglCreateImageKHR, glEGLImageTargetTexture2DOESと
 // 組み合わせてテクスチャにしたものを描画するためのフラグメントシェーダー
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *yuv420sp_nv12_ext_yuv_target_gl3_fsh =
 R"SHADER(#version 300 es
 #extension GL_EXT_YUV_target : require

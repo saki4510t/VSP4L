@@ -35,6 +35,7 @@ target_include_directories(aandusb_pipeline PRIVATE
 
 target_link_libraries(aandusb_pipeline PUBLIC
     ${LIBGL_INCLUDE_DIRS}
+    ${LIBGLES_INCLUDE_DIRS}
     ${LIBGLEW_INCLUDE_DIRS}
 )
 

@@ -36,9 +36,15 @@
 		#if defined(_WIN32)
 			#include <windows.h>
 		#endif
-        #include <GL/glew.h>
-		#include <GL/gl.h>
-#endif
+		#if defined(ENABLE_GLES)
+			#include <EGL/egl.h>
+			#include <EGL/eglext.h>
+			#include <GLES3/gl3.h>
+		#else
+        	#include <GL/glew.h>
+			#include <GL/gl.h>
+		#endif
+	#endif
 #endif
 
 #undef GLCHECK

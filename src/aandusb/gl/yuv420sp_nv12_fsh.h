@@ -10,7 +10,7 @@
 
 // YUV420sp(NV21)のセミプレーンのデータをGL_LUMINANCEの1つのテクスチャとして渡して
 // RGBAとして描画するためのフラグメントシェーダー
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *yuv420sp_nv12_as_lumi_gl2_fsh =
 R"SHADER(#version 100
 

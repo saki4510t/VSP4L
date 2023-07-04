@@ -10,7 +10,7 @@
 
 // 矩形にテクスチャを貼り付けるための頂点シェーダー
 
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *texture_gl2_vsh =
 R"SHADER(#version 100
 attribute vec4 aPosition;

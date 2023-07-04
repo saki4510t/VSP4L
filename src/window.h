@@ -17,7 +17,9 @@
 #include <mutex>
 #include <thread>
 
+#if !defined(ENABLE_GLES)
 #include <GL/glew.h>
+#endif
 #include <GLFW/glfw3.h>
 
 #include "imgui.h"

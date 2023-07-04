@@ -11,7 +11,7 @@
 // uyvyのデータをrgbaのテクスチャとして渡して変換しながら描画するフラグメントシェーダー
 // FIXME 今はYUV2のまま
 
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *uyvy_as_rgba_gl2_fsh =
 R"SHADER(#version 100
 precision highp float;

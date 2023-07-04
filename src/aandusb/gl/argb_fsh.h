@@ -10,7 +10,7 @@
 
 // argbのテクスチャとして渡して変換しながら描画するフラグメントシェーダー
 
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *argb_gl2_fsh =
 R"SHADER(#version 100
 

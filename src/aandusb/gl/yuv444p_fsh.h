@@ -10,7 +10,7 @@
 
 // YUV444pの3プレーンのデータをGL_LUMINANCEの1つのテクスチャとして渡して
 // RGBAとして描画するためのフラグメントシェーダー
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *yuv444p_as_lumi_gl2_fsh =
 R"SHADER(#version 100
 precision highp float;

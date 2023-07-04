@@ -10,7 +10,7 @@
 
 // YV12の3プレーンのデータをGL_LUMINANCEの1つのテクスチャとして渡して
 // RGBAとして描画するためのフラグメントシェーダー
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *yuv420p_yv12_as_lumi_gl2_fsh =
 R"SHADER(#version 100
 

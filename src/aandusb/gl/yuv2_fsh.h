@@ -10,7 +10,7 @@
 
 // yuyvのデータをrgbaのテクスチャとして渡して変換しながら描画するフラグメントシェーダー
 
-#if __ANDROID__
+#if __ANDROID__ || defined(ENABLE_GLES)
 constexpr const char *yuy2_as_rgba_gl2_fsh =
 R"SHADER(#version 100
 precision highp float;
