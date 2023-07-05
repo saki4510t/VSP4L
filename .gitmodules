@@ -7,3 +7,6 @@
 [submodule "src/libyuv"]
 	path = src/libyuv
 	url = https://github.com/saki4510t/libyuv.git
+[submodule "src/glfw"]
+	path = src/glfw
+	url = https://github.com/glfw/glfw.git
