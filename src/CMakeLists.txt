@@ -52,13 +52,16 @@ pkg_check_modules(LIBPNG REQUIRED libpng)
 # search library with pkg-config and name its results "LIBJPEG_TURBO"
 pkg_check_modules(LIBJPEG REQUIRED libjpeg)
 pkg_check_modules(LIBJPEG_TURBO REQUIRED libturbojpeg)
-# search library with pkg-config and name its results "LIBYUV"
-pkg_check_modules(LIBYUV REQUIRED libyuv)
+# # search library with pkg-config and name its results "LIBYUV"
+# pkg_check_modules(LIBYUV REQUIRED libyuv)
 # search library with pkg-config and name its results "LIBUDEV"
 pkg_check_modules(LIBUDEV REQUIRED libudev)
 
 # サブモジュールとして取り込んだglfwのソースをビルドする
 add_subdirectory(${lib_src_DIR}/glfw)
+
+# サブモジュールとして取り込んだlibyuvのソースをビルドする
+add_subdirectory(${lib_src_DIR}/libyuv)
 
 # サブモジュールとしてsrc下に取り込んだimguiをスタティックライブラリーとしてビルドする
 add_library(imgui STATIC
@@ -113,6 +116,7 @@ target_include_directories(${target} PRIVATE
     ../
     ./aandusb
     ./glfw/include
+    ./libyuv/include
     ${LIBGLES_INCLUDE_DIRS}
 )
 
@@ -121,13 +125,15 @@ target_link_libraries(${target} PRIVATE
     ${LIBUDEV_LIBRARIES}
     ${LIBPNG_LIBRARIES}
     ${LIBJPEG_TURBO_LIBRARIES}
-    ${LIBYUV_LIBRARIES}
     pthread
     glfw
+    yuv
     imgui
     aandusb_core
     aandusb_pipeline
     common_static
+
+    # ${LIBYUV_LIBRARIES}
 )
 
 message("==================== All variables (EyeApp)  ====================")

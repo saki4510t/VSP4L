@@ -31,7 +31,7 @@ target_compile_definitions(aandusb_core PRIVATE
 
 target_include_directories(aandusb_core PRIVATE
     ${LIBJPEG_TURBO_INCLUDE_DIRS}
-    ${LIBYUV_INCLUDE_DIRS}
+    ../../libyuv/include/
 )
 
 target_include_directories(aandusb_core PUBLIC
@@ -44,7 +44,7 @@ target_link_libraries(aandusb_core PRIVATE
     ${LIBUDEV_LIBRARIES}
     ${LIBJPEG_LIBRARIES}
     ${LIBJPEG_TURBO_LIBRARIES}
-    ${LIBYUV_LIBRARIES}
+    yuv
     common_static
 )
 
