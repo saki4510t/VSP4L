@@ -88,6 +88,7 @@ target_compile_definitions(imgui PRIVATE
 target_include_directories(imgui PUBLIC
     ./imgui/
     ./imgui/backends/
+    ./glfw/include
 )
 
 add_subdirectory(${lib_src_DIR}/aandusb)
