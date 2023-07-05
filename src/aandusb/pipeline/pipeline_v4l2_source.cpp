@@ -173,11 +173,11 @@ static core::raw_frame_t V4L2_PIX_FMT_to_raw_frame(const uint32_t &v4l2_pix_fmt)
 	case V4L2_PIX_FMT_MPEG2:		return core::RAW_FRAME_MPEG2TS;
 //									return core::RAW_FRAME_DV;
 //									return core::RAW_FRAME_FRAME_H264;
-	case V4L2_PIX_FMT_VP8_FRAME:	return core::RAW_FRAME_FRAME_VP8;
+//	case V4L2_PIX_FMT_VP8_FRAME:	return core::RAW_FRAME_FRAME_VP8;
 	case V4L2_PIX_FMT_H264:
 	case V4L2_PIX_FMT_H264_NO_SC:
-	case V4L2_PIX_FMT_H264_MVC:
-	case V4L2_PIX_FMT_H264_SLICE:	return core::RAW_FRAME_H264;
+	case V4L2_PIX_FMT_H264_MVC:		return core::RAW_FRAME_H264;
+//	case V4L2_PIX_FMT_H264_SLICE:	return core::RAW_FRAME_H264;
 //									return core::RAW_FRAME_H264_SIMULCAST;
 	case V4L2_PIX_FMT_VP8:			return core::RAW_FRAME_VP8;
 //									return core::RAW_FRAME_VP8_SIMULCAST;
@@ -221,7 +221,6 @@ static uint32_t raw_frame_to_V4L2_PIX_FMT(const core::raw_frame_t &frame_type) {
 	case core::RAW_FRAME_MPEG2TS:				return V4L2_PIX_FMT_MPEG2;
 //	case core::RAW_FRAME_DV;
 	case core::RAW_FRAME_FRAME_H264:			return V4L2_PIX_FMT_H264;
-	case core::RAW_FRAME_FRAME_VP8:				return V4L2_PIX_FMT_VP8_FRAME;
 	case core::RAW_FRAME_H264:					return V4L2_PIX_FMT_H264;	// V4L2_PIX_FMT_H264_NO_SC, V4L2_PIX_FMT_H264_MVC, V4L2_PIX_FMT_H264_SLICE
 //	case core::RAW_FRAME_H264_SIMULCAST:
 	case core::RAW_FRAME_VP8:					return V4L2_PIX_FMT_VP8;
@@ -381,7 +380,7 @@ static void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtr
 		}
 	}
 	// v4l2標準のカメラコントロール一覧
-	for (uint32_t i = V4L2_CID_EXPOSURE_AUTO + 1; i <= V4L2_CID_CAMERA_SENSOR_ROTATION; i++) {
+	for (uint32_t i = V4L2_CID_EXPOSURE_AUTO + 1; i < V4L2_CID_LASTP1; i++) {
 		struct v4l2_queryctrl query {
 			.id = i,
 		};
