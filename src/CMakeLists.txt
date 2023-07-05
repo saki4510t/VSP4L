@@ -44,7 +44,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti")
 # load the module to use pkg-config
 find_package(PkgConfig)
 # search library with pkg-config and name its results "GLES"
-pkg_check_modules(LIBGLES REQUIRED glesv2)
+# pkg_check_modules(LIBGLES REQUIRED glesv2)
 add_definitions("-DENABLE_GLES")
 
 # search library with pkg-config and name its results "LIBPNG"
@@ -126,6 +126,7 @@ target_link_libraries(${target} PRIVATE
     ${LIBPNG_LIBRARIES}
     ${LIBJPEG_TURBO_LIBRARIES}
     pthread
+    GLESv2
     glfw
     yuv
     imgui
