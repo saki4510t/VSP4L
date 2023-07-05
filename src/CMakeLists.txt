@@ -9,6 +9,13 @@ set(target EyeApp)
 # キャッシュ変数
 option(ENABLE_GLES "Use OpenGL|ES instead of OpenGL" ON)
 
+# キャッシュ変数、glfwのドキュメント・テスト・サンプルのビルドを無効化
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+# キャッシュ変数、glfwにwaylandサポート込みでビルドする
+set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
+
 # C/C++用設定
 set(c_cpp_flags "${c_cpp_flags} -DHAVE_PTHREADS -fPIC")
 set(c_cpp_flags "${c_cpp_flags} -O3 -fstrict-aliasing")
@@ -43,7 +50,6 @@ if (ENABLE_GLES)
 # search library with pkg-config and name its results "GLES"
 pkg_check_modules(LIBGLES REQUIRED glesv2)
 add_definitions("-DENABLE_GLES")
-add_definitions("-DGLFW_INCLUDE_ES3")
 else()
 # search library with pkg-config and name its results "GL"
 pkg_check_modules(LIBGL REQUIRED gl)
@@ -60,8 +66,9 @@ pkg_check_modules(LIBJPEG_TURBO REQUIRED libturbojpeg)
 pkg_check_modules(LIBYUV REQUIRED libyuv)
 # search library with pkg-config and name its results "LIBUDEV"
 pkg_check_modules(LIBUDEV REQUIRED libudev)
-# search library with pkg-config and name its results "GLFW"
-pkg_check_modules(LIBGLFW REQUIRED glfw3)
+
+# サブモジュールとして取り込んだglfwのソースをビルドする
+add_subdirectory(${lib_src_DIR}/glfw)
 
 # サブモジュールとしてsrc下に取り込んだimguiをスタティックライブラリーとしてビルドする
 add_library(imgui STATIC
@@ -115,22 +122,22 @@ target_compile_definitions(${target} PRIVATE
 target_include_directories(${target} PRIVATE
     ../
     ./aandusb
+    ./glfw/include
     # ${LIBGLEW_INCLUDE_DIRS}
     ${LIBGL_INCLUDE_DIRS}
     ${LIBGLES_INCLUDE_DIRS}
-    ${LIBGLFW_INCLUDE_DIRS}
 )
 
 target_link_libraries(${target} PRIVATE
     # ${LIBGLEW_LIBRARIES}
     ${LIBGL_LIBRARIES}
     ${LIBGLES_LIBRARIES}
-    ${LIBGLFW_LIBRARIES}
     ${LIBUDEV_LIBRARIES}
     ${LIBPNG_LIBRARIES}
     ${LIBJPEG_TURBO_LIBRARIES}
     ${LIBYUV_LIBRARIES}
     pthread
+    glfw
     imgui
     aandusb_core
     aandusb_pipeline

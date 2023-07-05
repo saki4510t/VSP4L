@@ -8,10 +8,7 @@
 #ifndef KEY_EVENT_H_
 #define KEY_EVENT_H_
 
-#if !defined(ENABLE_GLES)
-#include <GL/glew.h>
-#endif
-#include <GLFW/glfw3.h>
+#include "internal.h"
 
 #include "const.h"
 #include "key_state.h"

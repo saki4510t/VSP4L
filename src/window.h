@@ -17,15 +17,7 @@
 #include <mutex>
 #include <thread>
 
-#if !defined(ENABLE_GLES)
-#include <GL/glew.h>
-#endif
-#include <GLFW/glfw3.h>
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"		// フラグメントシェーダー等を使う場合はこっち
-// #include "imgui_impl_opengl2.h"	// これは昔の固定パイプラインを使うときのバックエンド
+#include "internal.h"
 
 #include "const.h"
 #include "key_event.h"
