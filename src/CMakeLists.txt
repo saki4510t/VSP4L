@@ -6,9 +6,6 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 set(lib_src_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(target EyeApp)
 
-# キャッシュ変数
-option(ENABLE_GLES "Use OpenGL|ES instead of OpenGL" ON)
-
 # キャッシュ変数、glfwのドキュメント・テスト・サンプルのビルドを無効化
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -46,16 +43,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti")
 # png, libjpeg-turbo, libyuvはpkg-configを使ってインストールされているものを使う
 # load the module to use pkg-config
 find_package(PkgConfig)
-if (ENABLE_GLES)
 # search library with pkg-config and name its results "GLES"
 pkg_check_modules(LIBGLES REQUIRED glesv2)
 add_definitions("-DENABLE_GLES")
-else()
-# search library with pkg-config and name its results "GL"
-pkg_check_modules(LIBGL REQUIRED gl)
-# # search library with pkg-config and name its results "GLEW"
-pkg_check_modules(LIBGLEW REQUIRED glew)
-endif()
 
 # search library with pkg-config and name its results "LIBPNG"
 pkg_check_modules(LIBPNG REQUIRED libpng)
@@ -123,14 +113,10 @@ target_include_directories(${target} PRIVATE
     ../
     ./aandusb
     ./glfw/include
-    # ${LIBGLEW_INCLUDE_DIRS}
-    ${LIBGL_INCLUDE_DIRS}
     ${LIBGLES_INCLUDE_DIRS}
 )
 
 target_link_libraries(${target} PRIVATE
-    # ${LIBGLEW_LIBRARIES}
-    ${LIBGL_LIBRARIES}
     ${LIBGLES_LIBRARIES}
     ${LIBUDEV_LIBRARIES}
     ${LIBPNG_LIBRARIES}

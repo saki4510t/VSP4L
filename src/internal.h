@@ -1,10 +1,7 @@
 #ifndef INTERNAL_H_
 #define INTERNAL_H_
 
-#if !defined(ENABLE_GLES)
-#include <GL/glew.h>
 #define GLFW_INCLUDE_ES3
-#endif
 #include <GLFW/glfw3.h>
 
 #include "imgui.h"
