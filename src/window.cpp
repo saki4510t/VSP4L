@@ -298,15 +298,6 @@ void Window::init_gl() {
 	if (window) {
 		// 作成したウィンドウへOpenGLで描画できるようにする
 		glfwMakeContextCurrent(window);
-#if !defined(ENABLE_GLES)
-		// GLEW を初期化する
-		glewExperimental = GL_TRUE;
-		if (glewInit() != GLEW_OK) {
-			// GLEW の初期化に失敗した
-			LOGE("Can't initialize GLEW");
-			EXIT();
-		}
-#endif
 		// ダブルバッファの入れ替えタイミングを指定, 垂直同期のタイミングを待つ
 		glfwSwapInterval(1);
 

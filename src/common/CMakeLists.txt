@@ -53,7 +53,6 @@ target_link_libraries(common_static PRIVATE
     atomic
     ${OPENGL_LIB}
     ${HARDWARE_BUFFER_NDK_LIB}
-    ${LIBGLEW_LIBRARIES}
     ${LIBGL_LIBRARIES}
     ${LIBGLES_LIBRARIES}
 )
