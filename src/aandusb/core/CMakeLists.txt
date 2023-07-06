@@ -30,6 +30,7 @@ target_compile_definitions(aandusb_core PRIVATE
 )
 
 target_include_directories(aandusb_core PRIVATE
+    ${LIBJPEG_TURBO_INCLUDEDIR}
     ${LIBJPEG_TURBO_INCLUDE_DIRS}
     ../../libyuv/include/
 )

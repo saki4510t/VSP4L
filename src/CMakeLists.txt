@@ -40,7 +40,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti")
 #デバッグ用に警告を出す設定
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wreorder")
 
-# png, libjpeg-turbo, libyuvはpkg-configを使ってインストールされているものを使う
+# png, libjpeg-turboはpkg-configを使ってインストールされているものを使う
 # load the module to use pkg-config
 find_package(PkgConfig)
 # search library with pkg-config and name its results "GLES"
@@ -52,8 +52,6 @@ pkg_check_modules(LIBPNG REQUIRED libpng)
 # search library with pkg-config and name its results "LIBJPEG_TURBO"
 pkg_check_modules(LIBJPEG REQUIRED libjpeg)
 pkg_check_modules(LIBJPEG_TURBO REQUIRED libturbojpeg)
-# # search library with pkg-config and name its results "LIBYUV"
-# pkg_check_modules(LIBYUV REQUIRED libyuv)
 # search library with pkg-config and name its results "LIBUDEV"
 pkg_check_modules(LIBUDEV REQUIRED libudev)
 
@@ -119,6 +117,9 @@ target_include_directories(${target} PRIVATE
     ./glfw/include
     ./libyuv/include
     ${LIBGLES_INCLUDE_DIRS}
+    ${LIBJPEG_TURBO_INCLUDEDIR}
+    ${LIBPNG_INCLUDEDIR}
+    ${LIBPNG_INCLUDE_DIRS}
 )
 
 target_link_libraries(${target} PRIVATE
@@ -134,8 +135,6 @@ target_link_libraries(${target} PRIVATE
     aandusb_core
     aandusb_pipeline
     common_static
-
-    # ${LIBYUV_LIBRARIES}
 )
 
 message("==================== All variables (EyeApp)  ====================")

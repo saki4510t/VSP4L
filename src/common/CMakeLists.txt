@@ -47,11 +47,16 @@ target_include_directories(common_static PUBLIC
     ./
     ../
     ../rapidjson/include/
+    ${LIBJPEG_TURBO_INCLUDEDIR}
+    ${LIBJPEG_TURBO_INCLUDE_DIRS}
+    ${LIBPNG_INCLUDEDIR}
+    ${LIBPNG_INCLUDE_DIRS}
 )
 
 target_link_libraries(common_static PRIVATE
     atomic
     ${LIBGLES_LIBRARIES}
+    ${LIBPNG_LIBRARIES}
 )
 
 target_link_libraries(common_static PUBLIC
@@ -65,6 +70,8 @@ target_include_directories(common PUBLIC
 
 target_link_libraries(common PRIVATE
     atomic
+    ${LIBGLES_LIBRARIES}
+    ${LIBPNG_LIBRARIES}
 )
 
 target_link_libraries(common PUBLIC
