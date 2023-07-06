@@ -11,40 +11,9 @@
 #include <string>
 #define EGL_EGLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
-#if defined(__ANDROID__)
-	#include <EGL/egl.h>
-	#include <EGL/eglext.h>
-	#if DYNAMIC_ES3
-		#include "gl3stub.h"
-	#else
-		// Include the latest possible header file( GL version header )
-		#if __ANDROID_API__ >= 24
-			#include <GLES3/gl32.h>
-		#elif __ANDROID_API__ >= 21
-			#include <GLES3/gl31.h>
-		#else
-			#include <GLES3/gl3.h>
-		#endif
-		#include <GLES2/gl2ext.h>
-	#endif
-#else
-	#if defined(__APPLE__)
-		#include <OpenGL/gl.h>
-		#include <OpenGL/glu.h>
-		#include <GLUT/glut.h>
-	#else
-		#if defined(_WIN32)
-			#include <windows.h>
-		#endif
-		#if defined(ENABLE_GLES)
-			#include <EGL/egl.h>
-			#include <EGL/eglext.h>
-			#include <GLES3/gl3.h>
-		#else
-			#include <GL/gl.h>
-		#endif
-	#endif
-#endif
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GLES3/gl3.h>
 
 #undef GLCHECK
 #ifdef DEBUG_GL_CHECK
