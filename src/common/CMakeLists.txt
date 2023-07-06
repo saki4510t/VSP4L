@@ -51,9 +51,6 @@ target_include_directories(common_static PUBLIC
 
 target_link_libraries(common_static PRIVATE
     atomic
-    ${OPENGL_LIB}
-    ${HARDWARE_BUFFER_NDK_LIB}
-    ${LIBGL_LIBRARIES}
     ${LIBGLES_LIBRARIES}
 )
 
@@ -68,9 +65,6 @@ target_include_directories(common PUBLIC
 
 target_link_libraries(common PRIVATE
     atomic
-    ${OPENGL_LIB}
-    ${HARDWARE_BUFFER_NDK_LIB}
-    ${libs_platform}
 )
 
 target_link_libraries(common PUBLIC
