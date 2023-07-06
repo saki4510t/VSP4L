@@ -12,6 +12,8 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 # キャッシュ変数、glfwにwaylandサポート込みでビルドする
 set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
+# キャッシュ変数、libyuvのユーティリティツールをビルドしない
+set(YUV_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 
 # C/C++用設定
 set(c_cpp_flags "${c_cpp_flags} -DHAVE_PTHREADS -fPIC")
