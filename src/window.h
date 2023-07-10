@@ -24,8 +24,8 @@
 
 namespace serenegiant::app {
 
-typedef std::function<void(GLFWwindow *win)> LifeCycletEventFunc;
-typedef std::function<void(GLFWwindow *win)> OnRenderFunc;
+typedef std::function<void()> LifeCycletEventFunc;
+typedef std::function<void()> OnRenderFunc;
 // 複数キー同時押しをENTERに割り当てるなどキーイベントを上書きできるようにKeyEventを返す
 typedef std::function<KeyEvent(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
 

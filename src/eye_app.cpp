@@ -111,10 +111,10 @@ EyeApp::EyeApp(const int &gl_version)
 		.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
 			return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
 		})
-		.set_on_start([this](GLFWwindow *win) { on_start(); })
-		.set_on_resume([this](GLFWwindow *win) { on_resume(); })
-		.set_on_pause([this](GLFWwindow *win) { on_pause(); })
-		.set_on_stop([this](GLFWwindow *win) { on_stop(); });
+		.set_on_start([this]() { on_start(); })
+		.set_on_resume([this]() { on_resume(); })
+		.set_on_pause([this]() { on_pause(); })
+		.set_on_stop([this]() { on_stop(); });
 	// OSD表示が終了したときのコールバック
 	osd.set_on_osd_close([this](const bool &changed) {
 		LOGD("on_osd_close, changed=%d", changed);
@@ -167,7 +167,7 @@ EyeApp::~EyeApp() {
 void EyeApp::run() {
     ENTER();
 
-	window.start([this](GLFWwindow *win) { on_render(); });
+	window.start([this]() { on_render(); });
 
 #if 0
 	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない

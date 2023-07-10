@@ -240,7 +240,7 @@ void Window::renderer_thread_func() {
 	init_gl();
 
 	if (on_start) {
-		on_start(window);
+		on_start();
 	}
 
 	for ( ; running ; ) {
@@ -255,14 +255,14 @@ void Window::renderer_thread_func() {
 
 		if (LIKELY(running)) {
 			if (on_resume) {
-				on_resume(window);
+				on_resume();
 			}
 
 			// 描画ループ
 			// メインスレッドでイベント処理しているのでここではpoll_eventsを呼び出さないように変更
 			for ( ; running && resumed /*&& poll_events()*/; ) {
 				const auto start = systemTime();
-				on_render(window);
+				on_render();
 				// ダブルバッファーをスワップ
 				swap_buffers();
 				// フレームレート調整
@@ -274,14 +274,14 @@ void Window::renderer_thread_func() {
 			}
 
 			if (on_pause) {
-				on_pause(window);
+				on_pause();
 			}
 		}
 	}
 
 	running = false;
 	if (on_stop) {
-		on_stop(window);
+		on_stop();
 	}
 
 	terminate_gl();
