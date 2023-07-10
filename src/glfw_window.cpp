@@ -61,7 +61,7 @@ int GlfwWindow::initialize() {
 }
 
 GlfwWindow::GlfwWindow(const int width, const int height, const char *title)
-:	IWindow(width, height, title),
+:	Window(width, height, title),
 	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
 	prev_key_callback(nullptr)
 {

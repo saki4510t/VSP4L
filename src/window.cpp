@@ -23,11 +23,11 @@
 // common
 #include "times.h"
 // app
-#include "iwindow.h"
+#include "window.h"
 
 namespace serenegiant::app {
 
-IWindow::IWindow(const int width, const int height, const char *title)
+Window::Window(const int width, const int height, const char *title)
 :	running(false), resumed(false),
 	renderer_thread(),
 	aspect(640 / 480.0f), fb_width(width), fb_height(height),
@@ -39,7 +39,7 @@ IWindow::IWindow(const int width, const int height, const char *title)
 }
 
 /*public*/
-IWindow::~IWindow() {
+Window::~Window() {
 	ENTER();
 	EXIT();
 }
@@ -49,7 +49,7 @@ IWindow::~IWindow() {
  *
  * @return int
  */
-int IWindow::start(OnRenderFunc render_func) {
+int Window::start(OnRenderFunc render_func) {
 	ENTER();
 
 	if (!running) {
@@ -67,7 +67,7 @@ int IWindow::start(OnRenderFunc render_func) {
  *
  * @return int
  */
-int IWindow::resume() {
+int Window::resume() {
 	ENTER();
 
 	if (running && !resumed) {
@@ -84,7 +84,7 @@ int IWindow::resume() {
  *
  * @return int
  */
-int IWindow::pause() {
+int Window::pause() {
 	ENTER();
 
 	resumed = false;
@@ -98,7 +98,7 @@ int IWindow::pause() {
  * @return int
  */
 /*public*/
-int IWindow::stop() {
+int Window::stop() {
 	ENTER();
 
 	if (running) {
@@ -116,7 +116,7 @@ int IWindow::stop() {
 }
 
 /*public*/
-IWindow::operator bool() {
+Window::operator bool() {
 	return poll_events();
 }
 
@@ -125,7 +125,7 @@ IWindow::operator bool() {
  *
  */
 /*private,@WorkerThread*/
-void IWindow::renderer_thread_func() {
+void Window::renderer_thread_func() {
     ENTER();
 
 	init_gl();
@@ -182,7 +182,7 @@ void IWindow::renderer_thread_func() {
 	EXIT();
 }
 
-void IWindow::internal_resize(const int &width, const int &height) {
+void Window::internal_resize(const int &width, const int &height) {
 	ENTER();
 
 	aspect = width / (float)height;

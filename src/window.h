@@ -40,7 +40,7 @@ typedef std::function<KeyEvent(const int&/*key*/, const int&/*scancode*/, const 
  *	  ←on_stop←stop←
  * 	　デストラクタ←	
  */
-class IWindow {
+class Window {
 private:
 	volatile bool running;
 	volatile bool resumed;
@@ -72,8 +72,8 @@ protected:
 	virtual void terminate_gui() = 0;
 	void internal_resize(const int &width, const int &height);
 public:
-	IWindow(const int width = 640, const int height = 480, const char *title = "aAndUsb");
-	virtual ~IWindow();
+	Window(const int width = 640, const int height = 480, const char *title = "aAndUsb");
+	virtual ~Window();
 
 	/**
 	 * @brief 描画スレッドを開始する
@@ -122,25 +122,25 @@ public:
 	 * @brief キーイベント発生時のハンドラーを登録
 	 *
 	 * @param listener
-	 * @return IWindow&
+	 * @return Window&
 	 */
-	inline IWindow &on_key_event(OnKeyEventFunc listener) {
+	inline Window &on_key_event(OnKeyEventFunc listener) {
 		on_key_event_func = listener;
 		return *this;
 	}
-	inline IWindow &set_on_start(LifeCycletEventFunc callback) {
+	inline Window &set_on_start(LifeCycletEventFunc callback) {
 		on_start = callback;
 		return *this;
 	}
-	inline IWindow &set_on_resume(LifeCycletEventFunc callback) {
+	inline Window &set_on_resume(LifeCycletEventFunc callback) {
 		on_resume = callback;
 		return *this;
 	}
-	inline IWindow &set_on_pause(LifeCycletEventFunc callback) {
+	inline Window &set_on_pause(LifeCycletEventFunc callback) {
 		on_pause = callback;
 		return *this;
 	}
-	inline IWindow &set_on_stop(LifeCycletEventFunc callback) {
+	inline Window &set_on_stop(LifeCycletEventFunc callback) {
 		on_stop = callback;
 		return *this;
 	}

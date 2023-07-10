@@ -20,7 +20,7 @@
 #include "key_dispatcher.h"
 #include "osd.h"
 #include "settings.h"
-#include "iwindow.h"
+#include "window.h"
 #include "glfw_window.h"
 
 namespace pipeline = serenegiant::pipeline;

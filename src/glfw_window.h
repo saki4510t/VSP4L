@@ -17,7 +17,7 @@
 
 #include "const.h"
 #include "key_event.h"
-#include "iwindow.h"
+#include "window.h"
 
 namespace serenegiant::app {
 
@@ -34,7 +34,7 @@ namespace serenegiant::app {
  *	  ←on_stop←stop←
  * 	　デストラクタ←	
  */
-class GlfwWindow : public IWindow {
+class GlfwWindow : public Window {
 private:
 	GLFWwindow *window;
 	GLFWkeyfun prev_key_callback;
