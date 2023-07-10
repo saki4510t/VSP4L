@@ -21,13 +21,9 @@
 
 #include "const.h"
 #include "key_event.h"
+#include "iwindow.h"
 
 namespace serenegiant::app {
-
-typedef std::function<void()> LifeCycletEventFunc;
-typedef std::function<void()> OnRenderFunc;
-// 複数キー同時押しをENTERに割り当てるなどキーイベントを上書きできるようにKeyEventを返す
-typedef std::function<KeyEvent(const int&/*key*/, const int&/*scancode*/, const int&/*action*/, const int&/*mods*/)> OnKeyEventFunc;
 
 /**
  * glfwによるwindow関係の処理用ヘルパークラス
@@ -42,114 +38,27 @@ typedef std::function<KeyEvent(const int&/*key*/, const int&/*scancode*/, const 
  *	  ←on_stop←stop←
  * 	　デストラクタ←	
  */
-class Window {
+class Window : public IWindow {
 private:
 	GLFWwindow *window;
-	volatile bool running;
-	volatile bool resumed;
-	mutable std::mutex state_lock;
-	std::condition_variable state_cond;
-	std::thread renderer_thread;
-	GLfloat aspect;
-	int fb_width;
-	int fb_height;
 	GLFWkeyfun prev_key_callback;
-	OnKeyEventFunc on_key_event_func;
-	LifeCycletEventFunc on_start;
-	LifeCycletEventFunc on_resume;
-	LifeCycletEventFunc on_pause;
-	LifeCycletEventFunc on_stop;
-	OnRenderFunc on_render;
-
-	void init_gl();
-	void terminate_gl();
-	void init_gui();
-	void terminate_gui();
-	bool poll_events();
-	/**
-	 * @brief 描画スレッドの実行関数
-	 *
-	 */
-	void renderer_thread_func();
 protected:
 	static void resize(GLFWwindow *win, int width, int height);
 	static void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods);
-	void swap_buffers();
+
+	void init_gl() override;
+	void terminate_gl() override;
+	bool poll_events() override;
+	void swap_buffers() override;
+	void init_gui() override;
+	void terminate_gui() override;
 public:
 	static int initialize();
 
 	Window(const int width = 640, const int height = 480, const char *title = "aAndUsb");
 	virtual ~Window();
 
-	/**
-	 * @brief 描画スレッドを開始する
-	 *
-	 * @return int
-	 */
-	int start(OnRenderFunc render_func);
-	/**
-	 * @brief 描画開始(startを呼んだときは自動的に呼ばれる)
-	 * 
-	 * @return int 
-	 */
-	int resume();
-	/**
-	 * @brief 描画待機(stopを呼んだときは自動的に呼ばれる)
-	 * 
-	 * @return int 
-	 */
-	int pause();
-	/**
-	 * @brief 描画スレッドを終了する
-	 *
-	 * @return int
-	 */
-	int stop();
-
-	explicit operator bool();
-	inline bool is_valid() const { return window != nullptr; };
-	inline bool is_running() const { return running; };
-	inline bool is_resumed() const { return resumed; };
-	inline GLfloat get_aspect() const { return aspect; };
-	/**
-	 * @brief フレームバッファの幅を取得
-	 *
-	 * @return int
-	 */
-	inline int width() const { return fb_width; };
-	/**
-	 * @brief フレームバッファの高さを取得
-	 *
-	 * @return int
-	 */
-	inline int height() const { return fb_height; };
-
-	/**
-	 * @brief キーイベント発生時のハンドラーを登録
-	 *
-	 * @param listener
-	 * @return Window&
-	 */
-	inline Window &on_key_event(OnKeyEventFunc listener) {
-		on_key_event_func = listener;
-		return *this;
-	}
-	inline Window &set_on_start(LifeCycletEventFunc callback) {
-		on_start = callback;
-		return *this;
-	}
-	inline Window &set_on_resume(LifeCycletEventFunc callback) {
-		on_resume = callback;
-		return *this;
-	}
-	inline Window &set_on_pause(LifeCycletEventFunc callback) {
-		on_pause = callback;
-		return *this;
-	}
-	inline Window &set_on_stop(LifeCycletEventFunc callback) {
-		on_stop = callback;
-		return *this;
-	}
+	bool is_valid() const override;
 };
 
 }	// end of namespace serenegiant::app

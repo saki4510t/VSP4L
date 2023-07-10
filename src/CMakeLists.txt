@@ -101,6 +101,7 @@ add_executable(${target}
     main.cpp
     osd.cpp
     settings.cpp
+    iwindow.cpp
     window.cpp
 )
 

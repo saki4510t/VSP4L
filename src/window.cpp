@@ -61,13 +61,9 @@ int Window::initialize() {
 }
 
 Window::Window(const int width, const int height, const char *title)
-:	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
-	running(false), resumed(false),
-	renderer_thread(),
-	aspect(640 / 480.0f), fb_width(width), fb_height(height),
-	prev_key_callback(nullptr),
-	on_key_event_func(nullptr),
-	on_start(nullptr), on_stop(nullptr), on_render(nullptr)
+:	IWindow(width, height, title),
+	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
+	prev_key_callback(nullptr)
 {
 	ENTER();
 
@@ -94,81 +90,9 @@ Window::~Window() {
 	EXIT();
 }
 
-/**
- * @brief 描画スレッドを開始する
- *
- * @return int
- */
-int Window::start(OnRenderFunc render_func) {
-	ENTER();
-
-	if (!running) {
-		running = true;
-		on_render = render_func;
-    	renderer_thread = std::thread([this] { renderer_thread_func(); });
-		resume();
-	}
-
-	RETURN(0, int);
-}
-
-/**
- * @brief 描画開始(startを呼んだときは自動的に呼ばれる)
- *
- * @return int
- */
-int Window::resume() {
-	ENTER();
-
-	if (running && !resumed) {
- 		std::lock_guard<std::mutex> lock(state_lock);
-		resumed = true;
-		state_cond.notify_one();
-	}
-
-	RETURN(0, int);
-}
-
-/**
- * @brief 描画待機(stopを呼んだときは自動的に呼ばれる)
- *
- * @return int
- */
-int Window::pause() {
-	ENTER();
-
-	resumed = false;
-
-	RETURN(0, int);
-}
-
-/**
- * @brief 描画スレッドを終了する
- *
- * @return int
- */
-/*public*/
-int Window::stop() {
-	ENTER();
-
-	if (running) {
-		pause();
-		running = false;
-		state_cond.notify_one();
-	}
-    if (renderer_thread.joinable()
-		&& (std::this_thread::get_id() != renderer_thread.get_id())) {
-		// デッドロックしないように描画スレッド以外から呼び出されたときのみjoinを呼び出す
-        renderer_thread.join();
-    }
-
-	RETURN(0, int);
-}
-
-/*public*/
-Window::operator bool() {
-	return poll_events();
-}
+bool Window::is_valid() const {
+	return window != nullptr;
+};
 
 /*public*/
 void Window::swap_buffers() {
@@ -192,9 +116,7 @@ void Window::resize(GLFWwindow *win, int width, int height) {
 	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(win));
 	if (self) {
 		// このインスタンスが保持する縦横比を更新する
-		self->aspect = width / (float)height;
-		self->fb_width = fbWidth;
-		self->fb_height = fbHeight;
+		self->internal_resize(fbWidth, fbHeight);
 	}
 
 	EXIT();
@@ -229,69 +151,7 @@ bool Window::poll_events() {
 	return window && !glfwWindowShouldClose(window);
 }
 
-/**
- * @brief 描画スレッドの実行関数
- *
- */
-/*private,@WorkerThread*/
-void Window::renderer_thread_func() {
-    ENTER();
-
-	init_gl();
-
-	if (on_start) {
-		on_start();
-	}
-
-	for ( ; running ; ) {
-		for ( ; running && !resumed ; ) {
-			// リジュームしていないときは待機する
- 			std::unique_lock<std::mutex> lock(state_lock);
-			const auto result = state_cond.wait_for(lock, std::chrono::seconds(3));
-			if ((result == std::cv_status::timeout)) {
-				continue;
-			}
-		}
-
-		if (LIKELY(running)) {
-			if (on_resume) {
-				on_resume();
-			}
-
-			// 描画ループ
-			// メインスレッドでイベント処理しているのでここではpoll_eventsを呼び出さないように変更
-			for ( ; running && resumed /*&& poll_events()*/; ) {
-				const auto start = systemTime();
-				on_render();
-				// ダブルバッファーをスワップ
-				swap_buffers();
-				// フレームレート調整
-				const auto t = (systemTime() - start) / 1000L;
-				if (t < 12000) {
-					// 60fpsだと16.6msだけど少し余裕をみて最大12ms待機する
-					usleep(12000 - t);
-				}
-			}
-
-			if (on_pause) {
-				on_pause();
-			}
-		}
-	}
-
-	running = false;
-	if (on_stop) {
-		on_stop();
-	}
-
-	terminate_gl();
-
-	LOGD("finished");
-
-	EXIT();
-}
-
-/*private,@WorkerThread*/
+/*protected,@WorkerThread*/
 void Window::init_gl() {
 	ENTER();
 
@@ -316,7 +176,7 @@ void Window::init_gl() {
 	EXIT();
 }
 
-/*private,@WorkerThread*/
+/*protected,@WorkerThread*/
 void Window::terminate_gl() {
 	ENTER();
 
@@ -330,7 +190,7 @@ void Window::terminate_gl() {
 	EXIT();
 }
 
-/*private,@WorkerThread*/
+/*protected,@WorkerThread*/
 void Window::init_gui() {
 	ENTER();
 
@@ -357,7 +217,7 @@ void Window::init_gui() {
 	EXIT();
 }
 
-/*private,@WorkerThread*/
+/*protected,@WorkerThread*/
 void Window::terminate_gui() {
 	ENTER();
 
