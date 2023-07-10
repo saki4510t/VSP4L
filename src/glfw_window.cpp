@@ -23,7 +23,7 @@
 // common
 #include "times.h"
 // app
-#include "window.h"
+#include "glfw_window.h"
 
 namespace serenegiant::app {
 
@@ -31,7 +31,7 @@ static void glfw_error_callback(int error, const char* description) {
     LOGE("GLFW Error %d: %s", error, description);
 }
 
-int Window::initialize() {
+int GlfwWindow::initialize() {
 	ENTER();
 
 	glfwSetErrorCallback(glfw_error_callback);
@@ -60,7 +60,7 @@ int Window::initialize() {
 	RETURN(0, int);
 }
 
-Window::Window(const int width, const int height, const char *title)
+GlfwWindow::GlfwWindow(const int width, const int height, const char *title)
 :	IWindow(width, height, title),
 	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
 	prev_key_callback(nullptr)
@@ -78,7 +78,7 @@ Window::Window(const int width, const int height, const char *title)
 }
 
 /*public*/
-Window::~Window() {
+GlfwWindow::~GlfwWindow() {
 	ENTER();
 
 	if (window) {
@@ -90,12 +90,12 @@ Window::~Window() {
 	EXIT();
 }
 
-bool Window::is_valid() const {
+bool GlfwWindow::is_valid() const {
 	return window != nullptr;
 };
 
 /*public*/
-void Window::swap_buffers() {
+void GlfwWindow::swap_buffers() {
 	if (window) {
 		glfwMakeContextCurrent(window);
 		glfwSwapBuffers(window);
@@ -103,7 +103,7 @@ void Window::swap_buffers() {
 }
 
 /*static, protected*/
-void Window::resize(GLFWwindow *win, int width, int height) {
+void GlfwWindow::resize(GLFWwindow *win, int width, int height) {
     ENTER();
 
 	// フレームバッファのサイズを調べる
@@ -113,7 +113,7 @@ void Window::resize(GLFWwindow *win, int width, int height) {
 	glViewport(0, 0, fbWidth, fbHeight);
 
 	// このインスタンスの this ポインタを得る
-	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(win));
+	auto self = reinterpret_cast<GlfwWindow *>(glfwGetWindowUserPointer(win));
 	if (self) {
 		// このインスタンスが保持する縦横比を更新する
 		self->internal_resize(fbWidth, fbHeight);
@@ -123,11 +123,11 @@ void Window::resize(GLFWwindow *win, int width, int height) {
 }
 
 /*static, protected*/
-void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, int mods) {
+void GlfwWindow::key_callback(GLFWwindow *win, int key, int scancode, int action, int mods) {
 	ENTER();
 
 	// このインスタンスの this ポインタを得る
-	auto self = reinterpret_cast<Window *>(glfwGetWindowUserPointer(win));
+	auto self = reinterpret_cast<GlfwWindow *>(glfwGetWindowUserPointer(win));
 	if (self && self->on_key_event_func) {
 		// コールバックが設定されていればそれを呼び出す
 		const auto event = self->on_key_event_func(key, scancode, action, mods);
@@ -142,7 +142,7 @@ void Window::key_callback(GLFWwindow *win, int key, int scancode, int action, in
 }
 
 /*private*/
-bool Window::poll_events() {
+bool GlfwWindow::poll_events() {
 	// イベントを確認
 //	glfwWaitEvents(); // こっちはイベントが起こるまで実行をブロックする
 	// glfwWaitEventsTimeout(0.010); // イベントが起こるかタイム・アウトするまで実行をブロック, glfw3.2以降
@@ -152,7 +152,7 @@ bool Window::poll_events() {
 }
 
 /*protected,@WorkerThread*/
-void Window::init_gl() {
+void GlfwWindow::init_gl() {
 	ENTER();
 
 	if (window) {
@@ -177,7 +177,7 @@ void Window::init_gl() {
 }
 
 /*protected,@WorkerThread*/
-void Window::terminate_gl() {
+void GlfwWindow::terminate_gl() {
 	ENTER();
 
 	if (prev_key_callback) {
@@ -191,7 +191,7 @@ void Window::terminate_gl() {
 }
 
 /*protected,@WorkerThread*/
-void Window::init_gui() {
+void GlfwWindow::init_gui() {
 	ENTER();
 
 // Setup Dear ImGui context
@@ -218,7 +218,7 @@ void Window::init_gui() {
 }
 
 /*protected,@WorkerThread*/
-void Window::terminate_gui() {
+void GlfwWindow::terminate_gui() {
 	ENTER();
 
 	// Cleanup

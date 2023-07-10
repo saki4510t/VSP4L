@@ -1,10 +1,11 @@
 #ifndef OSD_H_
 #define OSD_H_
 
+#include <functional>
+
 #include "const.h"
 #include "key_event.h"
 #include "settings.h"
-#include "window.h"
 
 namespace serenegiant::app {
 

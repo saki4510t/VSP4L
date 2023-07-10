@@ -102,7 +102,7 @@ add_executable(${target}
     osd.cpp
     settings.cpp
     iwindow.cpp
-    window.cpp
+    glfw_window.cpp
 )
 
 # ターゲットアプリのビルド設定

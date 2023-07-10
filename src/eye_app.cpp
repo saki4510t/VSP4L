@@ -22,8 +22,6 @@
 // gl
 #include "gl/texture_vsh.h"
 #include "gl/rgba_fsh.h"
-// aandusb
-#include "window.h"
 // app
 #include "effect_fsh.h"
 #include "eye_app.h"
@@ -59,7 +57,7 @@ namespace serenegiant::app {
 /*public*/
 EyeApp::EyeApp(const int &gl_version)
 :   gl_version(gl_version),
-	initialized(!Window::initialize()),
+	initialized(!GlfwWindow::initialize()),
 	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
 	source(nullptr), renderer_pipeline(nullptr),

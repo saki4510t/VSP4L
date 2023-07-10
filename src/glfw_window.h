@@ -11,11 +11,7 @@
 // Open GL3を使うかどうか, 1: GL3を使う, 0: 使わない(GL2を使う)
 #define USE_GL3 (0)
 
-#include <condition_variable>
 #include <cstdlib>
-#include <functional>
-#include <mutex>
-#include <thread>
 
 #include "internal.h"
 
@@ -29,7 +25,7 @@ namespace serenegiant::app {
  * glfwによるwindow関係の処理用ヘルパークラス
  * あらかじめglfwInitを呼び出してglfwを初期化しておくこと
  * ライフサイクル：
- * Window::initialize
+ * GlfwWindow::initialize
  * 	→コンストラクタ
  * 	　→start→on_start
  *	　　→on_resume→
@@ -38,7 +34,7 @@ namespace serenegiant::app {
  *	  ←on_stop←stop←
  * 	　デストラクタ←	
  */
-class Window : public IWindow {
+class GlfwWindow : public IWindow {
 private:
 	GLFWwindow *window;
 	GLFWkeyfun prev_key_callback;
@@ -55,8 +51,8 @@ protected:
 public:
 	static int initialize();
 
-	Window(const int width = 640, const int height = 480, const char *title = "aAndUsb");
-	virtual ~Window();
+	GlfwWindow(const int width = 640, const int height = 480, const char *title = "aAndUsb");
+	virtual ~GlfwWindow();
 
 	bool is_valid() const override;
 };
