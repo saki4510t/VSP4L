@@ -75,6 +75,10 @@ WaylandDisplay::~WaylandDisplay() {
 		wl_compositor_destroy(m_compositor);
 		m_compositor = nullptr;
 	}
+	if (m_subcompositor) {
+		wl_subcompositor_destroy(m_subcompositor);
+		m_subcompositor = nullptr;
+	}
 	if (m_registry) {
 		wl_registry_destroy(m_registry);
 		m_registry = nullptr;
@@ -144,7 +148,7 @@ void WaylandDisplay::registry_handle_global(
 	if (strcmp(interface, "wl_compositor") == 0) {
 		d->m_compositor = static_cast<wl_compositor *>(wl_registry_bind(registry, name, &wl_compositor_interface, 1));
     } else if (strcmp(interface, "wl_subcompositor") == 0) {
-        d->m_subcompositor = static_cast<wl_subcompositor *>wl_registry_bind(registry, name, &wl_subcompositor_interface, 1);
+        d->m_subcompositor = static_cast<wl_subcompositor *>(wl_registry_bind(registry, name, &wl_subcompositor_interface, 1));
 	} else if (strcmp(interface, "wl_shell") == 0) {
 		d->m_shell = static_cast<wl_shell *>(wl_registry_bind(registry, name, &wl_shell_interface, 1));
 	} else if (strcmp(interface, "wl_seat") == 0) {
