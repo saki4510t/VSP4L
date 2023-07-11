@@ -106,7 +106,7 @@ EyeApp::EyeApp(const int &gl_version)
 		});
 	// キーイベントハンドラを登録
 	window
-		.on_key_event([this](const int &key, const int &scancode, const int &action, const int &mods) {
+		.on_key_event([this](const ImGuiKey &key, const int &scancode, const int &action, const int &mods) {
 			return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
 		})
 		.set_on_start([this]() { on_start(); })

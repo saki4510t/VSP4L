@@ -175,8 +175,8 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 		result = 1;
 	}
 	if (result/*handled*/) {
-		// 処理済みならkeyをGLFW_KEY_UNKNOWNに変更して返す
-		RET(KeyEvent(GLFW_KEY_UNKNOWN, event.scancode, event.action, event.mods));
+		// 処理済みならkeyをImGuiKey_Noneに変更して返す
+		RET(KeyEvent(ImGuiKey_None, event.scancode, event.action, event.mods));
 	} else {
 		RET(event);
 	}

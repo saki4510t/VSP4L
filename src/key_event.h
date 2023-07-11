@@ -18,14 +18,14 @@ namespace serenegiant::app {
 class KeyEvent {
 private:
 public:
-	const int key;
+	const ImGuiKey key;
     const int scancode;
 	const int action;
     const int mods;
     const nsecs_t event_time_ns;
     key_state_t state;
 
-    explicit KeyEvent(const int &key, const int &scancode, const int &action, const int &mods)
+    explicit KeyEvent(const ImGuiKey &key, const int &scancode, const int &action, const int &mods)
     :	key(key), scancode(scancode),
         action(action), mods(mods),
         event_time_ns(systemTime()),
