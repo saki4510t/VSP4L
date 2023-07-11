@@ -73,7 +73,7 @@ if (EYEAPP_ENABLE_GLFW)
         imgui/backends/imgui_impl_glfw.cpp
         imgui/backends/imgui_impl_opengl3.cpp
     )
-    set(APP_WINDOW
+    set(APP_SRC_WINDOW
         glfw_window.cpp
     )
     set(APP_LIBS
@@ -84,8 +84,10 @@ else()
     set(IMGUI_BACKEND
         imgui/backends/imgui_impl_opengl3.cpp
     )
-    set(APP_WINDOW
+    set(APP_SRC_WINDOW
         egl_window.cpp
+        wayland/wayland_display.cpp
+        wayland/wayland_window.cpp
     )
     set(APP_LIBS
         EGL
@@ -132,20 +134,21 @@ add_executable(${target}
     osd.cpp
     settings.cpp
     window.cpp
-    ${APP_WINDOW}
+    ${APP_SRC_WINDOW}
 )
 
 # ターゲットアプリのビルド設定
 target_compile_definitions(${target} PRIVATE
     #ログ出力設定
-    NDEBUG            # LOG_ALLを無効にする・assertを無効にする場合
-    LOG_NDEBUG        # デバッグメッセージを出さないようにする時
+#   NDEBUG            # LOG_ALLを無効にする・assertを無効にする場合
+#   LOG_NDEBUG        # デバッグメッセージを出さないようにする時
 #   USE_LOGALL		  # define USE_LOGALL macro to enable all debug string
 #   DISABLE_IMPORTGL  # when static link OpenGL|ES library
 )
 
 target_include_directories(${target} PRIVATE
     ../
+    ./common
     ./aandusb
     ./glfw/include
     ./libyuv/include

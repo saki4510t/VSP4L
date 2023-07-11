@@ -6,8 +6,8 @@
  */
 
 #if 0    // set 0 if you need debug log, otherwise set 1
-#ifndef LOG_NDEBUG
-	#define LOG_NDEBUG
+    #ifndef LOG_NDEBUG
+	    #define LOG_NDEBUG
 	#endif
 	#undef USE_LOGALL
 #else

@@ -13,8 +13,15 @@
 
 #include <cstdlib>
 
+#include "eglbase.h"
+
 #include "internal.h"
 
+// wayland
+#include "wayland/wayland_display.h"
+#include "wayland/wayland_window.h"
+
+// app
 #include "const.h"
 #include "key_event.h"
 #include "window.h"
@@ -31,10 +38,14 @@ namespace serenegiant::app {
  *	　　　→on_render→
  *	　　←on_pause←pause←
  *	  ←on_stop←stop←
- * 	　デストラクタ←	
+ * 	　デストラクタ←
  */
 class EglWindow : public Window {
 private:
+	wayland::WaylandDisplayUp display;
+
+	void init_egl();
+	void release_egl();
 protected:
 	void init_gl() override;
 	void terminate_gl() override;
@@ -45,7 +56,7 @@ protected:
 public:
 	static int initialize();
 
-	EglWindow(const int width = 640, const int height = 480, const char *title = "aAndUsb");
+	EglWindow(const int &width = 640, const int &height = 480, const char *title = "aAndUsb");
 	virtual ~EglWindow();
 
 	bool is_valid() const override;

@@ -1,6 +1,11 @@
 #ifndef INTERNAL_H_
 #define INTERNAL_H_
 
+#include <memory>
+
+// common
+#include "glutils.h"
+
 #if defined(EYEAPP_ENABLE_GLFW)
     #define GLFW_INCLUDE_ES3
     #include <GLFW/glfw3.h>
