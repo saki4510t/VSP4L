@@ -151,7 +151,11 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
  		std::lock_guard<std::mutex> lock(state_lock);
 		current_key_mode = key_mode;
 	}
-	if ((key >= ImGuiKey_RightArrow) && (key <= ImGuiKey_UpArrow)) {
+	switch (key) {
+	case ImGuiKey_LeftArrow:
+	case ImGuiKey_RightArrow:
+	case ImGuiKey_UpArrow:
+	case ImGuiKey_DownArrow:
 		switch (event.action) {
 		case KEY_ACTION_RELEASE:	// 0
 			result = handle_on_key_up(event);
@@ -163,9 +167,11 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 		default:
 			break;
 		}
-	} else {
+		break;
+	default:
 		LOGD("key=%d,scancode=%d,action=%d,mods=%d",
 			key, event.scancode, event.action, event.mods);
+		break;
 	}
 	if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
 		// OSDモードのときは未処理のすべてのキーイベントをOSDクラスへ送る
