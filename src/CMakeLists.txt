@@ -6,12 +6,16 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 set(lib_src_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(target EyeApp)
 
+# キャッシュ変数
+option(EYEAPP_ENABLE_GLFW "Enable GLFW" ON)
+
 # キャッシュ変数、glfwのドキュメント・テスト・サンプルのビルドを無効化
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 # キャッシュ変数、glfwにwaylandサポート込みでビルドする
 set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
+set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
 # キャッシュ変数、libyuvのユーティリティツールをビルドしない
 set(YUV_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 
@@ -57,23 +61,41 @@ pkg_check_modules(LIBJPEG_TURBO REQUIRED libturbojpeg)
 # search library with pkg-config and name its results "LIBUDEV"
 pkg_check_modules(LIBUDEV REQUIRED libudev)
 
-# サブモジュールとして取り込んだglfwのソースをビルドする
-add_subdirectory(${lib_src_DIR}/glfw)
+if (EYEAPP_ENABLE_GLFW)
+    # サブモジュールとして取り込んだglfwのソースをビルドする
+    add_subdirectory(${lib_src_DIR}/glfw)
+    add_definitions("-DEYEAPP_ENABLE_GLFW")
+endif()
 
 # サブモジュールとして取り込んだlibyuvのソースをビルドする
 add_subdirectory(${lib_src_DIR}/libyuv)
 
 # サブモジュールとしてsrc下に取り込んだimguiをスタティックライブラリーとしてビルドする
-add_library(imgui STATIC
+set(IMGUI_COMMON
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
     imgui/imgui_draw.cpp
     imgui/imgui_tables.cpp
     imgui/imgui_widgets.cpp
-    imgui/backends/imgui_impl_glfw.cpp
     imgui/backends/imgui_impl_opengl3.cpp
+)
 
-    # imgui/backends/imgui_impl_opengl2.cpp
+if (EYEAPP_ENABLE_GLFW)
+    set(IMGUI_BACKEND
+        imgui/backends/imgui_impl_glfw.cpp
+        imgui/backends/imgui_impl_opengl3.cpp
+    )
+else()
+    # FIXME とりあえずglfwのまま
+    set(IMGUI_BACKEND
+        imgui/backends/imgui_impl_glfw.cpp
+        imgui/backends/imgui_impl_opengl3.cpp
+    )
+endif()
+
+add_library(imgui STATIC
+    ${IMGUI_COMMON}
+    ${IMGUI_BACKEND}
 )
 
 target_compile_definitions(imgui PRIVATE
@@ -94,7 +116,7 @@ target_include_directories(imgui PUBLIC
 add_subdirectory(${lib_src_DIR}/aandusb)
 add_subdirectory(${lib_src_DIR}/common)
 
-add_executable(${target}
+set(APP_COMMON
     const.cpp
     eye_app.cpp
     key_dispatcher.cpp
@@ -102,7 +124,21 @@ add_executable(${target}
     osd.cpp
     settings.cpp
     window.cpp
-    glfw_window.cpp
+)
+
+if (EYEAPP_ENABLE_GLFW)
+    set(APP_WINDOW
+        glfw_window.cpp
+    )
+else()
+    set(APP_WINDOW
+        egl_window.cpp
+    )
+endif()
+
+add_executable(${target}
+    ${APP_COMMON}
+    ${APP_WINDOW}
 )
 
 # ターゲットアプリのビルド設定
