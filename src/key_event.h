@@ -20,23 +20,23 @@ private:
 public:
 	const ImGuiKey key;
     const int scancode;
-	const int action;
+	const key_action_t action;
     const int mods;
     const nsecs_t event_time_ns;
     key_state_t state;
 
-    explicit KeyEvent(const ImGuiKey &key, const int &scancode, const int &action, const int &mods)
+    explicit KeyEvent(const ImGuiKey &key, const int &scancode, const key_action_t &action, const int &mods)
     :	key(key), scancode(scancode),
         action(action), mods(mods),
         event_time_ns(systemTime()),
         state(KEY_STATE_UP)
     {
 		switch (action) {
-		case GLFW_RELEASE:	// 0
+		case KEY_ACTION_RELEASE:	// 0
             state = KEY_STATE_UP;
 			break;
-		case GLFW_PRESS:	// 1
-		case GLFW_REPEAT:	// 2
+		case KEY_ACTION_PRESSED:	// 1
+		case KEY_ACTION_REPEAT:	// 2
             state = KEY_STATE_DOWN;
 			break;
 		default:

@@ -132,9 +132,8 @@ void KeyDispatcher::reset_key_mode() {
 }
 
 /**
- * @brief GLFWからのキー入力イベントの処理
- * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
- * 4種類だけキー処理を行う
+ * @brief キー入力イベントの処理
+ * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
  *
  * @param event
  * @return KeyEvent
@@ -145,29 +144,28 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 
 	int result = 0;
 
-	// XXX 複数キー同時押しのときに最後に押したキーに対してのみGLFW_REPEATがくるみたいなのでGLFW_REPEATは使わない
+	// XXX 複数キー同時押しのときに最後に押したキーに対してのみKEY_ACTION_REPEATがくるみたいなのでKEY_ACTION_REPEATは使わない
 	const auto key = event.key;
 	key_mode_t current_key_mode;
 	{
  		std::lock_guard<std::mutex> lock(state_lock);
 		current_key_mode = key_mode;
 	}
-	if ((key >= GLFW_KEY_RIGHT) && (key <= GLFW_KEY_UP)) {
+	if ((key >= ImGuiKey_RightArrow) && (key <= ImGuiKey_UpArrow)) {
 		switch (event.action) {
-		case GLFW_RELEASE:	// 0
+		case KEY_ACTION_RELEASE:	// 0
 			result = handle_on_key_up(event);
 			break;
-		case GLFW_PRESS:	// 1
+		case KEY_ACTION_PRESSED:	// 1
 			result = handle_on_key_down(event);
 			break;
-		case GLFW_REPEAT:	// 2
+		case KEY_ACTION_REPEAT:	// 2
 		default:
 			break;
 		}
 	} else {
-		LOGD("key=%d,scancode=%d/%s,action=%d,mods=%d",
-			key, event.scancode, glfwGetKeyName(key, event.scancode),
-			event.action, event.mods);
+		LOGD("key=%d,scancode=%d,action=%d,mods=%d",
+			key, event.scancode, event.action, event.mods);
 	}
 	if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
 		// OSDモードのときは未処理のすべてのキーイベントをOSDクラスへ送る
@@ -222,7 +220,7 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 	const auto sts = state->state;
 
 	switch (event.action) {
-	case GLFW_RELEASE:	// 0
+	case KEY_ACTION_RELEASE:	// 0
 	{
 		state->state = handled ? KEY_STATE_HANDLED : KEY_STATE_UP;
 		// 前回同じキーを押したときからの経過時間を計算
@@ -243,10 +241,10 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 		LOGD("sts=%d,interval=%ld,tap_count=%d", sts, tap_interval_ms, state->tap_count);
 		break;
 	}
-	case GLFW_PRESS:	// 1
+	case KEY_ACTION_PRESSED:	// 1
 		state->press_time_ns = event.event_time_ns;
 		// pass through
-	case GLFW_REPEAT:	// 2
+	case KEY_ACTION_REPEAT:	// 2
 		state->state = KEY_STATE_DOWN;
 		break;
 	default:
@@ -256,7 +254,7 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 	RET(prev);
 }
 
-void KeyDispatcher::clear_key_state(const int &key) {
+void KeyDispatcher::clear_key_state(const ImGuiKey &key) {
 	ENTER();
 
 	if (LIKELY(key_states.find(key) != key_states.end())) {
@@ -293,7 +291,7 @@ void KeyDispatcher::confirm_key_task(const KeyEvent &event) {
  * 
  * @param key 
  */
-void KeyDispatcher::cancel_key_up_task(const int &key) {
+void KeyDispatcher::cancel_key_up_task(const ImGuiKey &key) {
 	ENTER();
 
 	// キーアップの遅延処理用Runnableがあれば削除する
@@ -324,7 +322,7 @@ int KeyDispatcher::num_pressed() {
  * @return true
  * @return false
  */
-bool KeyDispatcher::is_pressed(const int &key) {
+bool KeyDispatcher::is_pressed(const ImGuiKey &key) {
 	return (key_states.find(key) != key_states.end())
 		&& ((key_states[key]->state == KEY_STATE_DOWN)
 			|| ((key_states[key]->state == KEY_STATE_DOWN_LONG)));
@@ -338,7 +336,7 @@ bool KeyDispatcher::is_pressed(const int &key) {
  * @return false
  */
 /*private*/
-bool KeyDispatcher::is_short_pressed(const int &key) {
+bool KeyDispatcher::is_short_pressed(const ImGuiKey &key) {
 	return (key_states.find(key) != key_states.end())
 		&& (key_states[key]->state == KEY_STATE_DOWN);
 }
@@ -351,7 +349,7 @@ bool KeyDispatcher::is_short_pressed(const int &key) {
  * @return false
  */
 /*private*/
-bool KeyDispatcher::is_long_pressed(const int &key) {
+bool KeyDispatcher::is_long_pressed(const ImGuiKey &key) {
 	return (key_states.find(key) != key_states.end())
 		&& (key_states[key]->state == KEY_STATE_DOWN_LONG);
 }
@@ -362,7 +360,7 @@ bool KeyDispatcher::is_long_pressed(const int &key) {
  * @param key 
  * @return int
  */
-int KeyDispatcher::tap_counts(const int &key) {
+int KeyDispatcher::tap_counts(const ImGuiKey &key) {
 	return (key_states.find(key) != key_states.end())
 		? key_states[key]->tap_count : 0;
 }
@@ -370,8 +368,7 @@ int KeyDispatcher::tap_counts(const int &key) {
 //--------------------------------------------------------------------------------
 /**
  * @brief handle_on_key_eventの下請け、キーが押されたとき
- * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
- * 4種類だけキー処理を行う
+ * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
  *
  * @param event
  * @return int
@@ -401,8 +398,7 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 
 /**
  * @brief handle_on_key_eventの下請け、キーが離されたとき
- * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
- * 4種類だけキー処理を行う
+ * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
  *
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -574,16 +570,16 @@ int KeyDispatcher::on_tap_short_brightness(const KeyEvent &event) {
 	int result = 0;
 	const auto key = event.key;
 	switch (key) {
-	case GLFW_KEY_RIGHT:
-	case GLFW_KEY_LEFT:
+	case ImGuiKey_RightArrow:
+	case ImGuiKey_LeftArrow:
 		// 輝度変更
 		if (on_brightness_changed) {
-			on_brightness_changed(key == GLFW_KEY_RIGHT);
+			on_brightness_changed(key == ImGuiKey_RightArrow);
 		}
 		result = 1;
 		break;
-	case GLFW_KEY_DOWN:
-	case GLFW_KEY_UP:
+	case ImGuiKey_DownArrow:
+	case ImGuiKey_UpArrow:
 	default:
 		LOGW("unexpected key code,%d", key);
 		break;
@@ -604,16 +600,16 @@ int KeyDispatcher::on_tap_short_zoom(const KeyEvent &event) {
 	int result = 0;
 	const auto key = event.key;
 	switch (key) {
-	case GLFW_KEY_DOWN:
-	case GLFW_KEY_UP:
+	case ImGuiKey_DownArrow:
+	case ImGuiKey_UpArrow:
 		// 拡大縮小
 		if (on_scale_changed) {
-			on_scale_changed(key == GLFW_KEY_UP);
+			on_scale_changed(key == ImGuiKey_UpArrow);
 		}
 		result = 1;
 		break;
-	case GLFW_KEY_RIGHT:
-	case GLFW_KEY_LEFT:
+	case ImGuiKey_RightArrow:
+	case ImGuiKey_LeftArrow:
 	default:
 		LOGW("unexpected key code,%d", key);
 		break;
@@ -692,14 +688,14 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 		// 単独でキー操作したときのみ受け付ける
 		const auto key = event.key;
 		switch (key) {
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
+		case ImGuiKey_DownArrow:
+		case ImGuiKey_UpArrow:
 			// 拡大縮小モードへ
 			change_key_mode(KEY_MODE_ZOOM);
 			result = 1;
 			break;
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
+		case ImGuiKey_RightArrow:
+		case ImGuiKey_LeftArrow:
 			// 輝度調整モードへ
 			change_key_mode(KEY_MODE_BRIGHTNESS);
 			result = 1;
@@ -713,13 +709,13 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 		{
 	 		std::lock_guard<std::mutex> lock(state_lock);
 			is_osd_toggle
-				= (is_long_pressed(GLFW_KEY_RIGHT) || is_long_pressed(GLFW_KEY_LEFT))
-				&& (is_long_pressed(GLFW_KEY_UP) || is_long_pressed(GLFW_KEY_DOWN));
+				= (is_long_pressed(ImGuiKey_RightArrow) || is_long_pressed(ImGuiKey_LeftArrow))
+				&& (is_long_pressed(ImGuiKey_UpArrow) || is_long_pressed(ImGuiKey_DownArrow));
 			if (is_osd_toggle) {
-				clear_key_state(GLFW_KEY_RIGHT);
-				clear_key_state(GLFW_KEY_LEFT);
-				clear_key_state(GLFW_KEY_UP);
-				clear_key_state(GLFW_KEY_DOWN);
+				clear_key_state(ImGuiKey_RightArrow);
+				clear_key_state(ImGuiKey_LeftArrow);
+				clear_key_state(ImGuiKey_UpArrow);
+				clear_key_state(ImGuiKey_DownArrow);
 			}
 		}
 		if (is_osd_toggle) {
@@ -748,14 +744,14 @@ int KeyDispatcher::on_tap_long_brightness(const KeyEvent &event) {
 		// 単独でキー操作したときのみ受け付ける
 		const auto key = event.key;
 		switch (key) {
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
+		case ImGuiKey_DownArrow:
+		case ImGuiKey_UpArrow:
 			// 拡大縮小モードへ
 			change_key_mode(KEY_MODE_ZOOM);
 			result = 1;
 			break;
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
+		case ImGuiKey_RightArrow:
+		case ImGuiKey_LeftArrow:
 			break;
 		default:
 			LOGW("unexpected key code,%d", key);
@@ -782,11 +778,11 @@ int KeyDispatcher::on_tap_long_zoom(const KeyEvent &event) {
 		// 単独でキー操作したときのみ受け付ける
 		const auto key = event.key;
 		switch (key) {
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
+		case ImGuiKey_DownArrow:
+		case ImGuiKey_UpArrow:
 			break;
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
+		case ImGuiKey_RightArrow:
+		case ImGuiKey_LeftArrow:
 			// 輝度調整モードへ
 			change_key_mode(KEY_MODE_BRIGHTNESS);
 			result = 1;
@@ -866,8 +862,8 @@ int KeyDispatcher::on_tap_double_normal(const KeyEvent &event) {
 		// キーアップイベントからくるので他にキーが押されていなければ0
 		const auto key = event.key;
 		switch (key) {
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
+		case ImGuiKey_RightArrow:
+		case ImGuiKey_LeftArrow:
 			// 映像フリーズON/OFF
 			freeze = !freeze;
 			if (on_freeze_changed) {
@@ -875,8 +871,8 @@ int KeyDispatcher::on_tap_double_normal(const KeyEvent &event) {
 			}
 			result = 1;
 			break;
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
+		case ImGuiKey_DownArrow:
+		case ImGuiKey_UpArrow:
 			// FIXME 現在の映像効果切り替えはデバッグ用に映像効果をローテーション
 			effect = (effect + 1) % EFFECT_NUM;
 			if (on_effect_changed) {
@@ -991,16 +987,16 @@ int KeyDispatcher::on_tap_triple_normal(const KeyEvent &event) {
 		// キーアップイベントからくるので他にキーが押されていなければ0
 		const auto key = event.key;
 		switch (key) {
-		case GLFW_KEY_RIGHT:
-		case GLFW_KEY_LEFT:
+		case ImGuiKey_RightArrow:
+		case ImGuiKey_LeftArrow:
 			// 測光モードを平均測光へ
 			if (on_exp_mode_changed) {
 				on_exp_mode_changed(EXP_MODE_AVERAGE);
 			}
 			result = 1;
 			break;
-		case GLFW_KEY_DOWN:
-		case GLFW_KEY_UP:
+		case ImGuiKey_DownArrow:
+		case ImGuiKey_UpArrow:
 			// 測光モードを中央測光へ
 			if (on_exp_mode_changed) {
 				on_exp_mode_changed(EXP_MODE_CENTER);

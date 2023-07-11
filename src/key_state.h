@@ -24,6 +24,16 @@ typedef enum {
 	KEY_STATE_DOWN_LONG,	// キーが長押しされた
 } key_state_t;
 
+/**
+ * @brief ユーザーが行ったキー操作定数
+ * 
+ */
+typedef enum {
+    KEY_ACTION_RELEASE = 0,
+    KEY_ACTION_PRESSED,
+    KEY_ACTION_REPEAT,
+} key_action_t;
+
 class KeyState {
 private:
 public:

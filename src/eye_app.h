@@ -21,7 +21,12 @@
 #include "osd.h"
 #include "settings.h"
 #include "window.h"
-#include "glfw_window.h"
+
+#if defined(EYEAPP_ENABLE_GLFW)
+	#include "glfw_window.h"
+#else
+	#include "egl_window.h"
+#endif
 
 namespace pipeline = serenegiant::pipeline;
 namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
@@ -41,8 +46,12 @@ private:
 	std::function<void()> reset_mode_task;
 	// 一定時間毎にステータス(LED点滅等)を更新するタスク
 	std::function<void()> update_state_task;
+#if defined(EYEAPP_ENABLE_GLFW)
 	// GLFWでの画面表示用
 	GlfwWindow window;
+#else
+	EglWindow window;
+#endif
 	// V4L2からの映像取得用
 	v4l2_pipeline::V4L2SourcePipelineUp source;
 	// 映像表示用

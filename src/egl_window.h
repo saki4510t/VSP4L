@@ -22,8 +22,7 @@
 namespace serenegiant::app {
 
 /**
- * glfwによるwindow関係の処理用ヘルパークラス
- * あらかじめglfwInitを呼び出してglfwを初期化しておくこと
+ * wayland+eglによるwindow関係の処理用ヘルパークラス
  * ライフサイクル：
  * EglWindow::initialize
  * 	→コンストラクタ
@@ -36,12 +35,7 @@ namespace serenegiant::app {
  */
 class EglWindow : public Window {
 private:
-	GLFWwindow *window;
-	GLFWkeyfun prev_key_callback;
 protected:
-	static void resize(GLFWwindow *win, int width, int height);
-	static void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods);
-
 	void init_gl() override;
 	void terminate_gl() override;
 	bool poll_events() override;

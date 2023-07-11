@@ -287,11 +287,11 @@ void GlfwWindow::key_callback(GLFWwindow *win, int key, int scancode, int action
 			action, mods);
 		const auto imgui_key = ImGui_ImplGlfw_KeyToImGuiKey(keycode);
 		// コールバックが設定されていればそれを呼び出す
-		const auto event = self->on_key_event_func(imgui_key, scancode, action, mods);
+		const auto event = self->on_key_event_func(imgui_key, scancode, (key_action_t)action, mods);
 		if ((event.key != ImGuiKey_None) && self->prev_key_callback) {
 			// ここでprev_key_callbackを呼び出せばimgui自体のキーコールバックが呼ばれる
 			// キーが有効な場合のみprev_key_callbackを呼び出す
-			self->prev_key_callback(self->window, event.key, event.scancode, event.action, event.mods);
+			self->prev_key_callback(self->window, event.key, event.scancode, (const int)event.action, event.mods);
 		}
 	}
 

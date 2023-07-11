@@ -57,7 +57,11 @@ namespace serenegiant::app {
 /*public*/
 EyeApp::EyeApp(const int &gl_version)
 :   gl_version(gl_version),
+#if defined(EYEAPP_ENABLE_GLFW)
 	initialized(!GlfwWindow::initialize()),
+#else
+	initialized(!EglWindow::initialize()),
+#endif
 	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
 	source(nullptr), renderer_pipeline(nullptr),
@@ -106,7 +110,7 @@ EyeApp::EyeApp(const int &gl_version)
 		});
 	// キーイベントハンドラを登録
 	window
-		.on_key_event([this](const ImGuiKey &key, const int &scancode, const int &action, const int &mods) {
+		.on_key_event([this](const ImGuiKey &key, const int &scancode, const key_action_t &action, const int &mods) {
 			return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
 		})
 		.set_on_start([this]() { on_start(); })
@@ -184,7 +188,7 @@ void EyeApp::run() {
 	// ステータス更新開始
 	handler.post(update_state_task);
 
-	// GLFWのイベント処理ループ
+	// ウインドウのイベント処理ループ
     for ( ; window.is_running() && window ; ) {
         usleep(30000);	//　30ms
 		// FIXME ここで装着検知センサーの読み込みを行い未装着ならpauseさせる
@@ -426,7 +430,9 @@ void EyeApp::handle_draw_gui() {
 
 	// Start the Dear ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
+#if defined(EYEAPP_ENABLE_GLFW)
 	ImGui_ImplGlfw_NewFrame();
+#endif
 	ImGui::NewFrame();
 
 	// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す

@@ -39,11 +39,11 @@ private:
 	int effect;
 	bool freeze;
 	// キーの押し下げ状態を保持するハッシュマップ
-	std::unordered_map<int, KeyStateSp> key_states;
+	std::unordered_map<ImGuiKey, KeyStateSp> key_states;
 	// キーの長押し確認用Runnableを保持するハッシュマップ
-	std::unordered_map<int, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
+	std::unordered_map<ImGuiKey, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
 	// マルチタップ確認用Runnableを保持するハッシュマップ
-	std::unordered_map<int, std::shared_ptr<thread::Runnable>> key_up_tasks;
+	std::unordered_map<ImGuiKey, std::shared_ptr<thread::Runnable>> key_up_tasks;
 	OnKeyModeChangedFunc on_key_mode_changed;
 	OnBrightnessChangedFunc on_brightness_changed;
 	OnScaleChangedFunc on_scale_changed;
@@ -66,7 +66,7 @@ private:
 	 * 
 	 * @param key 
 	 */
-	void clear_key_state(const int &key);
+	void clear_key_state(const ImGuiKey &key);
 	/**
 	 * @brief キーの長押し・マルチタップ確認用Runnableが生成されていることを確認、未生成なら新たに生成する
 	 *
@@ -78,7 +78,7 @@ private:
 	 * 
 	 * @param key 
 	 */
-	void cancel_key_up_task(const int &key);
+	void cancel_key_up_task(const ImGuiKey &key);
 	/**
 	 * @brief 押されているキーの個数を取得, 排他制御してないので上位でロックすること
 	 * 
@@ -92,7 +92,7 @@ private:
 	 * @return true
 	 * @return false
 	 */
-	bool is_pressed(const int &key);
+	bool is_pressed(const ImGuiKey &key);
 	/**
 	 * @brief 短押しかどうか, 排他制御してないので上位でロックすること
 	 *
@@ -100,7 +100,7 @@ private:
 	 * @return true
 	 * @return false
 	 */
-	bool is_short_pressed(const int &key);
+	bool is_short_pressed(const ImGuiKey &key);
 	/**
 	 * @brief 長押しされているかどうか, 排他制御してないので上位でロックすること
 	 *
@@ -108,18 +108,17 @@ private:
 	 * @return true
 	 * @return false
 	 */
-	bool is_long_pressed(const int &key);
+	bool is_long_pressed(const ImGuiKey &key);
 	/**
 	 * @brief 指定したキーのタップカウントを取得, 排他制御してないので上位でロックすること
 	 * 
 	 * @param key 
 	 * @return int
 	 */
-	int tap_counts(const int &key);
+	int tap_counts(const ImGuiKey &key);
 	/**
 	 * @brief handle_on_key_eventの下請け、キーが押されたとき/押し続けているとき
-	 * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
-	 * 4種類だけキー処理を行う
+	 * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
 	 *
 	 * @param event
 	 * @return int
@@ -127,8 +126,7 @@ private:
 	int handle_on_key_down(const KeyEvent &event);
 	/**
 	 * @brief handle_on_key_eventの下請け、キーが離されたとき
-	 * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
-	 * 4種類だけキー処理を行う
+	 * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
 	 *
 	 * @param event
 	 * @return int 処理済みなら1、未処理なら0, エラーなら負
@@ -383,9 +381,8 @@ public:
 	}
 
 	/**
-	 * @brief GLFWからのキー入力イベントの処理
-	 * とりあえずは、GLFW_KEY_RIGHT(262), GLFW_KEY_LEFT(263), GLFW_KEY_DOWN(264), GLFW_KEY_UP(265)の
-	 * 4種類だけキー処理を行う
+	 * @brief キー入力イベントの処理
+	 * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
 	 *
 	 * @param event
 	 * @return KeyEvent

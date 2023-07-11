@@ -78,7 +78,7 @@ void OSD::on_key(const KeyEvent &event) {
 	ENTER();
 
     auto io = ImGui::GetIO();
-    io.AddKeyEvent(event.key, (event.action == GLFW_PRESS));
+    io.AddKeyEvent(event.key, (event.action == KEY_ACTION_PRESSED));
 
 	EXIT();
 }

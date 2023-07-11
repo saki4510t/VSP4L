@@ -61,40 +61,48 @@ pkg_check_modules(LIBJPEG_TURBO REQUIRED libturbojpeg)
 # search library with pkg-config and name its results "LIBUDEV"
 pkg_check_modules(LIBUDEV REQUIRED libudev)
 
+# サブモジュールとして取り込んだlibyuvのソースをビルドする
+add_subdirectory(${lib_src_DIR}/libyuv)
+
 if (EYEAPP_ENABLE_GLFW)
     # サブモジュールとして取り込んだglfwのソースをビルドする
     add_subdirectory(${lib_src_DIR}/glfw)
     add_definitions("-DEYEAPP_ENABLE_GLFW")
+
+    set(IMGUI_BACKEND
+        imgui/backends/imgui_impl_glfw.cpp
+        imgui/backends/imgui_impl_opengl3.cpp
+    )
+    set(APP_WINDOW
+        glfw_window.cpp
+    )
+    set(APP_LIBS
+        glfw
+    )
+else()
+    # FIXME wayland/egl用のバックエンドを作らないといけない
+    set(IMGUI_BACKEND
+        imgui/backends/imgui_impl_opengl3.cpp
+    )
+    set(APP_WINDOW
+        egl_window.cpp
+    )
+    set(APP_LIBS
+        EGL
+        wayland-client
+        wayland-server
+        wayland-cursor
+        wayland-egl
+    )
 endif()
 
-# サブモジュールとして取り込んだlibyuvのソースをビルドする
-add_subdirectory(${lib_src_DIR}/libyuv)
-
-# サブモジュールとしてsrc下に取り込んだimguiをスタティックライブラリーとしてビルドする
-set(IMGUI_COMMON
+add_library(imgui STATIC
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
     imgui/imgui_draw.cpp
     imgui/imgui_tables.cpp
     imgui/imgui_widgets.cpp
     imgui/backends/imgui_impl_opengl3.cpp
-)
-
-if (EYEAPP_ENABLE_GLFW)
-    set(IMGUI_BACKEND
-        imgui/backends/imgui_impl_glfw.cpp
-        imgui/backends/imgui_impl_opengl3.cpp
-    )
-else()
-    # FIXME とりあえずglfwのまま
-    set(IMGUI_BACKEND
-        imgui/backends/imgui_impl_glfw.cpp
-        imgui/backends/imgui_impl_opengl3.cpp
-    )
-endif()
-
-add_library(imgui STATIC
-    ${IMGUI_COMMON}
     ${IMGUI_BACKEND}
 )
 
@@ -116,7 +124,7 @@ target_include_directories(imgui PUBLIC
 add_subdirectory(${lib_src_DIR}/aandusb)
 add_subdirectory(${lib_src_DIR}/common)
 
-set(APP_COMMON
+add_executable(${target}
     const.cpp
     eye_app.cpp
     key_dispatcher.cpp
@@ -124,20 +132,6 @@ set(APP_COMMON
     osd.cpp
     settings.cpp
     window.cpp
-)
-
-if (EYEAPP_ENABLE_GLFW)
-    set(APP_WINDOW
-        glfw_window.cpp
-    )
-else()
-    set(APP_WINDOW
-        egl_window.cpp
-    )
-endif()
-
-add_executable(${target}
-    ${APP_COMMON}
     ${APP_WINDOW}
 )
 
@@ -161,14 +155,15 @@ target_include_directories(${target} PRIVATE
     ${LIBPNG_INCLUDE_DIRS}
 )
 
+
 target_link_libraries(${target} PRIVATE
     ${LIBGLES_LIBRARIES}
     ${LIBUDEV_LIBRARIES}
     ${LIBPNG_LIBRARIES}
     ${LIBJPEG_TURBO_LIBRARIES}
+    ${APP_LIBS}
     pthread
     GLESv2
-    glfw
     yuv
     imgui
     aandusb_core
