@@ -165,6 +165,7 @@ target_link_libraries(${target} PRIVATE
     ${LIBPNG_LIBRARIES}
     ${LIBJPEG_TURBO_LIBRARIES}
     ${APP_LIBS}
+    dl
     pthread
     GLESv2
     yuv
