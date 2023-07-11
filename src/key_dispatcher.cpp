@@ -156,6 +156,8 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 	case ImGuiKey_RightArrow:
 	case ImGuiKey_UpArrow:
 	case ImGuiKey_DownArrow:
+    case ImGuiKey_Enter:
+    case ImGuiKey_Escape:
 		switch (event.action) {
 		case KEY_ACTION_RELEASE:	// 0
 			result = handle_on_key_up(event);
