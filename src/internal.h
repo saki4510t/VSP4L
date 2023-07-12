@@ -6,8 +6,8 @@
 // common
 #include "glutils.h"
 
+#define GLFW_INCLUDE_ES3
 #if defined(EYEAPP_ENABLE_GLFW)
-    #define GLFW_INCLUDE_ES3
     #include <GLFW/glfw3.h>
 #else
     #include <wayland-client.h>
