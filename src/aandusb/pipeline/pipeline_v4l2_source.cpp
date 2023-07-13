@@ -57,7 +57,7 @@ namespace serenegiant::v4l2::pipeline {
 /**
  * デフォルトのv4l2ピクセルフォーマット
  */
-#define DEFAULT_PIX_FMT (V4L2_PIX_FMT_MJPEG)
+#define DEFAULT_PIX_FMT (V4L2_PIX_FMT_UYVY)	// (V4L2_PIX_FMT_MJPEG)
 /**
  * 映像データ最大待ち時間
  */
@@ -985,6 +985,8 @@ static int find_frame_size(int fd,
 
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 	int r = 0;
+	LOGD("pixel format=0x%08x=%s",
+		pixel_format, V4L2_PIX_FMT_to_string(pixel_format).c_str());
 	for (int i = 0; result && (r != -1); i++) {
 		struct v4l2_frmsizeenum fmt {
 			.pixel_format = pixel_format,
@@ -1024,6 +1026,8 @@ static int find_frame_size(int fd,
 				LOGW("%i:Unsupported type %d", fmt.index, fmt.type);
 				break;
 			}
+		} else {
+			LOGD("VIDIOC_ENUM_FRAMESIZES failed,ix=%d),err=%d", i, r);
 		}
 	}
 
@@ -1053,6 +1057,7 @@ int V4L2SourcePipeline::find_stream(
 		const uint32_t pixel_format = _pixel_format
 			? _pixel_format
 			: (stream_pixel_format ? stream_pixel_format : DEFAULT_PIX_FMT);
+		LOGD("target pixel format=0x%08x,sz(%dx%d)", pixel_format, width, height);
 		int r = 0;
 		for (int i = 0 ; result && (r != -1); i++) {
 			struct v4l2_fmtdesc fmt {
@@ -1061,11 +1066,13 @@ int V4L2SourcePipeline::find_stream(
 			fmt.index = i;
 			r = xioctl(m_fd, VIDIOC_ENUM_FMT, &fmt);
 			if (r != -1) {
-				LOGD("%i)%s(%s)", fmt.index,
+				LOGD("%i)0x%08x=%s(%s)", fmt.index,
+					fmt.pixelformat,
 					V4L2_PIX_FMT_to_string(fmt.pixelformat).c_str(),
 					fmt.description);
 				if (pixel_format == fmt.pixelformat) {
 					// ピクセルフォーマットが一致したとき
+					LOGD("found pixel format, try find video size");
 					result = find_frame_size(m_fd, pixel_format, width, height, min_fps, max_fps);
 				}
 			}

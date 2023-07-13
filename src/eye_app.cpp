@@ -33,8 +33,8 @@ namespace serenegiant::app {
 #define VIDEO_WIDTH (1920)
 #define VIDEO_HEIGHT (1080)
 // 画面サイズ
-#define WINDOW_WIDTH (VIDEO_WIDTH/2)
-#define WINDOW_HEIGHT (VIDEO_HEIGHT/2)
+#define WINDOW_WIDTH (VIDEO_WIDTH)
+#define WINDOW_HEIGHT (VIDEO_HEIGHT)
 // 輝度調整・拡大縮小率モード表示の背景アルファ
 #define MODE_BK_ALPHA (0.3f)
 // 輝度調整モード・拡大縮小モード表示でアイコンと一緒に表示する文字のサイズ

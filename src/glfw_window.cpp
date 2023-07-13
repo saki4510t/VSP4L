@@ -194,17 +194,26 @@ int GlfwWindow::initialize() {
 		RETURN(1, int);
 	}
 	// OpenGL Version 3.2 Core Profile を選択する XXX ここで指定するとエラーはなさそうなのに映像が表示できなくなる
-#if USE_GL3
+    // Decide GL+GLSL versions
+#if defined(GLFW_INCLUDE_ES2)
+    // GL ES 2.0 + GLSL 100
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#elif defined(GLFW_INCLUDE_ES3)
+    // GL ES 3.0 + GLSL 100
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#else
+    // GL 3.0 + GLSL 130
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 //	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);	// OpenGL 3.2
 //	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 //	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);	// OpenGL3以降で前方互換プロファイルを使う
-#else
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 #endif
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);	// マウス等でリサイズ可能
 //	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -263,6 +272,8 @@ void GlfwWindow::resize(GLFWwindow *win, int width, int height) {
 	// フレームバッファのサイズを調べる
 	int fbWidth, fbHeight;
 	glfwGetFramebufferSize(win, &fbWidth, &fbHeight);
+    LOGD("sz(%dx%d),fb(%dx%d)", width, height, fbWidth, fbHeight);
+
 	// フレームバッファ全体をビューポートに設定する
 	glViewport(0, 0, fbWidth, fbHeight);
 
@@ -332,7 +343,9 @@ void GlfwWindow::init_gl() {
 		// キー入力イベントコールバックをセット
 		prev_key_callback = glfwSetKeyCallback(window, key_callback);
 		LOGD("prev_key_callback=%p", prev_key_callback);
-	}
+	} else {
+        LOGW("has no window");
+    }
 
 	EXIT();
 }
@@ -355,6 +368,18 @@ void GlfwWindow::terminate_gl() {
 void GlfwWindow::init_gui() {
 	ENTER();
 
+    // Decide GL+GLSL versions
+#if defined(GLFW_INCLUDE_ES2)
+    // GL ES 2.0 + GLSL 100
+    static const char *GLSL_VERSION = "#version 100";
+#elif defined(GLFW_INCLUDE_ES3)
+    // GL ES 3.0 + GLSL 100
+    static const char *GLSL_VERSION = "#version 300 es";
+#else
+    // GL 3.0 + GLSL 130
+    static const char *GLSL_VERSION = "#version 130";
+#endif
+
 // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -367,13 +392,12 @@ void GlfwWindow::init_gui() {
     ImGui::StyleColorsDark();
     //ImGui::StyleColorsLight();
 
+    LOGV("ImGui_ImplGlfw_InitForOpenGL");
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-#if USE_GL3
-    ImGui_ImplOpenGL3_Init("#version 130");
-#else
-	ImGui_ImplOpenGL3_Init("#version 100");
-#endif
+
+    LOGV("ImGui_ImplGlfw_InitForOpenGL");
+    ImGui_ImplOpenGL3_Init(GLSL_VERSION);
 
 	EXIT();
 }
