@@ -1076,7 +1076,7 @@ int V4L2SourcePipeline::find_stream(
 				if (!pixel_format || (pixel_format == fmt.pixelformat)) {
 					// ピクセルフォーマットが一致したとき
 					LOGD("found pixel format, try find video size");
-					result = find_frame_size(m_fd, pixel_format, width, height, min_fps, max_fps);
+					result = find_frame_size(m_fd, fmt.pixelformat, width, height, min_fps, max_fps);
 				}
 				if (!result) {
 					if (!request_pixel_format) {
