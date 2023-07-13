@@ -197,18 +197,21 @@ int GlfwWindow::initialize() {
     // Decide GL+GLSL versions
 #if defined(GLFW_INCLUDE_ES2)
     // GL ES 2.0 + GLSL 100
+    LOGD("GLES2");
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 #elif defined(GLFW_INCLUDE_ES3)
     // GL ES 3.0 + GLSL 100
+    LOGD("GLES3");
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 #else
     // GL 3.0 + GLSL 130
+    LOGD("GL3");
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 //	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);	// OpenGL 3.2
@@ -396,7 +399,7 @@ void GlfwWindow::init_gui() {
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 
-    LOGV("ImGui_ImplGlfw_InitForOpenGL");
+    LOGV("ImGui_ImplOpenGL3_Init:%s", GLSL_VERSION);
     ImGui_ImplOpenGL3_Init(GLSL_VERSION);
 
 	EXIT();
