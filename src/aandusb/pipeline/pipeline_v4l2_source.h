@@ -269,7 +269,7 @@ public:
 	 */
 	int find_stream(
 		const uint32_t &width, const uint32_t &height,
-		const uint32_t &pixel_format = 0,
+		uint32_t pixel_format = 0,
 		const float &min_fps = DEFAULT_PREVIEW_FPS_MIN, const float &max_fps = DEFAULT_PREVIEW_FPS_MAX);
 
 	/**

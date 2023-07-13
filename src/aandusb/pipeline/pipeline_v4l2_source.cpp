@@ -1047,7 +1047,7 @@ static int find_frame_size(int fd,
  */
 int V4L2SourcePipeline::find_stream(
 	const uint32_t &width, const uint32_t &height,
-	const uint32_t &_pixel_format,
+	uint32_t pixel_format,
 	const float &min_fps, const float &max_fps) {
 
 	ENTER();
@@ -1056,11 +1056,11 @@ int V4L2SourcePipeline::find_stream(
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 
 	if (m_state > STATE_CLOSE) {
-		const uint32_t pixel_format = _pixel_format
-			? _pixel_format
+		const uint32_t _pixel_format = pixel_format
+			? pixel_format
 			: (stream_pixel_format ? stream_pixel_format
 				: (request_pixel_format ? request_pixel_format : DEFAULT_PIX_FMT));
-		LOGD("target pixel format=0x%08x,sz(%dx%d)", pixel_format, width, height);
+		LOGD("target pixel format=0x%08x,sz(%dx%d)", _pixel_format, width, height);
 		int r = 0;
 		for (int i = 0 ; result && (r != -1); i++) {
 			struct v4l2_fmtdesc fmt {
@@ -1069,25 +1069,25 @@ int V4L2SourcePipeline::find_stream(
 			fmt.index = i;
 			r = xioctl(m_fd, VIDIOC_ENUM_FMT, &fmt);
 			if (r != -1) {
+				const auto pxl_fmt = fmt.pixelformat;
 				LOGD("%i)0x%08x=%s(%s)", fmt.index,
-					fmt.pixelformat,
-					V4L2_PIX_FMT_to_string(fmt.pixelformat).c_str(),
+					pxl_fmt, V4L2_PIX_FMT_to_string(pxl_fmt).c_str(),
 					fmt.description);
-				if (!pixel_format || (pixel_format == fmt.pixelformat)) {
+				if (!_pixel_format || (_pixel_format == pxl_fmt)) {
 					// ピクセルフォーマットが一致したとき
+					pixel_format = pxl_fmt;	// 最後に一致したピクセルフォーマットをセット
 					LOGD("found pixel format, try find video size");
-					result = find_frame_size(m_fd, fmt.pixelformat, width, height, min_fps, max_fps);
+					result = find_frame_size(m_fd, pxl_fmt, width, height, min_fps, max_fps);
 				}
 				if (!result) {
 					if (!request_pixel_format) {
-						request_pixel_format = fmt.pixelformat;
+						request_pixel_format = pxl_fmt;
 					}
 					if (!stream_pixel_format) {
-						stream_pixel_format = fmt.pixelformat;
+						stream_pixel_format = pxl_fmt;
 					}
 					LOGD("%i)0x%08x=%s(%s),sz(%dx%d)", fmt.index,
-						fmt.pixelformat,
-						V4L2_PIX_FMT_to_string(fmt.pixelformat).c_str(),
+						pxl_fmt, V4L2_PIX_FMT_to_string(pxl_fmt).c_str(),
 						fmt.description, width, height);
 				}
 			}
