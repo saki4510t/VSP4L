@@ -56,6 +56,8 @@ namespace serenegiant::v4l2::pipeline {
 #define BUFFER_NUMS (4)
 /**
  * デフォルトのv4l2ピクセルフォーマット
+ * 0ならfind_streamで最初に見つかったピクセルフォーマットを使う
+ * V4L2_PIX_FMT_MJPEG, V4L2_PIX_FMT_UYVY
  */
 #define DEFAULT_PIX_FMT (V4L2_PIX_FMT_UYVY)	// (V4L2_PIX_FMT_MJPEG)
 /**
@@ -1056,7 +1058,8 @@ int V4L2SourcePipeline::find_stream(
 	if (m_state > STATE_CLOSE) {
 		const uint32_t pixel_format = _pixel_format
 			? _pixel_format
-			: (stream_pixel_format ? stream_pixel_format : DEFAULT_PIX_FMT);
+			: (stream_pixel_format ? stream_pixel_format
+				: (request_pixel_format ? request_pixel_format : DEFAULT_PIX_FMT));
 		LOGD("target pixel format=0x%08x,sz(%dx%d)", pixel_format, width, height);
 		int r = 0;
 		for (int i = 0 ; result && (r != -1); i++) {
@@ -1070,10 +1073,22 @@ int V4L2SourcePipeline::find_stream(
 					fmt.pixelformat,
 					V4L2_PIX_FMT_to_string(fmt.pixelformat).c_str(),
 					fmt.description);
-				if (pixel_format == fmt.pixelformat) {
+				if (!pixel_format || (pixel_format == fmt.pixelformat)) {
 					// ピクセルフォーマットが一致したとき
 					LOGD("found pixel format, try find video size");
 					result = find_frame_size(m_fd, pixel_format, width, height, min_fps, max_fps);
+				}
+				if (!result) {
+					if (!request_pixel_format) {
+						request_pixel_format = fmt.pixelformat;
+					}
+					if (!stream_pixel_format) {
+						stream_pixel_format = fmt.pixelformat;
+					}
+					LOGD("%i)0x%08x=%s(%s),sz(%dx%d)", fmt.index,
+						fmt.pixelformat,
+						V4L2_PIX_FMT_to_string(fmt.pixelformat).c_str(),
+						fmt.description, width, height);
 				}
 			}
 		}
