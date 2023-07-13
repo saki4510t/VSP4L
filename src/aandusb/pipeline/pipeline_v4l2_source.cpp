@@ -107,7 +107,7 @@ typedef struct _format_info {
 	const int index;
 	const uint32_t pixel_format;
 	std::vector<FrameInfoSp> frames;
-	
+
 	_format_info(const int &index, const uint32_t &pixel_format)
 	:	index(index), pixel_format(pixel_format) { }
 } format_info_t;
@@ -281,39 +281,39 @@ static const char *ctrl_type_string(const uint32_t &type) {
 		return "V4L2_CTRL_TYPE_U16";
 	case V4L2_CTRL_TYPE_U32:			// 0x0102,
 		return "V4L2_CTRL_TYPE_U32";
-	case V4L2_CTRL_TYPE_AREA:			// 0x0106,
-		return "V4L2_CTRL_TYPE_AREA";
+	// case V4L2_CTRL_TYPE_AREA:			// 0x0106,
+	// 	return "V4L2_CTRL_TYPE_AREA";
 
-	case V4L2_CTRL_TYPE_HDR10_CLL_INFO:	// 0x0110,
-		return "V4L2_CTRL_TYPE_HDR10_CLL_INFO";
-	case V4L2_CTRL_TYPE_HDR10_MASTERING_DISPLAY:	// 0x0111,
-		return "V4L2_CTRL_TYPE_HDR10_MASTERING_DISPLAY";
+	// case V4L2_CTRL_TYPE_HDR10_CLL_INFO:	// 0x0110,
+	// 	return "V4L2_CTRL_TYPE_HDR10_CLL_INFO";
+	// case V4L2_CTRL_TYPE_HDR10_MASTERING_DISPLAY:	// 0x0111,
+	// 	return "V4L2_CTRL_TYPE_HDR10_MASTERING_DISPLAY";
 
-	case V4L2_CTRL_TYPE_H264_SPS:		// 0x0200,
-		return "V4L2_CTRL_TYPE_H264_SPS";
-	case V4L2_CTRL_TYPE_H264_PPS:		// 0x0201,
-		return "V4L2_CTRL_TYPE_H264_PPS";
-	case V4L2_CTRL_TYPE_H264_SCALING_MATRIX:	// 0x0202,
-		return "V4L2_CTRL_TYPE_H264_SCALING_MATRIX";
-	case V4L2_CTRL_TYPE_H264_SLICE_PARAMS:		// 0x0203,
-		return "V4L2_CTRL_TYPE_H264_SLICE_PARAMS";
-	case V4L2_CTRL_TYPE_H264_DECODE_PARAMS:		// 0x0204,
-		return "V4L2_CTRL_TYPE_H264_DECODE_PARAMS";
-	case V4L2_CTRL_TYPE_H264_PRED_WEIGHTS:		// 0x0205,
-		return "V4L2_CTRL_TYPE_H264_PRED_WEIGHTS";
+	// case V4L2_CTRL_TYPE_H264_SPS:		// 0x0200,
+	// 	return "V4L2_CTRL_TYPE_H264_SPS";
+	// case V4L2_CTRL_TYPE_H264_PPS:		// 0x0201,
+	// 	return "V4L2_CTRL_TYPE_H264_PPS";
+	// case V4L2_CTRL_TYPE_H264_SCALING_MATRIX:	// 0x0202,
+	// 	return "V4L2_CTRL_TYPE_H264_SCALING_MATRIX";
+	// case V4L2_CTRL_TYPE_H264_SLICE_PARAMS:		// 0x0203,
+	// 	return "V4L2_CTRL_TYPE_H264_SLICE_PARAMS";
+	// case V4L2_CTRL_TYPE_H264_DECODE_PARAMS:		// 0x0204,
+	// 	return "V4L2_CTRL_TYPE_H264_DECODE_PARAMS";
+	// case V4L2_CTRL_TYPE_H264_PRED_WEIGHTS:		// 0x0205,
+	// 	return "V4L2_CTRL_TYPE_H264_PRED_WEIGHTS";
 
-	case V4L2_CTRL_TYPE_FWHT_PARAMS:	// 0x0220,
-		return "V4L2_CTRL_TYPE_FWHT_PARAMS";
+	// case V4L2_CTRL_TYPE_FWHT_PARAMS:	// 0x0220,
+	// 	return "V4L2_CTRL_TYPE_FWHT_PARAMS";
 
-	case V4L2_CTRL_TYPE_VP8_FRAME:		// 0x0240,
-		return "V4L2_CTRL_TYPE_VP8_FRAME";
+	// case V4L2_CTRL_TYPE_VP8_FRAME:		// 0x0240,
+	// 	return "V4L2_CTRL_TYPE_VP8_FRAME";
 
-	case V4L2_CTRL_TYPE_MPEG2_QUANTISATION:	// 0x0250,
-		return "V4L2_CTRL_TYPE_MPEG2_QUANTISATION";
-	case V4L2_CTRL_TYPE_MPEG2_SEQUENCE:		// 0x0251,
-		return "V4L2_CTRL_TYPE_MPEG2_SEQUENCE";
-	case V4L2_CTRL_TYPE_MPEG2_PICTURE:		// 0x0252,
-		return "V4L2_CTRL_TYPE_MPEG2_PICTURE";
+	// case V4L2_CTRL_TYPE_MPEG2_QUANTISATION:	// 0x0250,
+	// 	return "V4L2_CTRL_TYPE_MPEG2_QUANTISATION";
+	// case V4L2_CTRL_TYPE_MPEG2_SEQUENCE:		// 0x0251,
+	// 	return "V4L2_CTRL_TYPE_MPEG2_SEQUENCE";
+	// case V4L2_CTRL_TYPE_MPEG2_PICTURE:		// 0x0252,
+	// 	return "V4L2_CTRL_TYPE_MPEG2_PICTURE";
 	default:
 		return "UNKNOWN V4L2_CTRL_TYPE";
 	}
@@ -364,7 +364,7 @@ static void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
  */
 static void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &supported) {
 	ENTER();
-	
+
 	supported.clear();
 	// v4l2標準コントロール一覧
 	for (uint32_t i = V4L2_CID_BASE; i <  V4L2_CID_LASTP1; i++) {
@@ -409,7 +409,7 @@ static void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtr
 			break;
 		}
 	}
-	
+
 	EXIT();
 }
 
@@ -733,7 +733,7 @@ int V4L2SourcePipeline::open() {
 	} else {
 		LOGD("Illegal state: already opened");
 	}
-	
+
 	RETURN(result, int);
 }
 
@@ -744,7 +744,7 @@ int V4L2SourcePipeline::open() {
  */
 int V4L2SourcePipeline::close() {
 	ENTER();
-	
+
 	int result = internal_stop();
 	v4l2_lock.lock();
 	{
@@ -864,7 +864,7 @@ std::string V4L2SourcePipeline::get_supported_size() const {
 			}
 			writer.EndObject();
 		}
-	
+
 		writer.EndArray();
 	}
 	writer.EndObject();
@@ -889,9 +889,9 @@ static int find_fps(int fd,
 	const float &min_fps, const float &max_fps) {
 
 	ENTER();
-	
+
 	int result = core::USB_ERROR_NOT_SUPPORTED;
-	
+
 	int r = 0;
 	for (int i = 0; result && (r != -1); i++) {
 		struct v4l2_frmivalenum fmt {
@@ -982,7 +982,7 @@ static int find_frame_size(int fd,
 	const float &min_fps, const float &max_fps) {
 
 	ENTER();
-	
+
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 	int r = 0;
 	for (int i = 0; result && (r != -1); i++) {
@@ -1026,7 +1026,7 @@ static int find_frame_size(int fd,
 			}
 		}
 	}
-	
+
 	RETURN(result, int);
 }
 
@@ -1045,7 +1045,7 @@ int V4L2SourcePipeline::find_stream(
 	const float &min_fps, const float &max_fps) {
 
 	ENTER();
-	
+
 	AutoMutex lock(v4l2_lock);
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 
@@ -1070,7 +1070,7 @@ int V4L2SourcePipeline::find_stream(
 				}
 			}
 		}
-		
+
 	}
 
 	RETURN(result, int);
@@ -1155,7 +1155,7 @@ void V4L2SourcePipeline::v4l2_thread_func() {
 		}
 	}
 	v4l2_lock.unlock();
-	
+
 	LOGD("映像取得ループ,is_running=%d,result=%d", is_running(), result);
 	for ( ; is_running() && !result; ) {
 		v4l2_lock.lock();
@@ -1195,7 +1195,7 @@ void V4L2SourcePipeline::v4l2_thread_func() {
 /*private*/
 int V4L2SourcePipeline::v4l2_loop() {
 	ENTER();
-	
+
 	uvc::VideoFrame frame;
 	frame.resize(stream_width, stream_height, stream_frame_type);
 	frame.resize(image_bytes);
@@ -1483,7 +1483,7 @@ int V4L2SourcePipeline::init_mmap_locked() {
 			LOGE("VIDIOC_QUERYBUF,err=%d", result);
 			break;
 		}
-		
+
 		m_buffers[i].length = buf.length;
 		m_buffers[i].start = mmap(nullptr /* start anywhere */, buf.length,
 			PROT_READ | PROT_WRITE /* required */,
@@ -1685,7 +1685,7 @@ int V4L2SourcePipeline::get_ctrl(
   	uvc::control_value32_t &values) {
 
 	ENTER();
-	
+
 	AutoMutex lock(v4l2_lock);
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 
@@ -1719,7 +1719,7 @@ int V4L2SourcePipeline::get_ctrl(
 /*public*/
 int V4L2SourcePipeline::get_ctrl_value(const uint32_t &ctrl_id, int32_t &value) {
 	ENTER();
-	
+
 	AutoMutex lock(v4l2_lock);
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 
@@ -1747,7 +1747,7 @@ int V4L2SourcePipeline::get_ctrl_value(const uint32_t &ctrl_id, int32_t &value) 
 /*public*/
 int V4L2SourcePipeline::set_ctrl_value(const uint32_t &ctrl_id, const int32_t &value) {
 	ENTER();
-	
+
 	AutoMutex lock(v4l2_lock);
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 
