@@ -237,6 +237,7 @@ void EyeApp::on_resume() {
     source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
 	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
 		LOGE("カメラをオープンできなかった");
+		source.reset();
 		window.stop();
 		EXIT();
 	}
@@ -244,6 +245,7 @@ void EyeApp::on_resume() {
 	source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
 	if (source->start()) {
 		LOGE("カメラを開始できなかった");
+		source.reset();
 		window.stop();
 		EXIT();
 	}
