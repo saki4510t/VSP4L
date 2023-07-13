@@ -115,6 +115,7 @@ target_compile_definitions(imgui PRIVATE
     LOG_NDEBUG        # デバッグメッセージを出さないようにする時
 #   USE_LOGALL		# define USE_LOGALL macro to enable all debug string
 #   DISABLE_IMPORTGL  # when static link OpenGL|ES library
+    GLFW_INCLUDE_ES3
 )
 
 target_include_directories(imgui PUBLIC
