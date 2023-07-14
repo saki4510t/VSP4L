@@ -1060,7 +1060,25 @@ int V4L2SourcePipeline::find_stream(
 			? pixel_format
 			: (stream_pixel_format ? stream_pixel_format
 				: (request_pixel_format ? request_pixel_format : DEFAULT_PIX_FMT));
+
 		LOGD("target pixel format=0x%08x,sz(%dx%d)", _pixel_format, width, height);
+
+		// デフォルトまたは前回のネゴシエーションでセットされている
+		// ビデオキャプチャフォーマットを取得する
+		struct v4l2_format capture_format{
+			.type = V4L2_BUF_TYPE_VIDEO_CAPTURE
+		};
+
+		result = xioctl(m_fd, VIDIOC_G_FMT, &capture_format);
+		if (UNLIKELY(result == -1)) {
+			LOGW("VIDIOC_G_FMT,errno=%d", errno);
+			capture_format.fmt.pix.pixelformat = 0;
+		}
+		LOGD("default type=%d,sz(%dx%d),0x%08x=%s,field=%d",
+			capture_format.type, capture_format.fmt.pix.width, capture_format.fmt.pix.height,
+			capture_format.fmt.pix.pixelformat, V4L2_PIX_FMT_to_string(capture_format.fmt.pix.pixelformat).c_str(),
+			capture_format.fmt.pix.field);
+
 		int r = 0;
 		for (int i = 0 ; result && (r != -1); i++) {
 			struct v4l2_fmtdesc fmt {
@@ -1078,6 +1096,12 @@ int V4L2SourcePipeline::find_stream(
 					pixel_format = pxl_fmt;	// 最後に一致したピクセルフォーマットをセット
 					LOGD("found pixel format, try find video size");
 					result = find_frame_size(m_fd, pxl_fmt, width, height, min_fps, max_fps);
+					// XXX VIDIOC_ENUM_FRAMESIZESが常にエラーを返してfind_frame_sizeで判断できないV4L2機器があるので
+					//     デフォルトのキャプチャーフォーマットと一致すればOKとする
+					if (result && (capture_format.fmt.pix.pixelformat == pxl_fmt)
+						&& (capture_format.fmt.pix.width == width) && (capture_format.fmt.pix.height == height)) {
+						result = 0;
+					}
 				}
 				if (!result) {
 					if (!request_pixel_format) {
