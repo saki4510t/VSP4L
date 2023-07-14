@@ -38,9 +38,9 @@ namespace serenegiant::app {
 // 輝度調整・拡大縮小率モード表示の背景アルファ
 #define MODE_BK_ALPHA (0.3f)
 // 輝度調整モード・拡大縮小モード表示でアイコンと一緒に表示する文字のサイズ
-#define MODE_ICON_FONT_SZ (108)
+#define MODE_ICON_FONT_SZ (216)
 // 輝度調整・拡大縮小率モード表示のアイコンサイズ
-#define MODE_ICON_SZ (120)
+#define MODE_ICON_SZ (240)
 // 輝度調整・拡大縮小率モード表示のアイコンのテクスチャサイズ
 #define MODE_ICON_TEX_SZ (192)
 // ウオッチドッグをリセットする頻度[フレーム数]
