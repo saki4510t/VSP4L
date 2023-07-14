@@ -58,8 +58,9 @@ namespace serenegiant::v4l2::pipeline {
  * デフォルトのv4l2ピクセルフォーマット
  * 0ならfind_streamで最初に見つかったピクセルフォーマットを使う
  * V4L2_PIX_FMT_MJPEG, V4L2_PIX_FMT_UYVY
+ * 実機だとV4L2_PIX_FMT_NV16が一番速そう(1フレームのサイズが小さいから？)
  */
-#define DEFAULT_PIX_FMT (V4L2_PIX_FMT_UYVY)	// (V4L2_PIX_FMT_MJPEG)
+#define DEFAULT_PIX_FMT (V4L2_PIX_FMT_NV16)	// (V4L2_PIX_FMT_MJPEG)
 /**
  * 映像データ最大待ち時間
  */
