@@ -21,6 +21,7 @@
 	#undef NDEBUG
 #endif
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -28,7 +29,6 @@
 #include <ctime>
 #include <cerrno>
 #include <utility>
-#include <vector>
 
 #include <fcntl.h>              /* low-level i/o */
 #include <unistd.h>
@@ -1525,6 +1525,39 @@ err:
 		m_buffersNums = 0;
 	}
 	RETURN(result, int);
+}
+
+/**
+ * @brief 対応しているピクセルフォーマット一覧を取得する
+ * 
+ * @return std::vector 
+ */
+std::vector<uint32_t> V4L2SourcePipeline::get_supported_pixel_formats_locked(const std::vector<uint32_t> preffered) const {
+	ENTER();
+
+	std::vector<uint32_t> result;
+	if (m_state > STATE_CLOSE) {
+		int r = 0;
+		for (int i = 0 ; (r != -1); i++) {
+			struct v4l2_fmtdesc fmt {
+				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+			};
+			fmt.index = i;
+			r = xioctl(m_fd, VIDIOC_ENUM_FMT, &fmt);
+			if (r != -1) {
+				const auto pixel_format = fmt.pixelformat;
+				LOGD("%i)0x%08x=%s(%s)", fmt.index,
+					pixel_format, V4L2_PIX_FMT_to_string(pixel_format).c_str(),
+					fmt.description);
+				if (preffered.empty() || (find(preffered.begin(), preffered.end(), pixel_format) != preffered.end())) {
+					result.push_back(pixel_format);
+				}				
+			}
+		}
+	}
+	LOGD("num pixel formast=%" FMT_SIZE_T, result.size());
+
+	RET(result);
 }
 
 /**

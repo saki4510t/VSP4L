@@ -12,6 +12,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include <linux/videodev2.h>
 #include <linux/v4l2-controls.h>
@@ -171,6 +172,14 @@ private:
 	 */
 	int init_mmap_locked(void);
 	/**
+	 * @brief 対応するピクセルフォーマット一覧を取得する
+	 *        v4l2_lockをロックした状態で呼び出すこと
+	 * 
+	 * @return std::vector 空vectorでなければこのvectorに含まれるものだけを返す,
+	 *                     空ならV4L2機器がサポートするピクセルフォーマット全てを返す
+	 */
+	std::vector<uint32_t> get_supported_pixel_formats_locked(const std::vector<uint32_t> preffered = {}) const;
+	/**
 	 * 実際の解像度変更処理
 	 * ワーカースレッド上で呼ばれる
 	 * @param width
@@ -251,6 +260,20 @@ public:
 	 * @return
 	 */
 	virtual int stop() override;
+
+	/**
+	 * @brief 対応するピクセルフォーマット一覧を取得する
+	 * 
+	 * @return std::vector 空vectorでなければこのvectorに含まれるものだけを返す,
+	 *                     空ならV4L2機器がサポートするピクセルフォーマット全てを返す
+	 * 
+	 * @param preffered 
+	 * @return std::vector<uint32_t> 
+	 */
+	inline std::vector<uint32_t> get_supported_pixel_formats(const std::vector<uint32_t> preffered = {}) const {
+		AutoMutex lock(v4l2_lock);
+		return get_supported_pixel_formats_locked(preffered);
+	}
 
 	/**
 	 * 対応するピクセルフォーマット・解像度・フレームレートをjson文字列として取得する
