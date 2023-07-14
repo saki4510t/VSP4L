@@ -24,6 +24,8 @@
 #define		SAFE_DELETE_ARRAY(p)		{ if ((p)) { delete [](p); (p) = nullptr; } }
 #define		NUM_ARRAY_ELEMENTS(p)		(sizeof((p)) / sizeof(p[0]))
 
+template<typename TYPE, std::size_t SIZE> std::size_t num_array_elements(const TYPE (&)[SIZE]) { return SIZE; }
+
 // コンパイル時アサートの定義
 #ifdef NDEBUG
 #define COMPILE_TIME_ASSERT_FUNCTION_SCOPE( expression )
