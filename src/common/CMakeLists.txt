@@ -62,21 +62,6 @@ target_link_libraries(common_static PRIVATE
 target_link_libraries(common_static PUBLIC
 )
 
-add_library(common SHARED $<TARGET_OBJECTS:objlib>)
-
-target_include_directories(common PUBLIC
-    ./
-)
-
-target_link_libraries(common PRIVATE
-    atomic
-    ${LIBGLES_LIBRARIES}
-    ${LIBPNG_LIBRARIES}
-)
-
-target_link_libraries(common PUBLIC
-)
-
 if (AANDUSB_OUTPUT_VALS)
     message("==================== All variables (common)  ====================")
     get_cmake_property(_variableNames CACHE_VARIABLES)
