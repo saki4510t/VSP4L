@@ -7,8 +7,8 @@
 #include "glutils.h"
 
 #define GLFW_INCLUDE_ES3
-#define GLFW_EXPOSE_NATIVE_WAYLAND
 #define GLFW_EXPOSE_NATIVE_EGL
+#define GLFW_NATIVE_INCLUDE_NONE
 
 #if defined(EYEAPP_ENABLE_GLFW)
     #include <GLFW/glfw3.h>
