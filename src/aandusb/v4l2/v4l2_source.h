@@ -18,8 +18,6 @@
 // common
 #include "mutex.h"
 #include "condition.h"
-// uvc
-#include "uvc/aanduvc.h"
 // v4l2
 #include "v4l2/v4l2.h"
 

@@ -22,9 +22,6 @@
 #include "condition.h"
 // pipeline
 #include "pipeline/pipeline_base.h"
-// uvc
-#include "uvc/aanduvc.h"
-// #include "uvc/uvc_camera_base.h"
 // v4l2
 #include "v4l2/v4l2.h"
 
