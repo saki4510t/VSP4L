@@ -34,11 +34,6 @@ namespace sere_pipeline = serenegiant::pipeline;
 
 namespace serenegiant::v4l2::pipeline {
 
-typedef struct _buffer {
-	void *start;
-	size_t length;
-} buffer_t;
-
 /**
  * v4l2からの映像をソースとして使うためのパイプライン(始点)
  */

@@ -33,6 +33,11 @@ typedef enum _state {
 	STATE_STREAM,		// カメラ映像取得中
 } state_t;
 
+typedef struct _buffer {
+	void *start;
+	size_t length;
+} buffer_t;
+
 typedef std::shared_ptr<struct v4l2_queryctrl> QueryCtrlSp;
 typedef std::unique_ptr<struct v4l2_queryctrl> QueryCtrlUp;
 
