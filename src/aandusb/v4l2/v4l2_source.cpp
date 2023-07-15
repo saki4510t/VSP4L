@@ -47,7 +47,6 @@
 // v4l2
 #include "v4l2/v4l2_source.h"
 
-namespace sere = serenegiant;
 namespace serenegiant::v4l2 {
 
 /**
