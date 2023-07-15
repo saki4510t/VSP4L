@@ -11,10 +11,14 @@
 #include "glrenderer.h"
 #include "gltexture.h"
 #include "matrix.h"
+// core
+#include "core/video_frame_wrapped.h"
+#include "core/video_gl_renderer.h"
 // aandusb/pipeline
 #include "pipeline/pipeline_gl_renderer.h"
 // aandusb/v4l2
-#include "v4l2/pipeline_v4l2_source.h"
+// #include "v4l2/pipeline_v4l2_source.h"
+#include "v4l2/v4l2_source.h"
 
 #include "const.h"
 #include "key_event.h"
@@ -29,8 +33,8 @@
 	#include "egl_window.h"
 #endif
 
-namespace pipeline = serenegiant::pipeline;
-namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
+// namespace pipeline = serenegiant::pipeline;
+// namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
 
 namespace serenegiant::app {
 
@@ -54,11 +58,18 @@ private:
 	EglWindow window;
 #endif
 	// V4L2からの映像取得用
-	v4l2_pipeline::V4L2SourcePipelineUp source;
-	// 映像表示用
-	pipeline::GLRendererPipelineUp renderer_pipeline;
+	v4l2::V4l2SourceUp source;
+	// v4l2_pipeline::V4L2SourcePipelineUp source;
+	// // 映像表示用
+	// pipeline::GLRendererPipelineUp renderer_pipeline;
 	// 拡大縮小・映像効果付与・フリーズ用オフスクリーン
+	EGLDisplay m_egl_display;
+	EGLContext m_shared_context;
+	EGLSurface m_egl_surface;
+
 	gl::GLOffScreenUp offscreen;
+	core::WrappedVideoFrameUp frame_wrapper;
+	core::VideoGLRendererUp video_renderer;
 	// オフスクリーン描画用
 	gl::GLRendererUp gl_renderer;
 	// 排他制御用

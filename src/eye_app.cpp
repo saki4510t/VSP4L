@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string>
 #include <cstring>
+#include <sstream>
+#include <iterator>	// istream_iterator
 
 #include "utilbase.h"
 // common
@@ -23,6 +25,7 @@
 #include "gl/texture_vsh.h"
 #include "gl/rgba_fsh.h"
 // app
+#include "internal.h"
 #include "effect_fsh.h"
 #include "eye_app.h"
 
@@ -64,8 +67,10 @@ EyeApp::EyeApp(const int &gl_version)
 #endif
 	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
-	source(nullptr), renderer_pipeline(nullptr),
-	offscreen(nullptr), gl_renderer(nullptr),
+	source(nullptr), // renderer_pipeline(nullptr),
+	m_egl_display(EGL_NO_DISPLAY),
+	m_shared_context(EGL_NO_CONTEXT), m_egl_surface(EGL_NO_SURFACE),
+	offscreen(nullptr), video_renderer(nullptr), gl_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
 	req_effect_type(EFFECT_NON), current_effect(req_effect_type),
 	key_dispatcher(handler),
@@ -234,7 +239,84 @@ void EyeApp::on_resume() {
 	ENTER();
 
 	load(camera_settings);
-    source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
+    // source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
+    source = std::make_unique<v4l2::V4l2Source>("/dev/video0");
+	source->set_on_start([this]() {
+		// 共有EGL/GLESコンテキストを生成してこのスレッドに割り当てる
+		LOGD("create shared context");
+		m_egl_display = glfwGetEGLDisplay();
+		auto context = glfwGetEGLContext(window.get_window());
+		EGLConfig config;
+		int client_version = 3;
+		m_shared_context = egl::createEGLContext(m_egl_display, config, client_version, context);
+		LOGD("shared context gles%d", client_version);
+
+		// 対応しているEGL拡張を解析
+		std::istringstream eglext_stream(eglQueryString(m_egl_display, EGL_EXTENSIONS));
+		auto extensions = std::set<std::string> {
+			std::istream_iterator<std::string> {eglext_stream},
+			std::istream_iterator<std::string>{}
+		};
+
+		if (extensions.find("EGL_KHR_surfaceless_context") == extensions.end()) {
+			// GLコンテキストを保持するためにサーフェースが必要な場合は1x1のオフスクリーンサーフェースを生成
+			const EGLint surface_attrib_list[] = {
+				EGL_WIDTH, 1,
+				EGL_HEIGHT, 1,
+				EGL_NONE
+			};
+			m_egl_surface = eglCreatePbufferSurface(m_egl_display, config, surface_attrib_list);
+			EGLCHECK("eglCreatePbufferSurface");
+		}
+		eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
+		video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
+		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
+	})
+	.set_on_stop([this]() {
+		video_renderer.reset();
+		frame_wrapper.reset();
+		m_egl_display = EGL_NO_DISPLAY;
+		if (m_shared_context != EGL_NO_CONTEXT) {
+			// 共有EGL/GLESコンテキストを破棄
+			auto display = glfwGetEGLDisplay();
+			eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_shared_context);
+			if (m_egl_surface) {
+				LOGD("release surface");
+				eglDestroySurface(display, m_egl_surface);
+				m_egl_surface = EGL_NO_SURFACE;
+			}
+			LOGD("release shared context");
+			eglDestroyContext(display, m_shared_context);
+			m_shared_context = EGL_NO_CONTEXT;
+		}
+	})
+	.set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {
+		glFinish();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+		if (m_egl_surface) {
+			eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
+			glClearColor(0, 0, 0, 1);
+		}
+
+		if (LIKELY(frame_wrapper && offscreen && video_renderer)) {
+			static int cnt = 0;
+			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
+			frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
+			offscreen->bind();
+			video_renderer->draw_frame(*frame_wrapper);
+			offscreen->unbind();
+		}
+
+		if (m_egl_surface) {
+			const auto ret = eglSwapBuffers(m_egl_display, m_egl_surface);
+			if (UNLIKELY(!ret)) {
+				int err = eglGetError();
+				LOGW("eglSwapBuffers:err=%d", err);
+			}
+		}
+
+		return bytes;
+	});
+
 	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
 		LOGE("カメラをオープンできなかった");
 		source.reset();
@@ -256,9 +338,9 @@ void EyeApp::on_resume() {
 	// カメラ映像描画用のGLRendererPipelineを生成
 	const char* versionStr = (const char*)glGetString(GL_VERSION);
 	LOGD("GL_VERSION=%s", versionStr);
-	renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
-	source->set_pipeline(renderer_pipeline.get());
-	renderer_pipeline->start();
+	// renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
+	// source->set_pipeline(renderer_pipeline.get());
+	// renderer_pipeline->start();
 	// オフスクリーンを生成
 	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
 
@@ -275,11 +357,11 @@ void EyeApp::on_pause() {
 		source->stop();
 		source.reset();
 	}
-	if (renderer_pipeline) {
-		renderer_pipeline->on_release();
-		renderer_pipeline->stop();
-		renderer_pipeline.reset();
-	}
+	// if (renderer_pipeline) {
+	// 	renderer_pipeline->on_release();
+	// 	renderer_pipeline->stop();
+	// 	renderer_pipeline.reset();
+	// }
 	offscreen.reset();
 
 	EXIT();
@@ -303,20 +385,21 @@ void EyeApp::on_stop() {
 void EyeApp::on_render() {
     ENTER();
 
-	if (UNLIKELY(!source || !renderer_pipeline || !offscreen)) return;
+	if (UNLIKELY(!source || /*!renderer_pipeline ||*/ !offscreen)) return;
 
+	glFinish();	// XXX これを入れておかないとV4L2スレッドと干渉して激重になる
 	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
 	// 描画処理
-	if (!req_freeze) {
-		// オフスクリーンへ描画
-		offscreen->bind();
-		renderer_pipeline->on_draw();
-		offscreen->unbind();
-	} else {
-		// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
-		renderer_pipeline->on_draw();
-	}
+	// if (!req_freeze) {
+	// 	// オフスクリーンへ描画
+	// 	offscreen->bind();
+	// 	renderer_pipeline->on_draw();
+	// 	offscreen->unbind();
+	// } else {
+	// 	// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
+	// 	// renderer_pipeline->on_draw();
+	// }
 	// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
 	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
