@@ -7,8 +7,12 @@
 #include "glutils.h"
 
 #define GLFW_INCLUDE_ES3
+#define GLFW_EXPOSE_NATIVE_WAYLAND
+#define GLFW_EXPOSE_NATIVE_EGL
+
 #if defined(EYEAPP_ENABLE_GLFW)
     #include <GLFW/glfw3.h>
+    #include <GLFW/glfw3native.h>
     #include "imgui_impl_glfw.h"
 #else
     #include <wayland-client.h>
