@@ -236,6 +236,13 @@ public:
 	};
 
 	/**
+	 * @brief ネゴシーエーションしたフレームタイプを取得する
+	 * 
+	 * @return core::raw_frame_t 
+	 */
+	inline core::raw_frame_t get_frame_type() const  { return stream_frame_type; };
+
+	/**
 	 * コンストラクタで指定したv4l2機器をオープン
 	 * @return
 	 */
