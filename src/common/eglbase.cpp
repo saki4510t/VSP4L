@@ -60,6 +60,183 @@ void checkEglError(
 }
 
 /**
+ * EGLConfigを選択する
+ * @param display
+ * @param config
+ * @param client_version
+ * @param with_depth_buffer
+ * @param with_stencil_buffer
+ * @param isRecordable
+ * @return 正常に選択できれば0, それ以外ならエラー
+ */
+EGLint getConfig(
+	EGLDisplay &display, EGLConfig &config,
+	const int &client_version,
+	const bool &with_depth_buffer,
+	const bool &with_stencil_buffer,
+	const bool &isRecordable) {
+
+	ENTER();
+
+	EGLint opengl_bit;
+	if (client_version >= 3) {
+		opengl_bit = EGL_OPENGL_ES3_BIT;
+	} else {
+		opengl_bit = EGL_OPENGL_ES2_BIT;
+	}
+	// 有効にするEGLパラメータ:RGB565
+	std::vector<EGLint> attribs_rgb565 = {
+		// レンダリングタイプ(OpenGL|ES2 or ES3)
+		EGL_RENDERABLE_TYPE, opengl_bit,
+		// サーフェースタイプ, ダブルバッファを使用するのでEGL_WINDOW_BIT
+		EGL_SURFACE_TYPE,	EGL_WINDOW_BIT,
+		// 赤色で使用する最小フレームバッファサイズ, 8ビット
+		EGL_RED_SIZE,		5,
+		// 緑色で使用する最小フレームバッファサイズ, 8ビット
+		EGL_GREEN_SIZE,		6,
+		// 青色で使用する最小フレームバッファサイズ, 8ビット
+		EGL_BLUE_SIZE,		5,
+		// アルファで使用する最小フレームバッファサイズ, 8ビット
+//		EGL_ALPHA_SIZE, 8,
+		// ステンシルバッファとして使用する最小バッファサイズ, 8ビット
+//		EGL_STENCIL_SIZE,	8,
+		// 今のところ2D表示だけなのでデプスバッファは気にしない
+		// デプスバッファとして使用する最小バッファサイズ, 16ビット
+//		EGL_DEPTH_SIZE,		16,
+//		EGL_RECORDABLE_ANDROID, 1,
+	};
+
+	// 有効にするEGLパラメータ:RGBA8888(RGBA)
+	std::vector<EGLint> attribs_rgba8888 = {
+		// レンダリングタイプ(OpenGL|ES2 or ES3)
+		EGL_RENDERABLE_TYPE, opengl_bit,
+		// サーフェースタイプ, ダブルバッファを使用するのでEGL_WINDOW_BIT
+		EGL_SURFACE_TYPE,	EGL_WINDOW_BIT,
+		// 赤色で使用する最小フレームバッファサイズ, 8ビット
+		EGL_RED_SIZE,		8,
+		// 緑色で使用する最小フレームバッファサイズ, 8ビット
+		EGL_GREEN_SIZE,		8,
+		// 青色で使用する最小フレームバッファサイズ, 8ビット
+		EGL_BLUE_SIZE,		8,
+		// アルファで使用する最小フレームバッファサイズ, 8ビット
+        EGL_ALPHA_SIZE, 	8,
+        // 今のところ2D表示だけなのでデプスバッファは気にしない
+		// デプスバッファとして使用する最小バッファサイズ, 16ビット
+//		EGL_DEPTH_SIZE,		16,
+		// ステンシルバッファとして使用する最小バッファサイズ, 8ビット
+//		EGL_STENCIL_SIZE,	8,
+//		EGL_RECORDABLE_ANDROID, 1,
+	};
+
+	// 条件に合うEGLフレームバッファ設定のリストを取得
+	EGLint numConfigs;
+	EGLBoolean ret;
+	EGLint err;
+
+	if (with_depth_buffer) {
+		attribs_rgba8888.push_back(EGL_DEPTH_SIZE);
+		attribs_rgba8888.push_back(16);
+	}
+	if (with_stencil_buffer) {
+		attribs_rgba8888.push_back(EGL_STENCIL_SIZE);
+		attribs_rgba8888.push_back(8);
+	}
+	if (isRecordable) {
+		attribs_rgba8888.push_back(EGL_RECORDABLE_ANDROID);
+		attribs_rgba8888.push_back(1);
+	}
+	// 終端マーカ
+	attribs_rgba8888.push_back(EGL_NONE);
+	attribs_rgba8888.push_back(EGL_NONE);
+	// EGLConfigを選択する
+	// RGB8888を試みる
+	ret = eglChooseConfig(display, &attribs_rgba8888[0], &config, 1, &numConfigs);
+	if (UNLIKELY(!ret || !numConfigs)) {
+		// RGB8888がだめなときはRGB565を試みる
+		if (with_depth_buffer) {
+			attribs_rgb565.push_back(EGL_DEPTH_SIZE);
+			attribs_rgb565.push_back(16);
+		}
+		if (with_stencil_buffer) {
+			attribs_rgb565.push_back(EGL_STENCIL_SIZE);
+			attribs_rgb565.push_back(8);
+		}
+		if (isRecordable) {
+			attribs_rgb565.push_back(EGL_RECORDABLE_ANDROID);
+			attribs_rgb565.push_back(1);
+		}
+		// 終端マーカ
+		attribs_rgb565.push_back(EGL_NONE);
+		attribs_rgb565.push_back(EGL_NONE);
+		ret = eglChooseConfig(display, &attribs_rgb565[0], &config, 1, &numConfigs);
+		if (UNLIKELY(!ret || !numConfigs)) {
+			// RGB565もだめだった時
+			err = eglGetError();
+			LOGE("failed to eglChooseConfig,err=%d", err);
+			RETURN(-err, EGLint);
+		}
+	}
+
+	RETURN(0, EGLint);
+
+}
+
+/**
+ * @brief EGLコンテキストを生成する
+ * 
+ * @param display 
+ * @param config 
+ * @param client_version 
+ * @param shared_context
+ * @return EGLContext 
+ */
+EGLContext createEGLContext(
+	EGLDisplay &display, EGLConfig &config,
+	int &client_version,
+	EGLContext shared_context,
+	const bool &with_depth_buffer,
+	const bool &with_stencil_buffer,
+	const bool &isRecordable) {
+
+	ENTER();
+
+	EGLContext context = EGL_NO_CONTEXT;
+	EGLint attrib_list[] = {
+		EGL_CONTEXT_CLIENT_VERSION, client_version,		// OpenGL|ES2/ES3を指定
+		EGL_NONE,
+	};
+	EGLint ret;
+	EGLint err;
+
+	// コンフィグレーションを選択
+	if (client_version >= 3) {
+		// OpenGL|ES3を試みる
+		ret = getConfig(display, config, 3, with_depth_buffer, with_stencil_buffer, isRecordable);
+		if (!ret) {
+			client_version = 3;
+			// EGLレンダリングコンテキストを取得(OpenGL|ES3)
+			context = eglCreateContext(display, config, shared_context, attrib_list);
+		}
+	}
+	if ((context == EGL_NO_CONTEXT) && (client_version >= 2)) {
+		// OpenGL|ES2を試みる
+		ret = getConfig(display, config, 2, with_depth_buffer, with_stencil_buffer, isRecordable);
+		if (!ret) {
+			client_version = 2;
+			// EGLレンダリングコンテキストを取得(OpenGL|ES3)
+			context = eglCreateContext(display, config, shared_context, attrib_list);
+		}
+	}
+
+	if (context == EGL_NO_CONTEXT) {
+		client_version = 0;
+	}
+
+	RET(context);
+}
+
+//--------------------------------------------------------------------------------
+/**
  * コンストラクタ
  * @param client_version 2: OpenGL|ES2, 3:OpenGLES|3
  * @param shared_context 共有コンテキスト, Nullable
@@ -172,123 +349,6 @@ EGLBase::~EGLBase() {
 }
 
 /**
- * EGLConfigを選択する
- * @param client_version
- * @param with_depth_buffer
- * @param with_stencil_buffer
- * @param isRecordable
- * @return 正常に選択できれば0, それ以外ならエラー
- */
-/*private(friend)*/
-EGLint EGLBase::getConfig(const int &version,
-	const bool &with_depth_buffer,
-	const bool &with_stencil_buffer,
-	const bool &isRecordable) {
-	ENTER();
-
-	EGLint opengl_bit;
-	if (version >= 3) {
-		opengl_bit = EGL_OPENGL_ES3_BIT;
-	} else {
-		opengl_bit = EGL_OPENGL_ES2_BIT;
-	}
-	// 有効にするEGLパラメータ:RGB565
-	std::vector<EGLint> attribs_rgb565 = {
-		// レンダリングタイプ(OpenGL|ES2 or ES3)
-		EGL_RENDERABLE_TYPE, opengl_bit,
-		// サーフェースタイプ, ダブルバッファを使用するのでEGL_WINDOW_BIT
-		EGL_SURFACE_TYPE,	EGL_WINDOW_BIT,
-		// 赤色で使用する最小フレームバッファサイズ, 8ビット
-		EGL_RED_SIZE,		5,
-		// 緑色で使用する最小フレームバッファサイズ, 8ビット
-		EGL_GREEN_SIZE,		6,
-		// 青色で使用する最小フレームバッファサイズ, 8ビット
-		EGL_BLUE_SIZE,		5,
-		// アルファで使用する最小フレームバッファサイズ, 8ビット
-//		EGL_ALPHA_SIZE, 8,
-		// ステンシルバッファとして使用する最小バッファサイズ, 8ビット
-//		EGL_STENCIL_SIZE,	8,
-		// 今のところ2D表示だけなのでデプスバッファは気にしない
-		// デプスバッファとして使用する最小バッファサイズ, 16ビット
-//		EGL_DEPTH_SIZE,		16,
-//		EGL_RECORDABLE_ANDROID, 1,
-	};
-
-	// 有効にするEGLパラメータ:RGBA8888(RGBA)
-	std::vector<EGLint> attribs_rgba8888 = {
-		// レンダリングタイプ(OpenGL|ES2 or ES3)
-		EGL_RENDERABLE_TYPE, opengl_bit,
-		// サーフェースタイプ, ダブルバッファを使用するのでEGL_WINDOW_BIT
-		EGL_SURFACE_TYPE,	EGL_WINDOW_BIT,
-		// 赤色で使用する最小フレームバッファサイズ, 8ビット
-		EGL_RED_SIZE,		8,
-		// 緑色で使用する最小フレームバッファサイズ, 8ビット
-		EGL_GREEN_SIZE,		8,
-		// 青色で使用する最小フレームバッファサイズ, 8ビット
-		EGL_BLUE_SIZE,		8,
-		// アルファで使用する最小フレームバッファサイズ, 8ビット
-        EGL_ALPHA_SIZE, 	8,
-        // 今のところ2D表示だけなのでデプスバッファは気にしない
-		// デプスバッファとして使用する最小バッファサイズ, 16ビット
-//		EGL_DEPTH_SIZE,		16,
-		// ステンシルバッファとして使用する最小バッファサイズ, 8ビット
-//		EGL_STENCIL_SIZE,	8,
-//		EGL_RECORDABLE_ANDROID, 1,
-	};
-
-	// 条件に合うEGLフレームバッファ設定のリストを取得
-	EGLint numConfigs;
-	EGLBoolean ret;
-	EGLint err;
-
-	if (with_depth_buffer) {
-		attribs_rgba8888.push_back(EGL_DEPTH_SIZE);
-		attribs_rgba8888.push_back(16);
-	}
-	if (with_stencil_buffer) {
-		attribs_rgba8888.push_back(EGL_STENCIL_SIZE);
-		attribs_rgba8888.push_back(8);
-	}
-	if (isRecordable) {
-		attribs_rgba8888.push_back(EGL_RECORDABLE_ANDROID);
-		attribs_rgba8888.push_back(1);
-	}
-	// 終端マーカ
-	attribs_rgba8888.push_back(EGL_NONE);
-	attribs_rgba8888.push_back(EGL_NONE);
-	// EGLConfigを選択する
-	// RGB8888を試みる
-	ret = eglChooseConfig(mEglDisplay, &attribs_rgba8888[0], &mEglConfig, 1, &numConfigs);
-	if (UNLIKELY(!ret || !numConfigs)) {
-		// RGB8888がだめなときはRGB565を試みる
-		if (with_depth_buffer) {
-			attribs_rgb565.push_back(EGL_DEPTH_SIZE);
-			attribs_rgb565.push_back(16);
-		}
-		if (with_stencil_buffer) {
-			attribs_rgb565.push_back(EGL_STENCIL_SIZE);
-			attribs_rgb565.push_back(8);
-		}
-		if (isRecordable) {
-			attribs_rgb565.push_back(EGL_RECORDABLE_ANDROID);
-			attribs_rgb565.push_back(1);
-		}
-		// 終端マーカ
-		attribs_rgb565.push_back(EGL_NONE);
-		attribs_rgb565.push_back(EGL_NONE);
-		ret = eglChooseConfig(mEglDisplay, &attribs_rgb565[0], &mEglConfig, 1, &numConfigs);
-		if (UNLIKELY(!ret || !numConfigs)) {
-			// RGB565もだめだった時
-			err = eglGetError();
-			LOGE("failed to eglChooseConfig,err=%d", err);
-			RETURN(-err, EGLint);
-		}
-	}
-
-	RETURN(0, EGLint);
-}
-
-/**
  * EGLコンテキストを初期化する
  * @param client_version
  * @param shared_context
@@ -308,11 +368,6 @@ int EGLBase::initEGLContext(const int &version,
 
 	if (!shared_context) shared_context = EGL_NO_CONTEXT;
 
-	EGLint attrib_list[] = {
-		EGL_CONTEXT_CLIENT_VERSION, version,		// OpenGL|ES2/ES3を指定
-		EGL_NONE,
-	};
-
 	EGLint ret;
 	EGLint err;
 	// EGLディスプレイコネクションを取得
@@ -331,32 +386,19 @@ int EGLBase::initEGLContext(const int &version,
 	}
 	MARK("EGL ver.%d.%d", mMajor, mMinor);
 
-	// コンフィグレーションを選択
-	if (version >= 3) {
-		// OpenGL|ES3を試みる
-		ret = getConfig(3, with_depth_buffer, with_stencil_buffer, isRecordable);
-		if (!ret) {
-			attrib_list[1] = 3;
-			// EGLレンダリングコンテキストを取得(OpenGL|ES3)
-			mEglContext = eglCreateContext(mEglDisplay, mEglConfig, shared_context, attrib_list);
-		}
-	}
-	if ((mEglContext == EGL_NO_CONTEXT) && (version >= 2)) {
-		// OpenGL|ES2を試みる
-		ret = getConfig(2, with_depth_buffer, with_stencil_buffer, isRecordable);
-		if (!ret) {
-			attrib_list[1] = 2;
-			// EGLレンダリングコンテキストを取得(OpenGL|ES3)
-			mEglContext = eglCreateContext(mEglDisplay, mEglConfig, shared_context, attrib_list);
-		}
-	}
+	int client_version = version;
+	mEglContext = createEGLContext(
+		mEglDisplay, mEglConfig, client_version,
+		shared_context,
+		with_depth_buffer, with_stencil_buffer, isRecordable);
+
 	if (mEglContext == EGL_NO_CONTEXT) {
 		// EGLレンダリングコンテキストを取得できなかった
 		err = eglGetError();
 		LOGW("failed to getConfig,err=%d", err);
 		RETURN(-err, int);
 	}
-	this->client_version = attrib_list[1];
+	this->client_version = client_version;
 	EGLint value;
 	eglQueryContext(mEglDisplay, mEglContext, EGL_CONTEXT_CLIENT_VERSION, &value);
 	MARK("EGLContext created, client version %d", value);

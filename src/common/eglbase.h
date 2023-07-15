@@ -46,6 +46,41 @@ void checkEglError(
 	const char *op);
 
 /**
+ * EGLConfigを選択する
+ * @param display
+ * @param config
+ * @param client_version
+ * @param with_depth_buffer
+ * @param with_stencil_buffer
+ * @param isRecordable
+ * @return 正常に選択できれば0, それ以外ならエラー
+ */
+EGLint getConfig(
+	EGLDisplay &display, EGLConfig &config,
+	const int &client_version,
+	const bool &with_depth_buffer,
+	const bool &with_stencil_buffer,
+	const bool &isRecordable);
+
+/**
+ * @brief EGLコンテキストを生成する
+ * 
+ * @param display 
+ * @param config 
+ * @param client_version 
+ * @param shared_context デフォルトはEGL_NO_CONTEXT
+ * @return EGLContext 
+ */
+EGLContext createEGLContext(
+	EGLDisplay &display, EGLConfig &config,
+	int &client_version,
+	EGLContext shared_context = EGL_NO_CONTEXT,
+	const bool &with_depth_buffer = false,
+	const bool &with_stencil_buffer = false,
+	const bool &isRecordable = false);
+
+//--------------------------------------------------------------------------------
+/**
  * EGLを使ってカレントスレッドにEGL/GLコンテキストを生成するクラス
  * EGL関係のヘルパー関数を含む
  */
@@ -140,10 +175,15 @@ private:
 	 * @param isRecordable
 	 * @return 正常に選択できれば0, それ以外ならエラー
 	 */
-	EGLint getConfig(const int &client_version,
+	inline EGLint getConfig(const int &client_version,
 		const bool &with_depth_buffer,
 		const bool &with_stencil_buffer,
-		const bool &isRecordable);
+		const bool &isRecordable) {
+
+		return egl::getConfig(mEglDisplay, mEglConfig,
+			client_version, with_depth_buffer, with_stencil_buffer, isRecordable);
+	}
+
 	/**
 	 * EGLコンテキストを初期化する
 	 * @param client_version
