@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include <linux/videodev2.h>
 #include <linux/v4l2-controls.h>
