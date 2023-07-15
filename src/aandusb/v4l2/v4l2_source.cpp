@@ -2152,10 +2152,16 @@ void V4l2Source::on_stop() {
 int V4l2Source::on_frame_ready(const uint8_t *image, const size_t &bytes) {
 	ENTER();
 
+    MEAS_TIME_INIT
+
+	MEAS_TIME_START
+
 	int result = -1;
 	if (LIKELY(on_frame_ready_callbac)) {
 		result = on_frame_ready_callbac(image, bytes);
 	}
+
+	MEAS_TIME_STOP
 
 	RETURN(result, int);
 }
