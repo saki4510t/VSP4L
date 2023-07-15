@@ -227,6 +227,7 @@ int V4l2Source::stop() {
  * 対応するピクセルフォーマット・解像度・フレームレートをjson文字列として取得する
  * @return
  */
+/*public*/
 std::string V4l2Source::get_supported_size() const {
 	ENTER();
 
@@ -458,6 +459,7 @@ static int find_frame_size(int fd,
  * @param max_fps 最大フレームレート, 省略時はDEFAULT_PREVIEW_FPS_MAXを使う
  * @return 0: 対応している, 0以外: 対応していない
  */
+/*public*/
 int V4l2Source::find_stream(
 	const uint32_t &width, const uint32_t &height,
 	uint32_t pixel_format,
@@ -563,6 +565,7 @@ int V4l2Source::resize(
 	RETURN(core::USB_SUCCESS, int);
 }
 
+//--------------------------------------------------------------------------------
 /**
  * 映像取得ループ開始時の処理, 映像取得スレッド上で実行される
  */
@@ -956,6 +959,7 @@ err:
  * 
  * @return std::vector 
  */
+/*private*/
 std::vector<uint32_t> V4l2Source::get_supported_pixel_formats_locked(const std::vector<uint32_t> preffered) const {
 	ENTER();
 
@@ -1127,6 +1131,7 @@ int V4l2Source::read_frame(uint8_t *dst, const size_t &capacity) {
 	RETURN(result, int);
 }
 
+//--------------------------------------------------------------------------------
 /**
  * ctrl_idで指定したコントロール機能に対応しているかどうかを取得
  * v4l2機器をオープンしているときのみ有効。closeしているときは常にfalseを返す
