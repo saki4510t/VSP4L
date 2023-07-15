@@ -87,7 +87,7 @@ namespace serenegiant::v4l2 {
  * @param device_name v4l2機器名
  */
 /*public*/
-V4l2Source::V4l2Source(std::string device_name)
+V4l2SourceBase::V4l2SourceBase(std::string device_name)
 :	device_name(std::move(device_name)),
 	m_fd(0), m_state(STATE_CLOSE),
 	request_resize(false),
@@ -108,7 +108,7 @@ V4l2Source::V4l2Source(std::string device_name)
  * デストラクタ
  */
 /*public*/
-V4l2Source::~V4l2Source() {
+V4l2SourceBase::~V4l2SourceBase() {
 	ENTER();
 
 	close();
@@ -120,7 +120,7 @@ V4l2Source::~V4l2Source() {
  * コンストラクタで指定したv4l2機器をオープン
  * @return
  */
-int V4l2Source::open() {
+int V4l2SourceBase::open() {
 	ENTER();
 
 	int result = core::USB_ERROR_INVALID_STATE;
@@ -160,7 +160,7 @@ int V4l2Source::open() {
  * v4l2機器をオープンしていればクローズする
  * @return
  */
-int V4l2Source::close() {
+int V4l2SourceBase::close() {
 	ENTER();
 
 	int result = internal_stop();
@@ -187,7 +187,7 @@ int V4l2Source::close() {
  * @return
  */
 /*public*/
-int V4l2Source::start() {
+int V4l2SourceBase::start() {
 	ENTER();
 
 	int result = core::USB_ERROR_INVALID_STATE;
@@ -219,7 +219,7 @@ int V4l2Source::start() {
  * @return
  */
 /*public*/
-int V4l2Source::stop() {
+int V4l2SourceBase::stop() {
 	return internal_stop();
 }
 
@@ -228,7 +228,7 @@ int V4l2Source::stop() {
  * @return
  */
 /*public*/
-std::string V4l2Source::get_supported_size() const {
+std::string V4l2SourceBase::get_supported_size() const {
 	ENTER();
 
 	std::vector<FormatInfoSp> formats;
@@ -460,7 +460,7 @@ static int find_frame_size(int fd,
  * @return 0: 対応している, 0以外: 対応していない
  */
 /*public*/
-int V4l2Source::find_stream(
+int V4l2SourceBase::find_stream(
 	const uint32_t &width, const uint32_t &height,
 	uint32_t pixel_format,
 	const float &min_fps, const float &max_fps) {
@@ -545,7 +545,7 @@ int V4l2Source::find_stream(
  * @return
  */
 /*public*/
-int V4l2Source::resize(
+int V4l2SourceBase::resize(
 	const uint32_t &width, const uint32_t &height,
 	const uint32_t &pixel_format) {
 
@@ -567,28 +567,10 @@ int V4l2Source::resize(
 
 //--------------------------------------------------------------------------------
 /**
- * 映像取得ループ開始時の処理, 映像取得スレッド上で実行される
- */
-/*protected*/
-void V4l2Source::on_start() {
-	ENTER();
-	EXIT();
-}
-
-/**
- * 映像取得ループ終了時の処理, 映像取得スレッド上で実行される
- */
-/*protected*/
-void V4l2Source::on_stop() {
-	ENTER();
-	EXIT();
-}
-
-/**
  * 映像処理スレッドの実行関数
  */
 /*private*/
-void V4l2Source::v4l2_thread_func() {
+void V4l2SourceBase::v4l2_thread_func() {
 	ENTER();
 
 	int result;
@@ -645,23 +627,13 @@ void V4l2Source::v4l2_thread_func() {
  * @return
  */
 /*private*/
-int V4l2Source::v4l2_loop() {
+int V4l2SourceBase::v4l2_loop() {
 	ENTER();
-
-	uvc::VideoFrame frame;
-	frame.resize(stream_width, stream_height, stream_frame_type);
-	frame.resize(image_bytes);
 
 	// 実行中＆解像度・ピクセルフォーマット変更要求が無ければ映像取得する
 	for ( ; is_running() && !request_resize; ) {
 		// 映像フレームを待機
-		int result = wait_frame(frame.frame(), image_bytes);
-		if (result > 0) {
-			// mjpegとかだと受信データサイズは固定では無いので
-			// 実際のデータバイト数に合うようにリサイズする
-			frame.resize(result);
-            // FIXME 未実装 受け取った映像の処理
-		}
+		handle_frame();
 	} // for ( ; is_running(); )
 
 	RETURN(core::USB_SUCCESS, int);
@@ -672,7 +644,7 @@ int V4l2Source::v4l2_loop() {
  * @return
  */
 /*private*/
-int V4l2Source::internal_stop() {
+int V4l2SourceBase::internal_stop() {
 	ENTER();
 
 	bool b = set_running(false);
@@ -691,7 +663,7 @@ int V4l2Source::internal_stop() {
  * 映像ストリーム開始
  */
 /*private*/
-int V4l2Source::start_stream_locked() {
+int V4l2SourceBase::start_stream_locked() {
 	ENTER();
 
 	LOGD("state=%d", m_state);
@@ -733,7 +705,7 @@ ret:
  * 映像ストリーム終了
  */
 /*private*/
-int V4l2Source::stop_stream_locked() {
+int V4l2SourceBase::stop_stream_locked() {
 	ENTER();
 
 	if (m_state == STATE_STREAM) {
@@ -756,7 +728,7 @@ int V4l2Source::stop_stream_locked() {
  * @return
  */
 /*private*/
-int V4l2Source::init_v4l2_locked(
+int V4l2SourceBase::init_v4l2_locked(
   	const uint32_t &width, const uint32_t &height,
   	const uint32_t &pixel_format) {
 
@@ -853,7 +825,7 @@ int V4l2Source::init_v4l2_locked(
  * 映像データ受け取り用のメモリマップを開放
  */
 /*private*/
-int V4l2Source::release_mmap_locked() {
+int V4l2SourceBase::release_mmap_locked() {
 
 	ENTER();
 
@@ -881,7 +853,7 @@ int V4l2Source::release_mmap_locked() {
  * init_device_lockedの下請け
  */
 /*private*/
-int V4l2Source::init_mmap_locked() {
+int V4l2SourceBase::init_mmap_locked() {
 	ENTER();
 
 	int result = core::USB_SUCCESS;
@@ -956,11 +928,11 @@ err:
 
 /**
  * @brief 対応しているピクセルフォーマット一覧を取得する
- * 
- * @return std::vector 
+ *
+ * @return std::vector
  */
 /*private*/
-std::vector<uint32_t> V4l2Source::get_supported_pixel_formats_locked(const std::vector<uint32_t> preffered) const {
+std::vector<uint32_t> V4l2SourceBase::get_supported_pixel_formats_locked(const std::vector<uint32_t> preffered) const {
 	ENTER();
 
 	std::vector<uint32_t> result;
@@ -979,7 +951,7 @@ std::vector<uint32_t> V4l2Source::get_supported_pixel_formats_locked(const std::
 					fmt.description);
 				if (preffered.empty() || (find(preffered.begin(), preffered.end(), pixel_format) != preffered.end())) {
 					result.push_back(pixel_format);
-				}				
+				}
 			}
 		}
 	}
@@ -996,7 +968,7 @@ std::vector<uint32_t> V4l2Source::get_supported_pixel_formats_locked(const std::
  * @return
  */
 /*private*/
-int V4l2Source::handle_resize(
+int V4l2SourceBase::handle_resize(
 	const uint32_t &width, const uint32_t &height,
 	const uint32_t &pixel_format) {
 
@@ -1038,14 +1010,13 @@ int V4l2Source::handle_resize(
 }
 
 /**
- * 映像データを取得する
- * 映像データがないときはブロックする
- * @param dst
- * @param capacity
- * @return 負:エラー 0以上:読み込んだデータバイト数
+ * 映像データの処理
+ * 映像データがないときはMAX_WAIT_FRAME_USで指定した時間待機する
+ * ワーカースレッド上で呼ばれる
+ * @return int 負:エラー 0以上:読み込んだデータバイト数
  */
 /*private*/
-int V4l2Source::wait_frame(uint8_t *dst, const size_t &capacity) {
+int V4l2SourceBase::handle_frame() {
 
 	ENTER();
 
@@ -1053,6 +1024,7 @@ int V4l2Source::wait_frame(uint8_t *dst, const size_t &capacity) {
 		.tv_sec = 0,
 	 	.tv_usec = MAX_WAIT_FRAME_US,
 	};
+
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(m_fd, &fds);
@@ -1069,62 +1041,42 @@ int V4l2Source::wait_frame(uint8_t *dst, const size_t &capacity) {
 	} else {
 		// 映像データの準備ができたかタイムアウトした時
 		if (FD_ISSET(m_fd, &fds)) {
-			// 映像データを読み込み
-			result = read_frame(dst, capacity);
+			// 映像データの処理
+			struct v4l2_buffer buf {
+				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+				.memory = V4L2_MEMORY_MMAP,
+			};
+
+			// 映像の入ったバッファを取得
+			int result = xioctl(m_fd, VIDIOC_DQBUF, &buf);
+			if (result >= 0) {
+				// バッファを取得できた時
+				if (buf.index < m_buffersNums) {
+					result = on_frame_ready((const uint8_t *)m_buffers[buf.index].start, buf.bytesused);
+				}
+				// 読み込み終わったバッファをキューに追加
+				if (xioctl(m_fd, VIDIOC_QBUF, &buf) == -1) {
+					result = -errno;
+					LOGE("VIDIOC_QBUF: errno=%d", -result);
+				}
+			} else {
+				// バッファを取得できなかったとき
+				result = -errno;
+				switch (errno) {
+				case EAGAIN:
+					// 映像データが準備出来てない
+					result = 0;
+					break;
+				case EIO:
+					/* Could ignore EIO, see spec. */
+					/* fall through */
+				default:
+					LOGE("VIDIOC_DQBUF: errno=%d", -result);
+				}
+			}
 		} else {
 			// EAGAIN(タイムアウト)
 			result = 0;
-		}
-	}
-
-	RETURN(result, int);
-}
-
-/**
- * 映像データを指定したバッファにコピーする
- * @param dst
- * @param capacity
- * @return 負:エラー, 0以上:読み込んだ映像データのバイト数
- */
-/*private*/
-int V4l2Source::read_frame(uint8_t *dst, const size_t &capacity) {
-	ENTER();
-
-	struct v4l2_buffer buf{
-		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-		.memory = V4L2_MEMORY_MMAP,
-	};
-
-	// 映像の入ったバッファを取得
-	int result = xioctl(m_fd, VIDIOC_DQBUF, &buf);
-	if (result >= 0) {
-		// バッファを取得できた時
-		if (buf.index < m_buffersNums) {
-			if (LIKELY(dst && (capacity >= buf.bytesused))) {
-				memcpy(dst, m_buffers[buf.index].start, buf.bytesused);
-				// コピーしたサイズを返す
-				result = (int)buf.bytesused;
-			} else {
-				result = 0;
-			}
-		}
-		// 読み込み終わったバッファをキューに追加
-		if (xioctl(m_fd, VIDIOC_QBUF, &buf) == -1) {
-			result = -errno;
-			LOGE("VIDIOC_QBUF: errno=%d", -result);
-		}
-	} else {
-		result = -errno;
-		switch (errno) {
-		case EAGAIN:
-			// 映像データが準備出来てない
-			result = 0;
-			break;
-		case EIO:
-			/* Could ignore EIO, see spec. */
-			/* fall through */
-		default:
-			LOGE("VIDIOC_DQBUF: errno=%d", -result);
 		}
 	}
 
@@ -1139,7 +1091,7 @@ int V4l2Source::read_frame(uint8_t *dst, const size_t &capacity) {
  * @return
  */
 /*public*/
-bool V4l2Source::is_ctrl_supported(const uint32_t &ctrl_id) {
+bool V4l2SourceBase::is_ctrl_supported(const uint32_t &ctrl_id) {
 	AutoMutex lock(v4l2_lock);
 	return supported.find(ctrl_id) != supported.end();
 }
@@ -1151,7 +1103,7 @@ bool V4l2Source::is_ctrl_supported(const uint32_t &ctrl_id) {
  * @return
  */
 /*protected*/
-QueryCtrlSp V4l2Source::get_ctrl(const uint32_t &ctrl_id) {
+QueryCtrlSp V4l2SourceBase::get_ctrl(const uint32_t &ctrl_id) {
 	AutoMutex lock(v4l2_lock);
 	return supported.find(ctrl_id) != supported.end()
 		? supported[ctrl_id] : nullptr;
@@ -1164,7 +1116,7 @@ QueryCtrlSp V4l2Source::get_ctrl(const uint32_t &ctrl_id) {
  * @return
  */
 /*public*/
-int V4l2Source::get_ctrl(
+int V4l2SourceBase::get_ctrl(
   	const uint32_t &ctrl_id,
   	uvc::control_value32_t &values) {
 
@@ -1201,7 +1153,7 @@ int V4l2Source::get_ctrl(
  * @return
  */
 /*public*/
-int V4l2Source::get_ctrl_value(const uint32_t &ctrl_id, int32_t &value) {
+int V4l2SourceBase::get_ctrl_value(const uint32_t &ctrl_id, int32_t &value) {
 	ENTER();
 
 	AutoMutex lock(v4l2_lock);
@@ -1229,7 +1181,7 @@ int V4l2Source::get_ctrl_value(const uint32_t &ctrl_id, int32_t &value) {
  * @return
  */
 /*public*/
-int V4l2Source::set_ctrl_value(const uint32_t &ctrl_id, const int32_t &value) {
+int V4l2SourceBase::set_ctrl_value(const uint32_t &ctrl_id, const int32_t &value) {
 	ENTER();
 
 	AutoMutex lock(v4l2_lock);
@@ -1257,7 +1209,7 @@ int V4l2Source::set_ctrl_value(const uint32_t &ctrl_id, const int32_t &value) {
  * @param values
  * @return
  */
-int V4l2Source::update_brightness(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_brightness(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_BRIGHTNESS, values);
 }
 
@@ -1266,7 +1218,7 @@ int V4l2Source::update_brightness(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_brightness(const int32_t &value) {
+int V4l2SourceBase::set_brightness(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_BRIGHTNESS, value);
 }
 
@@ -1274,7 +1226,7 @@ int V4l2Source::set_brightness(const int32_t &value) {
  * V4L2_CID_BRIGHTNESS (V4L2_CID_BASE + 0)
  * @return
  */
-int32_t V4l2Source::get_brightness() {
+int32_t V4l2SourceBase::get_brightness() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_BRIGHTNESS, result);
 	return result;
@@ -1285,7 +1237,7 @@ int32_t V4l2Source::get_brightness() {
  * @param values
  * @return
  */
-int V4l2Source::update_contrast(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_contrast(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_CONTRAST, values);
 }
 
@@ -1294,7 +1246,7 @@ int V4l2Source::update_contrast(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_contrast(const int32_t &value) {
+int V4l2SourceBase::set_contrast(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_CONTRAST, value);
 }
 
@@ -1302,7 +1254,7 @@ int V4l2Source::set_contrast(const int32_t &value) {
  * V4L2_CID_CONTRAST (V4L2_CID_BASE + 1)
  * @return
  */
-int32_t V4l2Source::get_contrast() {
+int32_t V4l2SourceBase::get_contrast() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_CONTRAST, result);
 	return result;
@@ -1313,7 +1265,7 @@ int32_t V4l2Source::get_contrast() {
  * @param values
  * @return
  */
-int V4l2Source::update_saturation(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_saturation(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_SATURATION, values);
 }
 
@@ -1322,7 +1274,7 @@ int V4l2Source::update_saturation(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_saturation(const int32_t &value) {
+int V4l2SourceBase::set_saturation(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_SATURATION, value);
 }
 
@@ -1330,7 +1282,7 @@ int V4l2Source::set_saturation(const int32_t &value) {
  *V4L2_CID_SATURATION (V4L2_CID_BASE + 2)
  * @return
  */
-int32_t V4l2Source::get_saturation() {
+int32_t V4l2SourceBase::get_saturation() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_SATURATION, result);
 	return result;
@@ -1341,7 +1293,7 @@ int32_t V4l2Source::get_saturation() {
  * @param values
  * @return
  */
-int V4l2Source::update_hue(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_hue(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_HUE, values);
 }
 
@@ -1350,7 +1302,7 @@ int V4l2Source::update_hue(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_hue(const int32_t &value) {
+int V4l2SourceBase::set_hue(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_HUE, value);
 }
 
@@ -1358,7 +1310,7 @@ int V4l2Source::set_hue(const int32_t &value) {
  * V4L2_CID_HUE (V4L2_CID_BASE + 3)
  * @return
  */
-int32_t V4l2Source::get_hue() {
+int32_t V4l2SourceBase::get_hue() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_HUE, result);
 	return result;
@@ -1377,7 +1329,7 @@ int32_t V4l2Source::get_hue() {
  * @param values
  * @return
  */
-int V4l2Source::update_auto_white_blance(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_auto_white_blance(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_AUTO_WHITE_BALANCE, values);
 }
 
@@ -1386,7 +1338,7 @@ int V4l2Source::update_auto_white_blance(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_auto_white_blance(const int32_t &value) {
+int V4l2SourceBase::set_auto_white_blance(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_AUTO_WHITE_BALANCE, value);
 }
 
@@ -1394,7 +1346,7 @@ int V4l2Source::set_auto_white_blance(const int32_t &value) {
  * V4L2_CID_AUTO_WHITE_BALANCE (V4L2_CID_BASE + 12)
  * @return
  */
-int32_t V4l2Source::get_auto_white_blance() {
+int32_t V4l2SourceBase::get_auto_white_blance() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_AUTO_WHITE_BALANCE, result);
 	return result;
@@ -1409,7 +1361,7 @@ int32_t V4l2Source::get_auto_white_blance() {
  * @param values
  * @return
  */
-int V4l2Source::update_gamma(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_gamma(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_GAMMA, values);
 }
 
@@ -1418,7 +1370,7 @@ int V4l2Source::update_gamma(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_gamma(const int32_t &value) {
+int V4l2SourceBase::set_gamma(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_GAMMA, value);
 }
 
@@ -1426,7 +1378,7 @@ int V4l2Source::set_gamma(const int32_t &value) {
  * V4L2_CID_GAMMA (V4L2_CID_BASE + 16)
  * @return
  */
-int32_t V4l2Source::get_gamma() {
+int32_t V4l2SourceBase::get_gamma() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_GAMMA, result);
 	return result;
@@ -1442,7 +1394,7 @@ int32_t V4l2Source::get_gamma() {
  * @param values
  * @return
  */
-int V4l2Source::update_auto_gain(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_auto_gain(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_AUTOGAIN, values);
 }
 
@@ -1451,7 +1403,7 @@ int V4l2Source::update_auto_gain(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_auto_gain(const int32_t &value) {
+int V4l2SourceBase::set_auto_gain(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_AUTOGAIN, value);
 }
 
@@ -1459,7 +1411,7 @@ int V4l2Source::set_auto_gain(const int32_t &value) {
  * V4L2_CID_AUTOGAIN (V4L2_CID_BASE + 18)
  * @return
  */
-int32_t V4l2Source::get_auto_gain() {
+int32_t V4l2SourceBase::get_auto_gain() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_AUTOGAIN, result);
 	return result;
@@ -1470,7 +1422,7 @@ int32_t V4l2Source::get_auto_gain() {
  * @param values
  * @return
  */
-int V4l2Source::update_gain(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_gain(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_GAIN, values);
 }
 
@@ -1479,7 +1431,7 @@ int V4l2Source::update_gain(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_gain(const int32_t &value) {
+int V4l2SourceBase::set_gain(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_GAIN, value);
 }
 
@@ -1487,7 +1439,7 @@ int V4l2Source::set_gain(const int32_t &value) {
  * V4L2_CID_GAIN (V4L2_CID_BASE + 19)
  * @return
  */
-int32_t V4l2Source::get_gain() {
+int32_t V4l2SourceBase::get_gain() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_GAIN, result);
 	return result;
@@ -1501,7 +1453,7 @@ int32_t V4l2Source::get_gain() {
  * @param values
  * @return
  */
-int V4l2Source::update_powerline_frequency(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_powerline_frequency(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_POWER_LINE_FREQUENCY, values);
 }
 
@@ -1510,7 +1462,7 @@ int V4l2Source::update_powerline_frequency(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_powerline_frequency(const int32_t &value) {
+int V4l2SourceBase::set_powerline_frequency(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_POWER_LINE_FREQUENCY, value);
 }
 
@@ -1518,7 +1470,7 @@ int V4l2Source::set_powerline_frequency(const int32_t &value) {
  * V4L2_CID_POWER_LINE_FREQUENCY (V4L2_CID_BASE + 24)
  * @return
  */
-int32_t V4l2Source::get_powerline_frequency() {
+int32_t V4l2SourceBase::get_powerline_frequency() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_POWER_LINE_FREQUENCY, result);
 	return result;
@@ -1529,7 +1481,7 @@ int32_t V4l2Source::get_powerline_frequency() {
  * @param values
  * @return
  */
-int V4l2Source::update_auto_hue(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_auto_hue(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_HUE_AUTO, values);
 }
 
@@ -1538,7 +1490,7 @@ int V4l2Source::update_auto_hue(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_auto_hue(const int32_t &value) {
+int V4l2SourceBase::set_auto_hue(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_HUE_AUTO, value);
 }
 
@@ -1546,7 +1498,7 @@ int V4l2Source::set_auto_hue(const int32_t &value) {
  * V4L2_CID_HUE_AUTO (V4L2_CID_BASE + 25)
  * @return
  */
-int32_t V4l2Source::get_auto_hue() {
+int32_t V4l2SourceBase::get_auto_hue() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_HUE_AUTO, result);
 	return result;
@@ -1557,7 +1509,7 @@ int32_t V4l2Source::get_auto_hue() {
  * @param values
  * @return
  */
-int V4l2Source::update_white_blance(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_white_blance(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_WHITE_BALANCE_TEMPERATURE, values);
 }
 
@@ -1566,7 +1518,7 @@ int V4l2Source::update_white_blance(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_white_blance(const int32_t &value) {
+int V4l2SourceBase::set_white_blance(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_WHITE_BALANCE_TEMPERATURE, value);
 }
 
@@ -1574,7 +1526,7 @@ int V4l2Source::set_white_blance(const int32_t &value) {
  * V4L2_CID_WHITE_BALANCE_TEMPERATURE (V4L2_CID_BASE + 26)
  * @return
  */
-int32_t V4l2Source::get_white_blance() {
+int32_t V4l2SourceBase::get_white_blance() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_WHITE_BALANCE_TEMPERATURE, result);
 	return result;
@@ -1585,7 +1537,7 @@ int32_t V4l2Source::get_white_blance() {
  * @param values
  * @return
  */
-int V4l2Source::update_sharpness(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_sharpness(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_SHARPNESS, values);
 }
 
@@ -1594,7 +1546,7 @@ int V4l2Source::update_sharpness(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_sharpness(const int32_t &value) {
+int V4l2SourceBase::set_sharpness(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_SHARPNESS, value);
 }
 
@@ -1602,7 +1554,7 @@ int V4l2Source::set_sharpness(const int32_t &value) {
  * V4L2_CID_SHARPNESS (V4L2_CID_BASE + 27)
  * @return
  */
-int32_t V4l2Source::get_sharpness() {
+int32_t V4l2SourceBase::get_sharpness() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_SHARPNESS, result);
 	return result;
@@ -1613,7 +1565,7 @@ int32_t V4l2Source::get_sharpness() {
  * @param values
  * @return
  */
-int V4l2Source::update_backlight_comp(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_backlight_comp(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_BACKLIGHT_COMPENSATION, values);
 }
 
@@ -1622,7 +1574,7 @@ int V4l2Source::update_backlight_comp(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_backlight_comp(const int32_t &value) {
+int V4l2SourceBase::set_backlight_comp(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_BACKLIGHT_COMPENSATION, value);
 }
 
@@ -1630,7 +1582,7 @@ int V4l2Source::set_backlight_comp(const int32_t &value) {
  * V4L2_CID_BACKLIGHT_COMPENSATION (V4L2_CID_BASE + 28)
  * @return
  */
-int32_t V4l2Source::get_backlight_comp() {
+int32_t V4l2SourceBase::get_backlight_comp() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_BACKLIGHT_COMPENSATION, result);
 	return result;
@@ -1657,7 +1609,7 @@ int32_t V4l2Source::get_backlight_comp() {
  * @param values
  * @return
  */
-int V4l2Source::update_exposure_auto(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_exposure_auto(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_EXPOSURE_AUTO, values);
 }
 
@@ -1666,7 +1618,7 @@ int V4l2Source::update_exposure_auto(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_exposure_auto(const int32_t &value) {
+int V4l2SourceBase::set_exposure_auto(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_EXPOSURE_AUTO, value);
 }
 
@@ -1674,7 +1626,7 @@ int V4l2Source::set_exposure_auto(const int32_t &value) {
  * V4L2_CID_EXPOSURE_AUTO (V4L2_CID_CAMERA_CLASS_BASE + 1)
  * @return
  */
-int32_t V4l2Source::get_exposure_auto() {
+int32_t V4l2SourceBase::get_exposure_auto() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_EXPOSURE_AUTO, result);
 	return result;
@@ -1685,7 +1637,7 @@ int32_t V4l2Source::get_exposure_auto() {
  * @param values
  * @return
  */
-int V4l2Source::update_exposure_abs(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_exposure_abs(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_EXPOSURE_ABSOLUTE, values);
 }
 
@@ -1694,7 +1646,7 @@ int V4l2Source::update_exposure_abs(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_exposure_abs(const int32_t &value) {
+int V4l2SourceBase::set_exposure_abs(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_EXPOSURE_ABSOLUTE, value);
 }
 
@@ -1702,7 +1654,7 @@ int V4l2Source::set_exposure_abs(const int32_t &value) {
  * V4L2_CID_EXPOSURE_ABSOLUTE (V4L2_CID_CAMERA_CLASS_BASE + 2)
  * @return
  */
-int32_t V4l2Source::get_exposure_abs() {
+int32_t V4l2SourceBase::get_exposure_abs() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_EXPOSURE_ABSOLUTE, result);
 	return result;
@@ -1713,7 +1665,7 @@ int32_t V4l2Source::get_exposure_abs() {
  * @param values
  * @return
  */
-int V4l2Source::update_exposure_auto_priority(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_exposure_auto_priority(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_EXPOSURE_AUTO_PRIORITY, values);
 }
 
@@ -1722,7 +1674,7 @@ int V4l2Source::update_exposure_auto_priority(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_exposure_auto_priority(const int32_t &value) {
+int V4l2SourceBase::set_exposure_auto_priority(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_EXPOSURE_AUTO_PRIORITY, value);
 }
 
@@ -1730,7 +1682,7 @@ int V4l2Source::set_exposure_auto_priority(const int32_t &value) {
  * V4L2_CID_EXPOSURE_AUTO_PRIORITY (V4L2_CID_CAMERA_CLASS_BASE + 3)
  * @return
  */
-int32_t V4l2Source::get_exposure_auto_priority() {
+int32_t V4l2SourceBase::get_exposure_auto_priority() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_EXPOSURE_AUTO_PRIORITY, result);
 	return result;
@@ -1741,7 +1693,7 @@ int32_t V4l2Source::get_exposure_auto_priority() {
  * @param values
  * @return
  */
-int V4l2Source::update_pan_rel(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_pan_rel(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_PAN_RELATIVE, values);
 }
 
@@ -1750,7 +1702,7 @@ int V4l2Source::update_pan_rel(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_pan_rel(const int32_t &value) {
+int V4l2SourceBase::set_pan_rel(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_PAN_RELATIVE, value);
 }
 
@@ -1758,7 +1710,7 @@ int V4l2Source::set_pan_rel(const int32_t &value) {
  * V4L2_CID_PAN_RELATIVE (V4L2_CID_CAMERA_CLASS_BASE + 4)
  * @return
  */
-int32_t V4l2Source::get_pane_rel() {
+int32_t V4l2SourceBase::get_pane_rel() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_PAN_RELATIVE, result);
 	return result;
@@ -1769,7 +1721,7 @@ int32_t V4l2Source::get_pane_rel() {
  * @param values
  * @return
  */
-int V4l2Source::update_tilt_rel(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_tilt_rel(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_TILT_RELATIVE, values);
 }
 
@@ -1778,7 +1730,7 @@ int V4l2Source::update_tilt_rel(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_tilt_rel(const int32_t &value) {
+int V4l2SourceBase::set_tilt_rel(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_TILT_RELATIVE, value);
 }
 
@@ -1786,7 +1738,7 @@ int V4l2Source::set_tilt_rel(const int32_t &value) {
  * V4L2_CID_TILT_RELATIVE (V4L2_CID_CAMERA_CLASS_BASE + 5)
  * @return
  */
-int32_t V4l2Source::get_tilt_rel() {
+int32_t V4l2SourceBase::get_tilt_rel() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_TILT_RELATIVE, result);
 	return result;
@@ -1800,7 +1752,7 @@ int32_t V4l2Source::get_tilt_rel() {
  * @param values
  * @return
  */
-int V4l2Source::update_pan_abs(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_pan_abs(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_PAN_ABSOLUTE, values);
 }
 
@@ -1809,7 +1761,7 @@ int V4l2Source::update_pan_abs(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_pan_abs(const int32_t &value) {
+int V4l2SourceBase::set_pan_abs(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_PAN_ABSOLUTE, value);
 }
 
@@ -1817,7 +1769,7 @@ int V4l2Source::set_pan_abs(const int32_t &value) {
  * V4L2_CID_PAN_ABSOLUTE (V4L2_CID_CAMERA_CLASS_BASE + 8)
  * @return
  */
-int32_t V4l2Source::get_pan_abs() {
+int32_t V4l2SourceBase::get_pan_abs() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_PAN_ABSOLUTE, result);
 	return result;
@@ -1828,7 +1780,7 @@ int32_t V4l2Source::get_pan_abs() {
  * @param values
  * @return
  */
-int V4l2Source::update_tilt_abs(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_tilt_abs(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_TILT_ABSOLUTE, values);
 }
 
@@ -1837,7 +1789,7 @@ int V4l2Source::update_tilt_abs(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_tilt_abs(const int32_t &value) {
+int V4l2SourceBase::set_tilt_abs(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_TILT_ABSOLUTE, value);
 }
 
@@ -1845,7 +1797,7 @@ int V4l2Source::set_tilt_abs(const int32_t &value) {
  * V4L2_CID_TILT_ABSOLUTE (V4L2_CID_CAMERA_CLASS_BASE + 9)
  * @return
  */
-int32_t V4l2Source::get_tilt_abs() {
+int32_t V4l2SourceBase::get_tilt_abs() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_TILT_ABSOLUTE, result);
 	return result;
@@ -1856,7 +1808,7 @@ int32_t V4l2Source::get_tilt_abs() {
  * @param values
  * @return
  */
-int V4l2Source::update_focus_abs(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_focus_abs(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_FOCUS_ABSOLUTE, values);
 }
 
@@ -1865,7 +1817,7 @@ int V4l2Source::update_focus_abs(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_focus_abs(const int32_t &value) {
+int V4l2SourceBase::set_focus_abs(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_FOCUS_ABSOLUTE, value);
 }
 
@@ -1873,7 +1825,7 @@ int V4l2Source::set_focus_abs(const int32_t &value) {
  * V4L2_CID_FOCUS_ABSOLUTE (V4L2_CID_CAMERA_CLASS_BASE + 10)
  * @return
  */
-int32_t V4l2Source::get_focus_abs() {
+int32_t V4l2SourceBase::get_focus_abs() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_FOCUS_ABSOLUTE, result);
 	return result;
@@ -1884,7 +1836,7 @@ int32_t V4l2Source::get_focus_abs() {
  * @param values
  * @return
  */
-int V4l2Source::update_focus_rel(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_focus_rel(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_FOCUS_RELATIVE, values);
 }
 
@@ -1893,7 +1845,7 @@ int V4l2Source::update_focus_rel(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_focus_rel(const int32_t &value) {
+int V4l2SourceBase::set_focus_rel(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_FOCUS_RELATIVE, value);
 }
 
@@ -1901,7 +1853,7 @@ int V4l2Source::set_focus_rel(const int32_t &value) {
  * V4L2_CID_FOCUS_RELATIVE (V4L2_CID_CAMERA_CLASS_BASE + 11)
  * @return
  */
-int32_t V4l2Source::get_focus_rel() {
+int32_t V4l2SourceBase::get_focus_rel() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_FOCUS_RELATIVE, result);
 	return result;
@@ -1912,7 +1864,7 @@ int32_t V4l2Source::get_focus_rel() {
  * @param values
  * @return
  */
-int V4l2Source::update_focus_auto(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_focus_auto(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_FOCUS_AUTO, values);
 }
 
@@ -1921,7 +1873,7 @@ int V4l2Source::update_focus_auto(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_focus_auto(const int32_t &value) {
+int V4l2SourceBase::set_focus_auto(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_FOCUS_AUTO, value);
 }
 
@@ -1929,7 +1881,7 @@ int V4l2Source::set_focus_auto(const int32_t &value) {
  * V4L2_CID_FOCUS_AUTO (V4L2_CID_CAMERA_CLASS_BASE + 12)
  * @return
  */
-int32_t V4l2Source::get_focus_auto() {
+int32_t V4l2SourceBase::get_focus_auto() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_FOCUS_AUTO, result);
 	return result;
@@ -1940,7 +1892,7 @@ int32_t V4l2Source::get_focus_auto() {
  * @param values
  * @return
  */
-int V4l2Source::update_zoom_abs(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_zoom_abs(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_ZOOM_ABSOLUTE, values);
 }
 
@@ -1949,7 +1901,7 @@ int V4l2Source::update_zoom_abs(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_zoom_abs(const int32_t &value) {
+int V4l2SourceBase::set_zoom_abs(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_ZOOM_ABSOLUTE, value);
 }
 
@@ -1957,7 +1909,7 @@ int V4l2Source::set_zoom_abs(const int32_t &value) {
  * V4L2_CID_ZOOM_ABSOLUTE (V4L2_CID_CAMERA_CLASS_BASE + 13)
  * @return
  */
-int32_t V4l2Source::get_zoom_abs() {
+int32_t V4l2SourceBase::get_zoom_abs() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_ZOOM_ABSOLUTE, result);
 	return result;
@@ -1968,7 +1920,7 @@ int32_t V4l2Source::get_zoom_abs() {
  * @param values
  * @return
  */
-int V4l2Source::update_zoom_rel(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_zoom_rel(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_ZOOM_RELATIVE, values);
 }
 
@@ -1977,7 +1929,7 @@ int V4l2Source::update_zoom_rel(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_zoom_rel(const int32_t &value) {
+int V4l2SourceBase::set_zoom_rel(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_ZOOM_RELATIVE, value);
 }
 
@@ -1985,7 +1937,7 @@ int V4l2Source::set_zoom_rel(const int32_t &value) {
  * V4L2_CID_ZOOM_RELATIVE (V4L2_CID_CAMERA_CLASS_BASE + 14)
  * @return
  */
-int32_t V4l2Source::get_zoom_rel() {
+int32_t V4l2SourceBase::get_zoom_rel() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_ZOOM_RELATIVE, result);
 	return result;
@@ -1996,7 +1948,7 @@ int32_t V4l2Source::get_zoom_rel() {
  * @param values
  * @return
  */
-int V4l2Source::update_zoom_continuous(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_zoom_continuous(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_ZOOM_CONTINUOUS, values);
 }
 
@@ -2005,7 +1957,7 @@ int V4l2Source::update_zoom_continuous(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_zoom_continuous(const int32_t &value) {
+int V4l2SourceBase::set_zoom_continuous(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_ZOOM_CONTINUOUS, value);
 }
 
@@ -2013,7 +1965,7 @@ int V4l2Source::set_zoom_continuous(const int32_t &value) {
  * V4L2_CID_ZOOM_CONTINUOUS (V4L2_CID_CAMERA_CLASS_BASE + 15)
  * @return
  */
-int32_t V4l2Source::get_zoom_continuous() {
+int32_t V4l2SourceBase::get_zoom_continuous() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_ZOOM_CONTINUOUS, result);
 	return result;
@@ -2024,7 +1976,7 @@ int32_t V4l2Source::get_zoom_continuous() {
  * @param values
  * @return
  */
-int V4l2Source::update_privacy(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_privacy(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_PRIVACY, values);
 }
 
@@ -2033,7 +1985,7 @@ int V4l2Source::update_privacy(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_privacy(const int32_t &value) {
+int V4l2SourceBase::set_privacy(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_PRIVACY, value);
 }
 
@@ -2041,7 +1993,7 @@ int V4l2Source::set_privacy(const int32_t &value) {
  * V4L2_CID_PRIVACY (V4L2_CID_CAMERA_CLASS_BASE + 16)
  * @return
  */
-int32_t V4l2Source::get_privacy() {
+int32_t V4l2SourceBase::get_privacy() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_PRIVACY, result);
 	return result;
@@ -2052,7 +2004,7 @@ int32_t V4l2Source::get_privacy() {
  * @param values
  * @return
  */
-int V4l2Source::update_iris_abs(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_iris_abs(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_IRIS_ABSOLUTE, values);
 }
 
@@ -2061,7 +2013,7 @@ int V4l2Source::update_iris_abs(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_iris_abs(const int32_t &value) {
+int V4l2SourceBase::set_iris_abs(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_IRIS_ABSOLUTE, value);
 }
 
@@ -2069,7 +2021,7 @@ int V4l2Source::set_iris_abs(const int32_t &value) {
  * V4L2_CID_IRIS_ABSOLUTE (V4L2_CID_CAMERA_CLASS_BASE + 17)
  * @return
  */
-int32_t V4l2Source::get_iris_abs() {
+int32_t V4l2SourceBase::get_iris_abs() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_IRIS_ABSOLUTE, result);
 	return result;
@@ -2080,7 +2032,7 @@ int32_t V4l2Source::get_iris_abs() {
  * @param values
  * @return
  */
-int V4l2Source::update_iris_rel(uvc::control_value32_t &values) {
+int V4l2SourceBase::update_iris_rel(uvc::control_value32_t &values) {
 	return get_ctrl(V4L2_CID_IRIS_RELATIVE, values);
 }
 
@@ -2089,7 +2041,7 @@ int V4l2Source::update_iris_rel(uvc::control_value32_t &values) {
  * @param value
  * @return
  */
-int V4l2Source::set_iris_rel(const int32_t &value) {
+int V4l2SourceBase::set_iris_rel(const int32_t &value) {
 	return set_ctrl_value(V4L2_CID_IRIS_RELATIVE, value);
 }
 
@@ -2097,7 +2049,7 @@ int V4l2Source::set_iris_rel(const int32_t &value) {
  * V4L2_CID_IRIS_RELATIVE (V4L2_CID_CAMERA_CLASS_BASE + 18)
  * @return
  */
-int32_t V4l2Source::get_iris_rel() {
+int32_t V4l2SourceBase::get_iris_rel() {
 	int32_t result;
 	get_ctrl_value(V4L2_CID_IRIS_RELATIVE, result);
 	return result;
@@ -2130,5 +2082,68 @@ int32_t V4l2Source::get_iris_rel() {
 //#define V4L2_CAMERA_ORIENTATION_BACK 1
 //#define V4L2_CAMERA_ORIENTATION_EXTERNAL 2
 //#define V4L2_CID_CAMERA_SENSOR_ROTATION (V4L2_CID_CAMERA_CLASS_BASE + 35)
+
+//--------------------------------------------------------------------------------
+/**
+ * @brief コンストラクタ
+ *
+ * @param device_name v4l2機器名
+ */
+/*public*/
+V4l2Source::V4l2Source(std::string device_name)
+:	V4l2SourceBase(device_name),
+	on_frame_ready_callbac(nullptr)
+{
+	ENTER();
+	EXIT();
+}
+
+/**
+ * @brief デストラクタ
+ *
+ */
+/*public*/
+V4l2Source::~V4l2Source() {
+	ENTER();
+	EXIT();
+}
+
+/**
+ * 映像取得ループ開始時の処理, 映像取得スレッド上で実行される
+ */
+/*protected*/
+void V4l2Source::on_start() {
+	ENTER();
+	EXIT();
+}
+
+/**
+ * 映像取得ループ終了時の処理, 映像取得スレッド上で実行される
+ */
+/*protected*/
+void V4l2Source::on_stop() {
+	ENTER();
+	EXIT();
+}
+
+
+/**
+ * @brief 新しい映像を受け取ったときの処理, 純粋仮想関数
+ *        ワーカースレッド上で呼ばれる
+ *
+ * @param iamge 映像データの入った共有メモリーへのポインター
+ * @param bytes 映像データのサイズ
+ * @return int 負:エラー 0以上:読み込んだデータバイト数
+ */
+int V4l2Source::on_frame_ready(const uint8_t *image, const size_t &bytes) {
+	ENTER();
+
+	int result = -1;
+	if (LIKELY(on_frame_ready_callbac)) {
+		result = on_frame_ready_callbac(image, bytes);
+	}
+
+	RETURN(result, int);
+}
 
 }	// namespace serenegiant::v4l2

@@ -8,6 +8,7 @@
 #ifndef AANDUSB_V4L2_SOURCE_H
 #define AANDUSB_V4L2_SOURCE_H
 
+#include <functional>
 #include <stddef.h>
 #include <string>
 #include <thread>
@@ -28,9 +29,9 @@ namespace serenegiant::v4l2 {
 
 /**
  * @brief V4L2から映像を取得するためのヘルパークラス
- * 
+ *
  */
-class V4l2Source {
+class V4l2SourceBase {
 private:
 	const std::string device_name;
 
@@ -39,7 +40,6 @@ private:
 	 */
 	volatile bool mIsRunning;
 
-	mutable Mutex v4l2_lock;
 	volatile int m_fd;
 	/**
 	 * v4l2の状態
@@ -152,7 +152,7 @@ private:
 	/**
 	 * @brief 対応するピクセルフォーマット一覧を取得する
 	 *        v4l2_lockをロックした状態で呼び出すこと
-	 * 
+	 *
 	 * @return std::vector 空vectorでなければこのvectorに含まれるものだけを返す,
 	 *                     空ならV4L2機器がサポートするピクセルフォーマット全てを返す
 	 */
@@ -169,33 +169,35 @@ private:
 		const uint32_t &width, const uint32_t &height,
 		const uint32_t &pixel_format);
 	/**
-	 * 映像データを取得する
+	 * 映像データの処理
 	 * 映像データがないときはMAX_WAIT_FRAME_USで指定した時間待機する
 	 * ワーカースレッド上で呼ばれる
-	 * @param dst
-	 * @param capacity
 	 * @return 負:エラー 0以上:読み込んだデータバイト数
 	 */
-	int wait_frame(uint8_t *dst, const size_t &capacity);
-	/**
-	 * 映像データを指定したバッファにコピーする
-	 * ワーカースレッド上で呼ばれる
-	 * @param dst
-	 * @param capacity
-	 * @return 負:エラー, 0以上:読み込んだ映像データのバイト数
-	 */
-	int read_frame(uint8_t *dst, const size_t &capacity);
+	int handle_frame();
 protected:
+	mutable Mutex v4l2_lock;
+
 	/**
-	 * 映像取得開始時の処理
+	 * @brief 映像取得開始時の処理, 純粋仮想関数
 	 * ワーカースレッド上で呼ばれる
 	 */
-	virtual void on_start();
+	virtual void on_start() = 0;
 	/**
-	 * 映像取得終了時の処理
+	 * @brief 映像取得終了時の処理, 純粋仮想関数
 	 * ワーカースレッド上で呼ばれる
 	 */
-	virtual void on_stop();
+	virtual void on_stop() = 0; 
+	/**
+	 * @brief 新しい映像を受け取ったときの処理, 純粋仮想関数
+	 *        ワーカースレッド上で呼ばれる
+	 *
+	 * @param iamge 映像データの入った共有メモリーへのポインター
+	 * @param bytes 映像データのサイズ
+	 * @return int 負:エラー 0以上:読み込んだデータバイト数
+	 */
+	virtual int on_frame_ready(const uint8_t *image, const size_t &bytes) = 0;
+
 	/**
 	 * ctrl_idで指定したコントロール機能のQueryCtrlSpを返す
 	 * 未対応のコントロール機能またはv4l2機器をオープンしていなければnullptrを返す
@@ -204,17 +206,17 @@ protected:
 	 */
 	QueryCtrlSp get_ctrl(const uint32_t &ctrl_id);
 public:
-    /**
-     * @brief コンストラクタ
-     * 
+	/**
+	 * @brief コンストラクタ
+	 *
 	 * @param device_name v4l2機器名
-     */
-    V4l2Source(std::string device_name);
-    /**
-     * @brief デストラクタ
-     * 
-     */
-    virtual ~V4l2Source();
+	 */
+	V4l2SourceBase(std::string device_name);
+	/**
+	 * @brief デストラクタ
+	 *
+	 */
+	virtual ~V4l2SourceBase();
 
 	/**
 	 * 実行中かどうか
@@ -258,12 +260,12 @@ public:
 
 	/**
 	 * @brief 対応するピクセルフォーマット一覧を取得する
-	 * 
+	 *
 	 * @return std::vector 空vectorでなければこのvectorに含まれるものだけを返す,
 	 *                     空ならV4L2機器がサポートするピクセルフォーマット全てを返す
-	 * 
-	 * @param preffered 
-	 * @return std::vector<uint32_t> 
+	 *
+	 * @param preffered
+	 * @return std::vector<uint32_t>
 	 */
 	inline std::vector<uint32_t> get_supported_pixel_formats(const std::vector<uint32_t> preffered = {}) const {
 		AutoMutex lock(v4l2_lock);
@@ -347,7 +349,7 @@ public:
 	 * @return
 	 */
 	int32_t get_brightness();
-	
+
 	/**
 	 * V4L2_CID_CONTRAST (V4L2_CID_BASE + 1)
 	 * @param values
@@ -851,6 +853,62 @@ public:
 	 * @return
 	 */
 	int32_t get_iris_rel();
+};
+
+//--------------------------------------------------------------------------------
+typedef std::function<int(const uint8_t *image, const size_t &bytes)> OnFrameReadyFunc;
+
+/**
+ * @brief フレームコールバック関数をセットして映像データを受け取るようにしたV4l2SourceBase実装
+ * 
+ */
+class V4l2Source : virtual public V4l2SourceBase {
+private:
+	OnFrameReadyFunc on_frame_ready_callbac;
+protected:
+	/**
+	 * @brief 映像取得開始時の処理, V4l2SourceBaseの純粋仮想関数を実装
+	 * ワーカースレッド上で呼ばれる
+	 */
+	virtual void on_start() override;
+	/**
+	 * @brief 映像取得終了時の処理, V4l2SourceBaseの純粋仮想関数を実装
+	 * ワーカースレッド上で呼ばれる
+	 */
+	virtual void on_stop() override; 
+	/**
+	 * @brief 新しい映像を受け取ったときの処理, V4l2SourceBaseの純粋仮想関数を実装
+	 *        ワーカースレッド上で呼ばれる
+	 *
+	 * @param iamge 映像データの入った共有メモリーへのポインター
+	 * @param bytes 映像データのサイズ
+	 * @return int 負:エラー 0以上:読み込んだデータバイト数
+	 */
+	virtual int on_frame_ready(const uint8_t *image, const size_t &bytes) override;
+public:
+	/**
+	 * @brief コンストラクタ
+	 *
+	 * @param device_name v4l2機器名
+	 */
+	V4l2Source(std::string device_name);
+	/**
+	 * @brief デストラクタ
+	 *
+	 */
+	virtual ~V4l2Source();
+
+/**
+ * @brief フレームコールバック関数をセット
+ * 
+ * @param callback 
+ * @return V4l2Source& 
+ */
+	inline V4l2Source &set_on_frame_ready(OnFrameReadyFunc callback) {
+		AutoMutex lock(v4l2_lock);
+		on_frame_ready_callbac = callback;
+		return *this;
+	}
 };
 
 } // namespace serenegiant::v4l2
