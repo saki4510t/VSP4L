@@ -857,6 +857,7 @@ public:
 
 //--------------------------------------------------------------------------------
 typedef std::function<int(const uint8_t *image, const size_t &bytes)> OnFrameReadyFunc;
+typedef std::function<void()> LifeCycletEventFunc;
 
 /**
  * @brief フレームコールバック関数をセットして映像データを受け取るようにしたV4l2SourceBase実装
@@ -864,6 +865,8 @@ typedef std::function<int(const uint8_t *image, const size_t &bytes)> OnFrameRea
  */
 class V4l2Source : virtual public V4l2SourceBase {
 private:
+	LifeCycletEventFunc on_start_callback;
+	LifeCycletEventFunc on_stop_callback;
 	OnFrameReadyFunc on_frame_ready_callbac;
 protected:
 	/**
@@ -898,18 +901,29 @@ public:
 	 */
 	virtual ~V4l2Source();
 
-/**
- * @brief フレームコールバック関数をセット
- * 
- * @param callback 
- * @return V4l2Source& 
- */
+	inline V4l2Source &set_on_start(LifeCycletEventFunc callback) {
+		on_start_callback = callback;
+		return *this;
+	}
+	inline V4l2Source &set_on_stop(LifeCycletEventFunc callback) {
+		on_stop_callback = callback;
+		return *this;
+	}
+	/**
+	 * @brief フレームコールバック関数をセット
+	 * 
+	 * @param callback 
+	 * @return V4l2Source& 
+	 */
 	inline V4l2Source &set_on_frame_ready(OnFrameReadyFunc callback) {
 		AutoMutex lock(v4l2_lock);
 		on_frame_ready_callbac = callback;
 		return *this;
 	}
 };
+
+typedef std::unique_ptr<V4l2Source> V4l2SourceUp;
+typedef std::shared_ptr<V4l2Source> V4l2SourceSp;
 
 } // namespace serenegiant::v4l2
 

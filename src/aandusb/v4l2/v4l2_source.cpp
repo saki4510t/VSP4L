@@ -2114,6 +2114,11 @@ V4l2Source::~V4l2Source() {
 /*protected*/
 void V4l2Source::on_start() {
 	ENTER();
+
+	if (on_start_callback) {
+		on_start_callback();
+	}
+
 	EXIT();
 }
 
@@ -2123,6 +2128,11 @@ void V4l2Source::on_start() {
 /*protected*/
 void V4l2Source::on_stop() {
 	ENTER();
+
+	if (on_stop_callback) {
+		on_stop_callback();
+	}
+
 	EXIT();
 }
 
