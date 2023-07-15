@@ -13,14 +13,21 @@
 #include "matrix.h"
 // core
 #include "core/video_frame_wrapped.h"
-#include "core/video_gl_renderer.h"
-// aandusb/pipeline
-#include "pipeline/pipeline_gl_renderer.h"
-// aandusb/v4l2
-// #include "v4l2/pipeline_v4l2_source.h"
-#include "v4l2/v4l2_source.h"
 
 #include "const.h"
+
+#if USE_PIPELINE
+	// aandusb/pipeline
+	#include "pipeline/pipeline_gl_renderer.h"
+	// aandusb/v4l2
+	#include "v4l2/pipeline_v4l2_source.h"
+	namespace pipeline = serenegiant::pipeline;
+	namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
+#else
+	#include "v4l2/v4l2_source.h"
+	#include "core/video_gl_renderer.h"
+#endif
+
 #include "key_event.h"
 #include "key_dispatcher.h"
 #include "osd.h"
@@ -32,9 +39,6 @@
 #else
 	#include "egl_window.h"
 #endif
-
-// namespace pipeline = serenegiant::pipeline;
-// namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
 
 namespace serenegiant::app {
 
@@ -57,21 +61,23 @@ private:
 #else
 	EglWindow window;
 #endif
+
+#if USE_PIPELINE
+	v4l2_pipeline::V4L2SourcePipelineUp source;
+	pipeline::GLRendererPipelineUp renderer_pipeline;
+#else
 	// V4L2からの映像取得用
 	v4l2::V4l2SourceUp source;
-	// v4l2_pipeline::V4L2SourcePipelineUp source;
-	// // 映像表示用
-	// pipeline::GLRendererPipelineUp renderer_pipeline;
-	// 拡大縮小・映像効果付与・フリーズ用オフスクリーン
 	EGLDisplay m_egl_display;
 	EGLContext m_shared_context;
 	EGLSurface m_egl_surface;
-
-	gl::GLOffScreenUp offscreen;
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;
+#endif
 	// オフスクリーン描画用
 	gl::GLRendererUp gl_renderer;
+	// 拡大縮小・映像効果付与・フリーズ用オフスクリーン
+	gl::GLOffScreenUp offscreen;
 	// 排他制御用
 	mutable std::mutex state_lock;
 	/**

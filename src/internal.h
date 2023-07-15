@@ -25,4 +25,6 @@
 #include "imgui_impl_opengl3.h"		// フラグメントシェーダー等を使う場合はこっち
 // #include "imgui_impl_opengl2.h"	// これは昔の固定パイプラインを使うときのバックエンド
 
+#include "const.h"
+
 #endif // #ifndef INTERNAL_H_

@@ -21,6 +21,7 @@
 #include "glutils.h"
 #include "image_helper.h"
 #include "times.h"
+#include "eglbase.h"
 // gl
 #include "gl/texture_vsh.h"
 #include "gl/rgba_fsh.h"
@@ -68,9 +69,12 @@ EyeApp::EyeApp(const int &gl_version)
 	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
 	source(nullptr), // renderer_pipeline(nullptr),
+#if !USE_PIPELINE
 	m_egl_display(EGL_NO_DISPLAY),
 	m_shared_context(EGL_NO_CONTEXT), m_egl_surface(EGL_NO_SURFACE),
-	offscreen(nullptr), video_renderer(nullptr), gl_renderer(nullptr),
+	video_renderer(nullptr),
+#endif
+	offscreen(nullptr), gl_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
 	req_effect_type(EFFECT_NON), current_effect(req_effect_type),
 	key_dispatcher(handler),
@@ -239,7 +243,9 @@ void EyeApp::on_resume() {
 	ENTER();
 
 	load(camera_settings);
-    // source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
+#if USE_PIPELINE
+	source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
+#else
     source = std::make_unique<v4l2::V4l2Source>("/dev/video0");
 	source->set_on_start([this]() {
 		// 共有EGL/GLESコンテキストを生成してこのスレッドに割り当てる
@@ -316,6 +322,7 @@ void EyeApp::on_resume() {
 
 		return bytes;
 	});
+#endif
 
 	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
 		LOGE("カメラをオープンできなかった");
@@ -338,9 +345,11 @@ void EyeApp::on_resume() {
 	// カメラ映像描画用のGLRendererPipelineを生成
 	const char* versionStr = (const char*)glGetString(GL_VERSION);
 	LOGD("GL_VERSION=%s", versionStr);
-	// renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
-	// source->set_pipeline(renderer_pipeline.get());
-	// renderer_pipeline->start();
+#if USE_PIPELINE
+	renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
+	source->set_pipeline(renderer_pipeline.get());
+	renderer_pipeline->start();
+#endif
 	// オフスクリーンを生成
 	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
 
@@ -357,11 +366,14 @@ void EyeApp::on_pause() {
 		source->stop();
 		source.reset();
 	}
-	// if (renderer_pipeline) {
-	// 	renderer_pipeline->on_release();
-	// 	renderer_pipeline->stop();
-	// 	renderer_pipeline.reset();
-	// }
+
+#if USE_PIPELINE
+	if (renderer_pipeline) {
+		renderer_pipeline->on_release();
+		renderer_pipeline->stop();
+		renderer_pipeline.reset();
+	}
+#endif
 	offscreen.reset();
 
 	EXIT();
@@ -390,16 +402,18 @@ void EyeApp::on_render() {
 	glFinish();	// XXX これを入れておかないとV4L2スレッドと干渉して激重になる
 	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
+#if USE_PIPELINE
 	// 描画処理
-	// if (!req_freeze) {
-	// 	// オフスクリーンへ描画
-	// 	offscreen->bind();
-	// 	renderer_pipeline->on_draw();
-	// 	offscreen->unbind();
-	// } else {
-	// 	// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
-	// 	// renderer_pipeline->on_draw();
-	// }
+	if (!req_freeze) {
+		// オフスクリーンへ描画
+		offscreen->bind();
+		renderer_pipeline->on_draw();
+		offscreen->unbind();
+	} else {
+		// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
+		// renderer_pipeline->on_draw();
+	}
+#endif
 	// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
 	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
