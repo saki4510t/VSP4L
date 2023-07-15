@@ -171,6 +171,7 @@ target_link_libraries(${target} PRIVATE
     dl
     pthread
     GLESv2
+    EGL
     yuv
     imgui
     aandusb_core
