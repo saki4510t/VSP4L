@@ -28,13 +28,9 @@ target_compile_definitions(aandusb_pipeline PRIVATE
 )
 
 target_include_directories(aandusb_pipeline PRIVATE
-    ${LIBJPEG_TURBO_INCLUDEDIR}
-    ${LIBJPEG_TURBO_INCLUDE_DIRS}
-    ./libyuv/include
 )
 
 target_link_libraries(aandusb_pipeline PUBLIC
-    ${LIBGLES_INCLUDE_DIRS}
 )
 
 target_link_libraries(aandusb_pipeline PRIVATE
