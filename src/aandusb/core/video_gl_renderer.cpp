@@ -428,7 +428,7 @@ int VideoGLRenderer::draw_frame(IVideoFrame &frame)
 		release_renderer();
 		raw_frame_bytes = get_pixel_bytes(preview_frame_type)
 			.frame_bytes(preview_width, preview_height);
-		LOGD("raw_frame_bytes %" FMT_SIZE_T "=>%d",
+		LOGD("raw_frame_bytes %" FMT_SIZE_T "=>%" FMT_SIZE_T,
 			raw_frame_bytes, raw_frame_bytes);
 	}
 	int result = on_draw_frame(frame);
