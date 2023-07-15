@@ -13,7 +13,8 @@
 #include "matrix.h"
 // aandusb/pipeline
 #include "pipeline/pipeline_gl_renderer.h"
-#include "pipeline/pipeline_v4l2_source.h"
+// aandusb/v4l2
+#include "v4l2/pipeline_v4l2_source.h"
 
 #include "const.h"
 #include "key_event.h"

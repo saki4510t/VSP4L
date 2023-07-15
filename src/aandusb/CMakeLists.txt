@@ -15,3 +15,4 @@ set(lib_src_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(${lib_src_DIR}/core)
 add_subdirectory(${lib_src_DIR}/pipeline)
+add_subdirectory(${lib_src_DIR}/v4l2)

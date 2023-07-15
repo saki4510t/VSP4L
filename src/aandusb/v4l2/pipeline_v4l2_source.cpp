@@ -44,8 +44,8 @@
 
 // usb
 #include "usb/descriptor_defs.h"
-// v4l2/pipeline
-#include "pipeline/pipeline_v4l2_source.h"
+// v4l2
+#include "v4l2/pipeline_v4l2_source.h"
 
 namespace sere = serenegiant;
 namespace serenegiant::v4l2::pipeline {

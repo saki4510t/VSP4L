@@ -175,6 +175,7 @@ target_link_libraries(${target} PRIVATE
     imgui
     aandusb_core
     aandusb_pipeline
+    aandusb_v4l2
     common_static
 )
 
