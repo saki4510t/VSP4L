@@ -38,7 +38,7 @@ private:
 	/**
 	 * パイプライン処理実行中フラグ
 	 */
-	volatile bool mIsRunning;
+	volatile bool m_running;
 
 	volatile int m_fd;
 	/**
@@ -222,7 +222,7 @@ public:
 	 * 実行中かどうか
 	 * @return
 	 */
-	inline const bool is_running() const { return mIsRunning; };
+	inline const bool is_running() const { return m_running; };
 
 	/**
 	 * 実行中かどうかをセット
@@ -230,8 +230,8 @@ public:
 	 * @return
 	 */
 	inline bool set_running(const bool &is_running) {
-		const bool prev = mIsRunning;
-		mIsRunning  = is_running;
+		const bool prev = m_running;
+		m_running  = is_running;
 		return (prev);
 	};
 

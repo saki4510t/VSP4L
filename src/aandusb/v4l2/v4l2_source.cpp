@@ -89,6 +89,7 @@ namespace serenegiant::v4l2 {
 /*public*/
 V4l2SourceBase::V4l2SourceBase(std::string device_name)
 :	device_name(std::move(device_name)),
+	m_running(false),
 	m_fd(0), m_state(STATE_CLOSE),
 	request_resize(false),
 	request_pixel_format(DEFAULT_PIX_FMT),
