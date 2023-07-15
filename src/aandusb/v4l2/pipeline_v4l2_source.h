@@ -25,6 +25,8 @@
 // uvc
 #include "uvc/aanduvc.h"
 // #include "uvc/uvc_camera_base.h"
+// v4l2
+#include "v4l2/v4l2.h"
 
 namespace usb = serenegiant::usb;
 namespace uvc = serenegiant::usb::uvc;
@@ -32,28 +34,10 @@ namespace sere_pipeline = serenegiant::pipeline;
 
 namespace serenegiant::v4l2::pipeline {
 
-/**
- * オープン
- *     -> 解像度・ピクセルフォーマット設定
- *     -> ストリーム開始
- *         -> [解像度・ピクセルフォーマット設定]
- *     -> ストリーム停止
- * -> クローズ
- */
-typedef enum _state {
-	STATE_CLOSE = 0,	// openされていない
-	STATE_OPEN,			// openされたが解像度が選択されていない
-	STATE_INIT,			// open&解像度選択済み
-	STATE_STREAM,		// カメラ映像取得中
-} state_t;
-
 typedef struct _buffer {
 	void *start;
 	size_t length;
 } buffer_t;
-
-typedef std::shared_ptr<struct v4l2_queryctrl> QueryCtrlSp;
-typedef std::unique_ptr<struct v4l2_queryctrl> QueryCtrlUp;
 
 /**
  * v4l2からの映像をソースとして使うためのパイプライン(始点)
