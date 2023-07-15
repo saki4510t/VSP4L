@@ -55,6 +55,8 @@ public:
 	virtual ~GlfwWindow();
 
 	bool is_valid() const override;
+
+	inline GLFWwindow *get_window() { return window; };
 };
 
 }	// end of namespace serenegiant::app
