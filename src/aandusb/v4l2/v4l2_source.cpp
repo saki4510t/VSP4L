@@ -559,7 +559,10 @@ int V4l2SourceBase::resize(
 		Mutex::Autolock lock(v4l2_lock);
 		request_width = width;
 		request_height = height;
-		request_pixel_format = format;
+		if (format) {
+			request_pixel_format = format;
+		}
+		LOGD("request resize(%dx%d),format=0x%08x", width, height, request_pixel_format);
 		request_resize = true;
 	}
 
