@@ -317,12 +317,14 @@ void EyeApp::on_resume() {
 		if (LIKELY(frame_wrapper && offscreen && video_renderer)) {
 			static int cnt = 0;
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
-			frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
-			{
-				std::lock_guard<std::mutex> lock(image_lock);
-				offscreen->bind();
-				video_renderer->draw_frame(*frame_wrapper);
-				offscreen->unbind();
+			if (!req_freeze) {
+				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
+				{
+					std::lock_guard<std::mutex> lock(image_lock);
+					offscreen->bind();
+					video_renderer->draw_frame(*frame_wrapper);
+					offscreen->unbind();
+				}
 			}
 		}
 
