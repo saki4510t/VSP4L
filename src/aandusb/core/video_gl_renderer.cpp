@@ -59,9 +59,9 @@ namespace serenegiant::core {
 #define MJPEG_DECODE_TARGET RAW_FRAME_UNCOMPRESSED_YUV_ANY	// これが最速
 
 #if MEAS_TIME
-    #define MEAS_TIME_INIT	static nsecs_t _meas_time_ = 0;\
-    	static nsecs_t _init_time_ = systemTime();\
-    	static int _meas_count_ = 0;
+#define MEAS_TIME_INIT	static nsecs_t _meas_time_ = 0;\
+   	static nsecs_t _init_time_ = systemTime();\
+   	static int _meas_count_ = 0;
 #define MEAS_TIME_START	const nsecs_t _meas_t_ = systemTime();
 #define MEAS_TIME_STOP \
 	_meas_time_ += (systemTime() - _meas_t_); \

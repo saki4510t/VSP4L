@@ -58,18 +58,27 @@ namespace serenegiant::v4l2 {
 #define DEFAULT_PIX_FMT (V4L2_PIX_FMT_NV16)	// (V4L2_PIX_FMT_MJPEG)
 
 #if MEAS_TIME
-#define MEAS_TIME_INIT	nsecs_t _meas_time_ = 0; int _meas_count_ = 0;
+#define MEAS_TIME_INIT static nsecs_t _meas_time_ = 0;\
+   	static nsecs_t _init_time_ = systemTime();\
+   	static int _meas_count_ = 0;
 #define MEAS_TIME_START	const nsecs_t _meas_t_ = systemTime();
 #define MEAS_TIME_STOP \
 	_meas_time_ += (systemTime() - _meas_t_); \
-	if UNLIKELY((++_meas_count_ % 100) == 0) { \
+	_meas_count_++; \
+	if (UNLIKELY((_meas_count_ % 100) == 0)) { \
 		const float d = _meas_time_ / (1000000.f * _meas_count_); \
-		LOGI("draw time=%5.2f[msec]", d); \
+		const float fps = _meas_count_ * 1000000000.f / (systemTime() - _init_time_); \
+		LOGI("draw time=%5.2f[msec]/fps=%5.2f", d, fps); \
 	}
+#define MEAS_RESET \
+	_meas_count_ = 0; \
+	_meas_time_ = 0; \
+	_init_time_ = systemTime();
 #else
 #define MEAS_TIME_INIT
 #define MEAS_TIME_START
 #define MEAS_TIME_STOP
+#define MEAS_RESET
 #endif
 
 //--------------------------------------------------------------------------------
