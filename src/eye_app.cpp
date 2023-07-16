@@ -322,12 +322,9 @@ void EyeApp::on_resume() {
 #endif
 			if (!req_freeze) {
 				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
-				{
-					std::lock_guard<std::mutex> lock(image_lock);
-					offscreen->bind();
-					video_renderer->draw_frame(*frame_wrapper);
-					offscreen->unbind();
-				}
+				offscreen->bind();
+				video_renderer->draw_frame(*frame_wrapper);
+				offscreen->unbind();
 			}
 		}
 
