@@ -11,6 +11,10 @@
 	#define DEBUG_GL_CHECK			// GL関数のデバッグメッセージを表示する時
 #endif
 
+#define LOG_TAG "EyeApp"
+
+#define MEAS_TIME 0				// 1フレーム当たりの描画時間を測定する時1
+
 #include <stdio.h>
 #include <string>
 #include <cstring>
@@ -61,6 +65,22 @@ namespace serenegiant::app {
 #define PATH_SIZE (512)
 // ステータスの更新間隔(LED点滅の最小間隔), とりあえず1秒にしておく
 #define UPDATE_STATE_INTERVAL_MS (1000)
+
+#if MEAS_TIME
+#define MEAS_TIME_INIT	nsecs_t _meas_time_ = 0; int _meas_count_ = 0;
+#define MEAS_TIME_START	const nsecs_t _meas_t_ = systemTime();
+#define MEAS_TIME_STOP \
+	_meas_time_ += (systemTime() - _meas_t_); \
+	if UNLIKELY((++_meas_count_ % 100) == 0) { \
+		const float d = _meas_time_ / (1000000.f * _meas_count_); \
+		LOGI("draw time=%5.2f[msec]", d); \
+	}
+#else
+#define MEAS_TIME_INIT
+#define MEAS_TIME_START
+#define MEAS_TIME_STOP
+#endif
+
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -310,6 +330,9 @@ void EyeApp::on_resume() {
 	});
 #endif // #if BUFFURING
 	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {
+    MEAS_TIME_INIT
+
+	MEAS_TIME_START
 #if BUFFURING
 		std::lock_guard<std::mutex> lock(image_lock);
 		buffer.resize(VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
@@ -346,6 +369,9 @@ void EyeApp::on_resume() {
 		}
 #endif // #if !HANDLE_FRAME
 #endif // #if BUFFURING
+
+		MEAS_TIME_STOP
+
 		return bytes;
 	});
 
