@@ -315,8 +315,10 @@ void EyeApp::on_resume() {
 		}
 
 		if (LIKELY(frame_wrapper && offscreen && video_renderer)) {
+#if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)
 			static int cnt = 0;
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
+#endif
 			if (!req_freeze) {
 				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
 				{
