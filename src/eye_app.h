@@ -9,7 +9,7 @@
 // USE_PIPELINE=0のときに映像のバッファリングを行うかどうか
 // 0: バッファリングを行わない(V4L2スレッドの共有コンテキスト上でテクスチャへ転送)
 // 1: バッファリングを行う(V4L2スレッドでバッファへコピー、描画スレッドでレンダリング)
-#define BUFFURING (0)
+#define BUFFURING (1)
 
 #include <thread>
 #include <mutex>
