@@ -304,11 +304,9 @@ void EyeApp::on_resume() {
 #endif
 	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {
 #if BUFFURING
+		std::lock_guard<std::mutex> lock(image_lock);
 		buffer.resize(VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
-		{
-			std::lock_guard<std::mutex> lock(image_lock);
-			memcpy(buffer.frame(), image, bytes);
-		}		
+		memcpy(buffer.frame(), image, bytes);
 #else
 		glFinish();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 		if (m_egl_surface) {
