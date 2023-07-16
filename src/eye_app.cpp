@@ -307,9 +307,12 @@ void EyeApp::on_resume() {
 			static int cnt = 0;
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
 			frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
-			offscreen->bind();
-			video_renderer->draw_frame(*frame_wrapper);
-			offscreen->unbind();
+			{
+				std::lock_guard<std::mutex> lock(image_lock);
+				offscreen->bind();
+				video_renderer->draw_frame(*frame_wrapper);
+				offscreen->unbind();
+			}
 		}
 
 		if (m_egl_surface) {
@@ -406,12 +409,13 @@ void EyeApp::on_render() {
 	// 描画処理
 	if (!req_freeze) {
 		// オフスクリーンへ描画
+		std::lock_guard<std::mutex> lock(image_lock);
 		offscreen->bind();
 		renderer_pipeline->on_draw();
 		offscreen->unbind();
 	} else {
 		// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
-		// renderer_pipeline->on_draw();
+		renderer_pipeline->on_draw();
 	}
 #endif
 	// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす

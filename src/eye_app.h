@@ -80,6 +80,7 @@ private:
 	gl::GLOffScreenUp offscreen;
 	// 排他制御用
 	mutable std::mutex state_lock;
+	mutable std::mutex image_lock;
 	/**
 	 * @brief キー操作用
 	 * 
