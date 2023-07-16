@@ -70,8 +70,10 @@ EyeApp::EyeApp(const int &gl_version)
 #endif
 	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
-	source(nullptr), // renderer_pipeline(nullptr),
-#if !USE_PIPELINE
+	source(nullptr),
+#if USE_PIPELINE
+	renderer_pipeline(nullptr),
+#else
 	m_egl_display(EGL_NO_DISPLAY),
 	m_shared_context(EGL_NO_CONTEXT), m_egl_surface(EGL_NO_SURFACE),
 	video_renderer(nullptr),
@@ -143,10 +145,11 @@ EyeApp::EyeApp(const int &gl_version)
 		// 一時的に設定を適用する
 		apply_settings(settings);
 	});
-	// 遅延実行タスクの準備
+	// 遅延実行タスクの準備, 一定時間後にキーモードをリセットする
 	reset_mode_task = [this]() {
 		key_dispatcher.reset_key_mode();
 	};
+	// 遅延実行タスクの準備, 一定時間毎にステートを更新する
 	update_state_task = [this]() {
 		if (update_state_task) {
 			handler.post_delayed(update_state_task, UPDATE_STATE_INTERVAL_MS);
@@ -244,6 +247,7 @@ void EyeApp::on_start() {
 void EyeApp::on_resume() {
 	ENTER();
 
+	// カメラ設定を読み込む
 	load(camera_settings);
 #if USE_PIPELINE
 	source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
@@ -360,10 +364,10 @@ void EyeApp::on_resume() {
 	// カメラ設定を適用
 	apply_settings(camera_settings);
 
-	// カメラ映像描画用のGLRendererPipelineを生成
 	const char* versionStr = (const char*)glGetString(GL_VERSION);
 	LOGD("GL_VERSION=%s", versionStr);
 #if USE_PIPELINE
+	// カメラ映像描画用のGLRendererPipelineを生成
 	renderer_pipeline = std::make_unique<pipeline::GLRendererPipeline>(gl_version);
 	source->set_pipeline(renderer_pipeline.get());
 	renderer_pipeline->start();
