@@ -33,7 +33,7 @@ namespace serenegiant::v4l2 {
 /**
  * 映像データ受け取り用バッファーの個数
  */
-#define BUFFER_NUMS (4)
+#define DEFAULT_BUFFER_NUMS (4)
 
 /**
  * @brief V4L2から映像を取得するためのヘルパークラス
@@ -277,10 +277,10 @@ public:
 
 	/**
 	 * コンストラクタで指定したv4l2機器をオープンして映像取得開始する
-	 * @param buf_num キャプチャ用のバッファ数、デフォルトはBUFFER_NUMS
+	 * @param buf_num キャプチャ用のバッファ数、デフォルトはDEFAULT_BUFFER_NUMS
 	 * @return
 	 */
-	virtual int start(const int &buf_nums = BUFFER_NUMS);
+	virtual int start(const int &buf_nums = DEFAULT_BUFFER_NUMS);
 	/**
 	 * 映像取得終了
 	 * @return

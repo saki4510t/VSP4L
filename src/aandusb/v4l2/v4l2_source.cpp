@@ -177,7 +177,7 @@ int V4l2SourceBase::close() {
 
 /**
  * コンストラクタで指定したv4l2機器をオープンして映像取得開始する
- * @param buf_num キャプチャ用のバッファ数、デフォルトはBUFFER_NUMS
+ * @param buf_num キャプチャ用のバッファ数、デフォルトはDEFAULT_BUFFER_NUMS
  * @return
  */
 /*public*/
@@ -704,7 +704,7 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 	// 映像データ受取用のバッファを要求する
 	// 
 	struct v4l2_requestbuffers req {
-		.count = BUFFER_NUMS,
+		.count = DEFAULT_BUFFER_NUMS,
 		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
 		.memory = V4L2_MEMORY_MMAP,
 	};
