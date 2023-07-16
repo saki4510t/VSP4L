@@ -8,8 +8,6 @@
 #include <string>
 #include <memory>
 
-#define USE_PIPELINE (0)
-
 /**
  * @brief モデル文字列
  * 

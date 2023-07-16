@@ -32,7 +32,9 @@
 
 namespace serenegiant::app {
 
+// handle_drawの呼び出し回数をカウントするかどうか 0:カウントしない、1:カウントする
 #define COUNT_FRAMES (0)
+
 // カメラ映像サイズ
 #define VIDEO_WIDTH (1920)
 #define VIDEO_HEIGHT (1080)

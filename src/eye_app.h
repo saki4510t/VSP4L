@@ -1,6 +1,11 @@
 #ifndef EYE_APP_H_
 #define EYE_APP_H_
 
+// パイプラインを使った描画処理をするかどうか
+// 0: 使わない(V4l2Source+WrappedVideoFrame+VideoGLRenderer)
+// 1: 使う(V4L2SourcePipeline+GLRendererPipeline)
+#define USE_PIPELINE (0)
+
 #include <thread>
 #include <mutex>
 #include <unordered_map>
