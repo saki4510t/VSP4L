@@ -1,12 +1,7 @@
 #ifndef EYE_APP_H_
 #define EYE_APP_H_
 
-// パイプラインを使った描画処理をするかどうか
-// 0: 使わない(V4l2Source+WrappedVideoFrame+VideoGLRenderer)
-// 1: 使う(V4L2SourcePipeline+GLRendererPipeline)
-#define USE_PIPELINE (0)
-
-// USE_PIPELINE=0のときに映像のバッファリングを行うかどうか
+// 映像のバッファリングを行うかどうか
 // 0: バッファリングを行わない(V4L2スレッドの共有コンテキスト上でテクスチャへ転送)
 // 1: バッファリングを行う(V4L2スレッドでバッファへコピー、描画スレッドでレンダリング)
 #define BUFFURING (1)
@@ -26,17 +21,8 @@
 
 #include "const.h"
 
-#if USE_PIPELINE
-	// aandusb/pipeline
-	#include "pipeline/pipeline_gl_renderer.h"
-	// aandusb/v4l2
-	#include "v4l2/pipeline_v4l2_source.h"
-	namespace pipeline = serenegiant::pipeline;
-	namespace v4l2_pipeline = serenegiant::v4l2::pipeline;
-#else
-	#include "v4l2/v4l2_source.h"
-	#include "core/video_gl_renderer.h"
-#endif
+#include "v4l2/v4l2_source.h"
+#include "core/video_gl_renderer.h"
 
 #if BUFFURING
 	#include "core/video_frame_base.h"
@@ -75,11 +61,6 @@ private:
 #else
 	EglWindow window;
 #endif
-
-#if USE_PIPELINE
-	v4l2_pipeline::V4L2SourcePipelineUp source;
-	pipeline::GLRendererPipelineUp renderer_pipeline;
-#else
 	// V4L2からの映像取得用
 	v4l2::V4l2SourceUp source;
 	EGLDisplay m_egl_display;
@@ -87,7 +68,6 @@ private:
 	EGLSurface m_egl_surface;
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;
-#endif
 #if BUFFURING
 	core::BaseVideoFrame buffer;
 #endif
