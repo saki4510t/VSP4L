@@ -276,6 +276,10 @@ void EyeApp::on_resume() {
 		eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
 		video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
 		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
+		const auto versionStr = (const char*)glGetString(GL_VERSION);
+		LOGD("gl_version=%s", versionStr);
+		// オフスクリーンを生成
+		offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
 	})
 	.set_on_stop([this]() {
 		video_renderer.reset();
@@ -353,11 +357,12 @@ void EyeApp::on_resume() {
 	// カメラ設定を適用
 	apply_settings(camera_settings);
 
-	const char* versionStr = (const char*)glGetString(GL_VERSION);
+#if BUFFURING
+	const auto versionStr = (const char*)glGetString(GL_VERSION);
 	LOGD("GL_VERSION=%s", versionStr);
 	// オフスクリーンを生成
 	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
-
+#endif
 	req_change_matrix = true;
 
 	EXIT();
@@ -374,9 +379,8 @@ void EyeApp::on_pause() {
 
 #if BUFFURING
 	video_renderer.reset();
-#endif
-
 	offscreen.reset();
+#endif
 
 	EXIT();
 }
@@ -399,7 +403,7 @@ void EyeApp::on_stop() {
 void EyeApp::on_render() {
     ENTER();
 
-	if (UNLIKELY(!source || /*!renderer_pipeline ||*/ !offscreen)) return;
+	if (UNLIKELY(!source || !offscreen)) return;
 
 	glFinish();	// XXX これを入れておかないとV4L2スレッドと干渉して激重になる
 	// 描画用の設定更新を適用

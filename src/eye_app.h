@@ -4,7 +4,7 @@
 // 映像のバッファリングを行うかどうか
 // 0: バッファリングを行わない(V4L2スレッドの共有コンテキスト上でテクスチャへ転送)
 // 1: バッファリングを行う(V4L2スレッドでバッファへコピー、描画スレッドでレンダリング)
-#define BUFFURING (1)
+#define BUFFURING (0)
 
 #include <thread>
 #include <mutex>
