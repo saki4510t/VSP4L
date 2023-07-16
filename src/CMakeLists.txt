@@ -6,9 +6,6 @@ set(CMAKE_VERBOSE_MAKEFILE on)
 set(lib_src_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(target EyeApp)
 
-# キャッシュ変数
-option(EYEAPP_ENABLE_GLFW "Enable GLFW" ON)
-
 # キャッシュ変数、glfwのドキュメント・テスト・サンプルのビルドを無効化
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -64,39 +61,19 @@ pkg_check_modules(LIBUDEV REQUIRED libudev)
 # サブモジュールとして取り込んだlibyuvのソースをビルドする
 add_subdirectory(${lib_src_DIR}/libyuv)
 
-if (EYEAPP_ENABLE_GLFW)
-    # サブモジュールとして取り込んだglfwのソースをビルドする
-    add_subdirectory(${lib_src_DIR}/glfw)
-    add_definitions("-DEYEAPP_ENABLE_GLFW")
+# サブモジュールとして取り込んだglfwのソースをビルドする
+add_subdirectory(${lib_src_DIR}/glfw)
 
-    set(IMGUI_BACKEND
-        imgui/backends/imgui_impl_glfw.cpp
-        imgui/backends/imgui_impl_opengl3.cpp
-    )
-    set(APP_SRC_WINDOW
-        glfw_window.cpp
-    )
-    set(APP_LIBS
-        glfw
-    )
-else()
-    # FIXME wayland/egl用のバックエンドを作らないといけない
-    set(IMGUI_BACKEND
-        imgui/backends/imgui_impl_opengl3.cpp
-    )
-    set(APP_SRC_WINDOW
-        egl_window.cpp
-        wayland/wayland_display.cpp
-        wayland/wayland_window.cpp
-    )
-    set(APP_LIBS
-        EGL
-        wayland-client
-        wayland-server
-        wayland-cursor
-        wayland-egl
-    )
-endif()
+set(IMGUI_BACKEND
+    imgui/backends/imgui_impl_glfw.cpp
+    imgui/backends/imgui_impl_opengl3.cpp
+)
+set(APP_SRC_WINDOW
+    glfw_window.cpp
+)
+set(APP_LIBS
+    glfw
+)
 
 add_library(imgui STATIC
     imgui/imgui.cpp

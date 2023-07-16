@@ -34,11 +34,7 @@
 #include "settings.h"
 #include "window.h"
 
-#if defined(EYEAPP_ENABLE_GLFW)
-	#include "glfw_window.h"
-#else
-	#include "egl_window.h"
-#endif
+#include "glfw_window.h"
 
 namespace serenegiant::app {
 
@@ -55,12 +51,8 @@ private:
 	std::function<void()> reset_mode_task;
 	// 一定時間毎にステータス(LED点滅等)を更新するタスク
 	std::function<void()> update_state_task;
-#if defined(EYEAPP_ENABLE_GLFW)
 	// GLFWでの画面表示用
 	GlfwWindow window;
-#else
-	EglWindow window;
-#endif
 	// V4L2からの映像取得用
 	v4l2::V4l2SourceUp source;
 	EGLDisplay m_egl_display;

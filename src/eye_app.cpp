@@ -64,11 +64,7 @@ namespace serenegiant::app {
 /*public*/
 EyeApp::EyeApp(const int &gl_version)
 :   gl_version(gl_version),
-#if defined(EYEAPP_ENABLE_GLFW)
 	initialized(!GlfwWindow::initialize()),
-#else
-	initialized(!EglWindow::initialize()),
-#endif
 	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
 	source(nullptr),
@@ -533,9 +529,7 @@ void EyeApp::handle_draw_gui() {
 
 	// Start the Dear ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
-#if defined(EYEAPP_ENABLE_GLFW)
 	ImGui_ImplGlfw_NewFrame();
-#endif
 	ImGui::NewFrame();
 
 	// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す
