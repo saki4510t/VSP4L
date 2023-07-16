@@ -35,6 +35,9 @@ namespace serenegiant::app {
 
 // handle_drawの呼び出し回数をカウントするかどうか 0:カウントしない、1:カウントする
 #define COUNT_FRAMES (0)
+// 自前でV4l2Source::handle_frameを呼び出すかどうか
+// 0: v4l2sourceのワーカースレッドでhandle_frameを呼び出す, 1:自前でhandle_frameを呼び出す
+#define HANDLE_FRAME (1)
 
 // カメラ映像サイズ
 #define VIDEO_WIDTH (1920)
@@ -242,9 +245,10 @@ void EyeApp::on_resume() {
 
 	// カメラ設定を読み込む
 	load(camera_settings);
-    source = std::make_unique<v4l2::V4l2Source>("/dev/video0");
-#if BUFFURING
+    source = std::make_unique<v4l2::V4l2Source>("/dev/video0", !HANDLE_FRAME);
+#if BUFFURING || HANDLE_FRAME
 	video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
+	frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
 #else
 	source->set_on_start([this]() {
 		// 共有EGL/GLESコンテキストを生成してこのスレッドに割り当てる
@@ -302,18 +306,20 @@ void EyeApp::on_resume() {
 			m_shared_context = EGL_NO_CONTEXT;
 		}
 	});
-#endif
+#endif // #if BUFFURING
 	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {
 #if BUFFURING
 		std::lock_guard<std::mutex> lock(image_lock);
 		buffer.resize(VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
 		memcpy(buffer.frame(), image, bytes);
 #else
+#if !HANDLE_FRAME
 		glFinish();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 		if (m_egl_surface) {
 			eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
 			glClearColor(0, 0, 0, 1);
 		}
+#endif
 
 		if (LIKELY(frame_wrapper && offscreen && video_renderer)) {
 #if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)
@@ -328,6 +334,7 @@ void EyeApp::on_resume() {
 			}
 		}
 
+#if !HANDLE_FRAME
 		if (m_egl_surface) {
 			const auto ret = eglSwapBuffers(m_egl_display, m_egl_surface);
 			if (UNLIKELY(!ret)) {
@@ -335,7 +342,8 @@ void EyeApp::on_resume() {
 				LOGW("eglSwapBuffers:err=%d", err);
 			}
 		}
-#endif
+#endif // #if !HANDLE_FRAME
+#endif // #if BUFFURING
 		return bytes;
 	});
 
@@ -357,7 +365,7 @@ void EyeApp::on_resume() {
 	// カメラ設定を適用
 	apply_settings(camera_settings);
 
-#if BUFFURING
+#if BUFFURING || HANDLE_FRAME
 	const auto versionStr = (const char*)glGetString(GL_VERSION);
 	LOGD("GL_VERSION=%s", versionStr);
 	// オフスクリーンを生成
@@ -377,8 +385,9 @@ void EyeApp::on_pause() {
 		source.reset();
 	}
 
-#if BUFFURING
+#if BUFFURING || HANDLE_FRAME
 	video_renderer.reset();
+	frame_wrapper.reset();
 	offscreen.reset();
 #endif
 
@@ -405,7 +414,12 @@ void EyeApp::on_render() {
 
 	if (UNLIKELY(!source || !offscreen)) return;
 
+#if HANDLE_FRAME
+	// V4L2から映像取得を試みる
+	source->handle_frame(10000L);
+#else
 	glFinish();	// XXX これを入れておかないとV4L2スレッドと干渉して激重になる
+#endif
 	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
 #if BUFFURING

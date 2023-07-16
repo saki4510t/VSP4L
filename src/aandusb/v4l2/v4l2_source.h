@@ -36,7 +36,14 @@ namespace serenegiant::v4l2 {
  */
 class V4l2SourceBase {
 private:
+	// v4l2機器名
 	const std::string device_name;
+	/**
+	 * @brief 専用ワーカースレッドからhandle_frameを呼び出すかどうか
+	 *        1: 専用ワーカースレッドを使う,
+	 *        0: 専用ワーカースレッドを使わない(自前でhandle_frameを呼び出さないといけない)
+	 */
+	const bool async;
 
 	/**
 	 * パイプライン処理実行中フラグ
@@ -94,6 +101,7 @@ private:
 	uint32_t m_buffersNums;
 	/**
 	 * 映像取得スレッド
+	 * async=trueの場合にhandle_frameを呼び出すワーカースレッド
 	 */
 	std::thread v4l2_thread;
 	/**
@@ -171,14 +179,6 @@ private:
 	int handle_resize(
 		const uint32_t &width, const uint32_t &height,
 		const uint32_t &pixel_format);
-	/**
-	 * 映像データの処理
-	 * 映像データがないときはmax_wait_frame_usで指定した時間待機する
-	 * ワーカースレッド上で呼ばれる
-	 * @param max_wait_frame_us 最大映像待ち時間[マイクロ秒]
-	 * @return 負:エラー 0以上:読み込んだデータバイト数
-	 */
-	int handle_frame(const suseconds_t &max_wait_frame_us = MAX_WAIT_FRAME_US);
 protected:
 	mutable Mutex v4l2_lock;
 
@@ -203,6 +203,14 @@ protected:
 	virtual int on_frame_ready(const uint8_t *image, const size_t &bytes) = 0;
 
 	/**
+	 * 映像データの処理
+	 * 映像データがないときはmax_wait_frame_usで指定した時間待機する
+	 * ワーカースレッド上で呼ばれる
+	 * @param max_wait_frame_us 最大映像待ち時間[マイクロ秒]
+	 * @return 負:エラー 0以上:読み込んだデータバイト数
+	 */
+	int handle_frame(const suseconds_t &max_wait_frame_us = MAX_WAIT_FRAME_US);
+	/**
 	 * ctrl_idで指定したコントロール機能のQueryCtrlSpを返す
 	 * 未対応のコントロール機能またはv4l2機器をオープンしていなければnullptrを返す
 	 * @param ctrl_id
@@ -214,8 +222,9 @@ public:
 	 * @brief コンストラクタ
 	 *
 	 * @param device_name v4l2機器名
+	 * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
 	 */
-	V4l2SourceBase(std::string device_name);
+	V4l2SourceBase(std::string device_name, const bool &async = true);
 	/**
 	 * @brief デストラクタ
 	 *
@@ -904,13 +913,26 @@ public:
 	 * @brief コンストラクタ
 	 *
 	 * @param device_name v4l2機器名
+	 * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
 	 */
-	V4l2Source(std::string device_name);
+	V4l2Source(std::string device_name, const bool &async = true);
 	/**
 	 * @brief デストラクタ
 	 *
 	 */
 	virtual ~V4l2Source();
+
+	/**
+	 * 映像データの処理
+	 * 映像データがないときはmax_wait_frame_usで指定した時間待機する
+	 * ワーカースレッド上で呼ばれる
+	 * スコープをpublicに変更
+	 * @param max_wait_frame_us 最大映像待ち時間[マイクロ秒]
+	 * @return 負:エラー 0以上:読み込んだデータバイト数
+	 */
+	inline int handle_frame(const suseconds_t &max_wait_frame_us = MAX_WAIT_FRAME_US) {
+		return V4l2SourceBase::handle_frame(max_wait_frame_us);
+	}
 
 	inline V4l2Source &set_on_start(LifeCycletEventFunc callback) {
 		on_start_callback = callback;

@@ -80,10 +80,11 @@ namespace serenegiant::v4l2 {
 /**
  * コンストラクタ
  * @param device_name v4l2機器名
+ * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
  */
 /*public*/
-V4l2SourceBase::V4l2SourceBase(std::string device_name)
-:	device_name(std::move(device_name)),
+V4l2SourceBase::V4l2SourceBase(std::string device_name, const bool &async)
+:	device_name(std::move(device_name)), async(async),
 	m_running(false),
 	m_fd(0), m_state(STATE_CLOSE),
 	request_resize(false),
@@ -601,7 +602,7 @@ void V4l2SourceBase::v4l2_thread_func() {
 		}
 		v4l2_lock.unlock();
 		// 映像取得ループへ
-		if (!result) {
+		if (!result && async) {
 			v4l2_loop();
 		}
 	}	// for ( ; is_running() && !result; )
@@ -2088,10 +2089,11 @@ int32_t V4l2SourceBase::get_iris_rel() {
  * @brief コンストラクタ
  *
  * @param device_name v4l2機器名
+ * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
  */
 /*public*/
-V4l2Source::V4l2Source(std::string device_name)
-:	V4l2SourceBase(device_name),
+V4l2Source::V4l2Source(std::string device_name, const bool &async)
+:	V4l2SourceBase(device_name, async),
 	on_frame_ready_callbac(nullptr)
 {
 	ENTER();
