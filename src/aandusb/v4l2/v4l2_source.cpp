@@ -739,6 +739,7 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 		goto err;
 	}
 	LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
+	req.count = MIN(req.count, _buf_nums);
 
 	// 映像データ受け取り用バッファーを初期化
 	m_buffers = new buffer_t[req.count];
