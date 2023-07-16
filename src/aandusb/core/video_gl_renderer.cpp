@@ -69,7 +69,7 @@ namespace serenegiant::core {
 	if (UNLIKELY((_meas_count_ % 100) == 0)) { \
 		const float d = _meas_time_ / (1000000.f * _meas_count_); \
 		const float fps = _meas_count_ * 1000000000.f / (systemTime() - _init_time_); \
-		LOGI("draw time=%5.2f[msec]/fps=%5.2f", d, fps); \
+		LOGI("meas time=%5.2f[msec]/fps=%5.2f", d, fps); \
 	}
 #define MEAS_RESET \
 	_meas_count_ = 0; \
