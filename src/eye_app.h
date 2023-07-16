@@ -6,6 +6,11 @@
 // 1: 使う(V4L2SourcePipeline+GLRendererPipeline)
 #define USE_PIPELINE (0)
 
+// USE_PIPELINE=0のときに映像のバッファリングを行うかどうか
+// 0: バッファリングを行わない(V4L2スレッドの共有コンテキスト上でテクスチャへ転送)
+// 1: バッファリングを行う(V4L2スレッドでバッファへコピー、描画スレッドでレンダリング)
+#define BUFFURING (0)
+
 #include <thread>
 #include <mutex>
 #include <unordered_map>
@@ -31,6 +36,10 @@
 #else
 	#include "v4l2/v4l2_source.h"
 	#include "core/video_gl_renderer.h"
+#endif
+
+#if BUFFURING
+	#include "core/video_frame_base.h"
 #endif
 
 #include "key_event.h"
@@ -78,6 +87,9 @@ private:
 	EGLSurface m_egl_surface;
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;
+#endif
+#if BUFFURING
+	core::BaseVideoFrame buffer;
 #endif
 	// オフスクリーン描画用
 	gl::GLRendererUp gl_renderer;

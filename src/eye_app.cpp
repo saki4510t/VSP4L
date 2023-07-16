@@ -249,6 +249,9 @@ void EyeApp::on_resume() {
 	source = std::make_unique<v4l2_pipeline::V4L2SourcePipeline>("/dev/video0");
 #else
     source = std::make_unique<v4l2::V4l2Source>("/dev/video0");
+#if BUFFURING
+	video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
+#else
 	source->set_on_start([this]() {
 		// 共有EGL/GLESコンテキストを生成してこのスレッドに割り当てる
 		LOGD("create shared context");
@@ -297,8 +300,16 @@ void EyeApp::on_resume() {
 			eglDestroyContext(display, m_shared_context);
 			m_shared_context = EGL_NO_CONTEXT;
 		}
-	})
-	.set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {
+	});
+#endif
+	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {
+#if BUFFURING
+		buffer.resize(VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
+		{
+			std::lock_guard<std::mutex> lock(image_lock);
+			memcpy(buffer.frame(), image, bytes);
+		}		
+#else
 		glFinish();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 		if (m_egl_surface) {
 			eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
@@ -324,7 +335,7 @@ void EyeApp::on_resume() {
 				LOGW("eglSwapBuffers:err=%d", err);
 			}
 		}
-
+#endif
 		return bytes;
 	});
 #endif
@@ -372,6 +383,10 @@ void EyeApp::on_pause() {
 		source.reset();
 	}
 
+#if BUFFURING
+	video_renderer.reset();
+#endif
+
 #if USE_PIPELINE
 	if (renderer_pipeline) {
 		renderer_pipeline->on_release();
@@ -418,6 +433,14 @@ void EyeApp::on_render() {
 	} else {
 		// フレームキューが溢れないようにフリーズモード時は直接画面へ転送しておく(glClearで消される)
 		renderer_pipeline->on_draw();
+	}
+#endif
+#if BUFFURING
+	if (!req_freeze) {
+		std::lock_guard<std::mutex> lock(image_lock);
+		offscreen->bind();
+		video_renderer->draw_frame(buffer);
+		offscreen->unbind();
 	}
 #endif
 	// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
