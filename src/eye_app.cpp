@@ -250,7 +250,7 @@ void EyeApp::on_resume() {
 #else
     source = std::make_unique<v4l2::V4l2Source>("/dev/video0");
 #if BUFFURING
-	video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
+	video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
 #else
 	source->set_on_start([this]() {
 		// 共有EGL/GLESコンテキストを生成してこのスレッドに割り当てる
