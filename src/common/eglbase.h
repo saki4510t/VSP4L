@@ -10,12 +10,9 @@
 
 #pragma interface
 
-#define EGL_EGLEXT_PROTOTYPES
 #include <set>
 #include <string>
 #include <memory>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
 
 #if __ANDROID__
 #include <android/native_window.h>
