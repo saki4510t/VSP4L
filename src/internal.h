@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#define DEBUG_GL_CHECK			// GL関数のデバッグメッセージを表示する時
 // common
 #include "glutils.h"
 

@@ -8,6 +8,7 @@
 	#define USE_LOGD
 	#undef LOG_NDEBUG
 	#undef NDEBUG
+	#define DEBUG_GL_CHECK			// GL関数のデバッグメッセージを表示する時
 #endif
 
 #include <stdio.h>
