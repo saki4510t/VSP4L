@@ -37,7 +37,7 @@ namespace serenegiant::app {
 #define COUNT_FRAMES (0)
 // 自前でV4l2Source::handle_frameを呼び出すかどうか
 // 0: v4l2sourceのワーカースレッドでhandle_frameを呼び出す, 1:自前でhandle_frameを呼び出す
-#define HANDLE_FRAME (1)
+#define HANDLE_FRAME (0)
 
 // カメラ映像サイズ
 #define VIDEO_WIDTH (1920)
