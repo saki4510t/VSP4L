@@ -339,7 +339,7 @@ void EyeApp::on_resume() {
 		memcpy(buffer.frame(), image, bytes);
 #else
 #if !HANDLE_FRAME
-		glFinish();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 		if (m_egl_surface) {
 			eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
 			glClearColor(0, 0, 0, 1);
@@ -446,7 +446,7 @@ void EyeApp::on_render() {
 	// V4L2から映像取得を試みる
 	source->handle_frame(10000L);
 #else
-	glFinish();	// XXX これを入れておかないとV4L2スレッドと干渉して激重になる
+	glFlush();	// XXX これを入れておかないとV4L2スレッドと干渉して激重になる
 #endif
 	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
