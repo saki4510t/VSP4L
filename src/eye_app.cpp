@@ -284,6 +284,9 @@ void EyeApp::on_resume() {
 	.set_on_stop([this]() {
 		video_renderer.reset();
 		frame_wrapper.reset();
+#if !BUFFURING
+		offscreen.reset();
+#endif
 		m_egl_display = EGL_NO_DISPLAY;
 		if (m_shared_context != EGL_NO_CONTEXT) {
 			// 共有EGL/GLESコンテキストを破棄
