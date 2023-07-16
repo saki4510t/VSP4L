@@ -146,6 +146,38 @@ void get_supported_fps(int fd, const FrameInfoSp &frame);
  */
 void get_supported_frame_size(int fd, FormatInfoSp &format);
 
+/**
+ * 指定したピクセルフォーマット・解像度・フレームレートに対応しているかどうかを確認
+ * ::find_stream, ::find_frameの下請け
+ * @param fd
+ * @param pixel_format
+ * @param width
+ * @param height
+ * @param min_fps
+ * @param max_fps
+ * @return
+ */
+int find_fps(int fd,
+	const uint32_t &pixel_format,
+	const uint32_t &width, const uint32_t &height,
+	const float &min_fps, const float &max_fps);
+
+/**
+ * 指定したピクセルフォーマット・解像度・フレームレートに対応しているかどうかを確認
+ * ::find_streamの下請け
+ * @param fd
+ * @param pixel_format
+ * @param width
+ * @param height
+ * @param min_fps
+ * @param max_fps
+ * @return 0: 対応している, 0以外: 対応していない
+ */
+int find_frame_size(int fd,
+	const uint32_t &pixel_format,
+	const uint32_t &width, const uint32_t &height,
+	const float &min_fps, const float &max_fps);
+
 } // namespace serenegiant::v4l2
 
 #endif // AANDUSB_V4L2_H
