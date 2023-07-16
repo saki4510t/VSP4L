@@ -31,6 +31,11 @@ namespace serenegiant::v4l2 {
 #define MAX_WAIT_FRAME_US (100000L)
 
 /**
+ * 映像データ受け取り用バッファーの個数
+ */
+#define BUFFER_NUMS (4)
+
+/**
  * @brief V4L2から映像を取得するためのヘルパークラス
  *
  */
@@ -112,7 +117,7 @@ private:
 	/**
 	 * 映像取得スレッドの実行関数
 	 */
-	void v4l2_thread_func();
+	void v4l2_thread_func(const int &buf_nums);
 	/**
 	 * 映像取得ループ
 	 * ワーカースレッド上で呼ばれる
@@ -140,12 +145,14 @@ private:
 	/**
 	 * v4l2からの映像取得の準備
 	 * ワーカースレッド上で呼ばれる
+	 * @param buf_nums
 	 * @param width
 	 * @param height
 	 * @param pixel_format
 	 * @return
 	 */
 	int init_v4l2_locked(
+		const int &buf_nums,
 	  	const uint32_t &width, const uint32_t &height,
 	  	const uint32_t &pixel_format);
 	/**
@@ -153,13 +160,14 @@ private:
 	 * ワーカースレッド上で呼ばれる
 	 * @return
 	 */
-	int release_mmap_locked(void);
+	int release_mmap_locked();
 	/**
 	 * 画像データ読み込み用のメモリマップを初期化
 	 * ワーカースレッド上で呼ばれる
 	 * init_device_lockedの下請け
+	 * @param buf_nums
 	 */
-	int init_mmap_locked(void);
+	int init_mmap_locked(const int &buf_nums);
 	/**
 	 * @brief 対応するピクセルフォーマット一覧を取得する
 	 *        v4l2_lockをロックした状態で呼び出すこと
@@ -269,9 +277,10 @@ public:
 
 	/**
 	 * コンストラクタで指定したv4l2機器をオープンして映像取得開始する
+	 * @param buf_num キャプチャ用のバッファ数、デフォルトはBUFFER_NUMS
 	 * @return
 	 */
-	virtual int start();
+	virtual int start(const int &buf_nums = BUFFER_NUMS);
 	/**
 	 * 映像取得終了
 	 * @return

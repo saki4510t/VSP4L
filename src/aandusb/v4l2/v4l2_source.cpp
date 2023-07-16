@@ -50,10 +50,6 @@
 namespace serenegiant::v4l2 {
 
 /**
- * 映像データ受け取り用バッファーの個数
- */
-#define BUFFER_NUMS (4)
-/**
  * デフォルトのv4l2ピクセルフォーマット
  * 0ならfind_streamで最初に見つかったピクセルフォーマットを使う
  * V4L2_PIX_FMT_MJPEG, V4L2_PIX_FMT_UYVY
@@ -181,10 +177,11 @@ int V4l2SourceBase::close() {
 
 /**
  * コンストラクタで指定したv4l2機器をオープンして映像取得開始する
+ * @param buf_num キャプチャ用のバッファ数、デフォルトはBUFFER_NUMS
  * @return
  */
 /*public*/
-int V4l2SourceBase::start() {
+int V4l2SourceBase::start(const int &buf_nums) {
 	ENTER();
 
 	int result = core::USB_ERROR_INVALID_STATE;
@@ -202,7 +199,7 @@ int V4l2SourceBase::start() {
 		if (!b) {
 			LOGD("映像取得用のワーカースレッドを開始");
 			// 実際のイベントハンドラで初期化したthread型一時オブジェクトをムーブ代入
-			v4l2_thread = std::thread([this] { v4l2_thread_func(); });
+			v4l2_thread = std::thread([this, buf_nums] { v4l2_thread_func(buf_nums); });
 		}
 	} else {
 		LOGD("Illegal state: not opened");
@@ -408,7 +405,7 @@ int V4l2SourceBase::resize(
  * 映像処理スレッドの実行関数
  */
 /*private*/
-void V4l2SourceBase::v4l2_thread_func() {
+void V4l2SourceBase::v4l2_thread_func(const int &buf_nums) {
 	ENTER();
 
 	int result;
@@ -420,7 +417,7 @@ void V4l2SourceBase::v4l2_thread_func() {
 	v4l2_lock.lock();
 	{
 		LOGD("初期解像度・ピクセルフォーマットをセット");
-		result = init_v4l2_locked(request_width, request_height, request_pixel_format);
+		result = init_v4l2_locked(buf_nums, request_width, request_height, request_pixel_format);
 		if (!result) {
 			LOGD("映像ストリーム開始");
 			result = start_stream_locked();
@@ -561,12 +558,15 @@ int V4l2SourceBase::stop_stream_locked() {
 
 /**
  * 解像度とピクセルフォーマットをセットして映像データ受け取り用バッファーを初期化する
+ * @param buf_nums
  * @param width
  * @param height
+ * @param pixel_format 
  * @return
  */
 /*private*/
 int V4l2SourceBase::init_v4l2_locked(
+	const int &buf_nums,
   	const uint32_t &width, const uint32_t &height,
   	const uint32_t &pixel_format) {
 
@@ -644,7 +644,7 @@ int V4l2SourceBase::init_v4l2_locked(
 
 	// 画像データ読み込み用のメモリマップを初期化
 	LOGD("call init_mmap_locked");
-	result = init_mmap_locked();
+	result = init_mmap_locked(buf_nums);
 	if (!result) {
 		stream_width = fmt.fmt.pix.width;
 		stream_height = fmt.fmt.pix.height;
@@ -689,34 +689,57 @@ int V4l2SourceBase::release_mmap_locked() {
 /**
  * 画像データ読み込み用のメモリマップを初期化
  * init_device_lockedの下請け
+ * @param buff_nums
  */
 /*private*/
-int V4l2SourceBase::init_mmap_locked() {
+int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 	ENTER();
 
 	int result = core::USB_SUCCESS;
+	int _buf_nums = buf_nums;
+	if (_buf_nums < 1) {
+		_buf_nums = 1;
+	}
+
+	// 映像データ受取用のバッファを要求する
+	// 
 	struct v4l2_requestbuffers req {
 		.count = BUFFER_NUMS,
 		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
 		.memory = V4L2_MEMORY_MMAP,
 	};
-
-	LOGD("VIDIOC_REQBUFS");
-	if (xioctl(m_fd, VIDIOC_REQBUFS, &req) == -1) {
-		result = -errno;
-		if (EINVAL == errno) {
-			LOGE("%s does not support memory mapping", device_name.c_str());
+	for (int i = _buf_nums; i >= 1; i--) {
+		LOGD("VIDIOC_REQBUFS %d", i);
+		req.count = i;
+		if (xioctl(m_fd, VIDIOC_REQBUFS, &req) == -1) {
+			result = -errno;
+			req.count = 0;
+			if (EINVAL == errno) {
+				LOGE("%s does not support memory mapping", device_name.c_str());
+				goto err;
+			} else {
+				LOGD("VIDIOC_REQBUFS,err=%d", result);
+			}
 		} else {
-			LOGE("VIDIOC_REQBUFS,err=%d", result);
+			break;
 		}
-		goto err;
 	}
 
-	if (req.count < BUFFER_NUMS) {
+	if (!req.count) {
 		LOGE("Insufficient buffer memory on %s", device_name.c_str());
 		result = core::USB_ERROR_NO_MEM;
 		goto err;
 	}
+
+	req.memory = (req.capabilities & V4L2_BUF_CAP_SUPPORTS_DMABUF)
+		? V4L2_MEMORY_DMABUF : (req.capabilities & V4L2_BUF_CAP_SUPPORTS_MMAP ? V4L2_MEMORY_MMAP : 0);
+	if (!req.memory) {
+		LOGE("Unsupported memory type, capabilities=0x%08x", req.capabilities);
+		result = core::USB_ERROR_NO_MEM;
+		goto err;
+	}
+	LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
+
 	// 映像データ受け取り用バッファーを初期化
 	m_buffers = new buffer_t[req.count];
 	if (UNLIKELY(!m_buffers)) {
@@ -732,7 +755,7 @@ int V4l2SourceBase::init_mmap_locked() {
 	for (uint32_t i = 0; i < req.count; i++) {
 		struct v4l2_buffer buf {
 			.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-			.memory = V4L2_MEMORY_MMAP,
+			.memory = req.memory,
 		};
 		buf.index = i;
 
@@ -761,6 +784,7 @@ err:
 		SAFE_DELETE_ARRAY(m_buffers)
 		m_buffersNums = 0;
 	}
+
 	RETURN(result, int);
 }
 
@@ -822,11 +846,11 @@ int V4l2SourceBase::handle_resize(
 		result = release_mmap_locked();	// state == STATE_OPEN
 		if (LIKELY(!result)) {
 			// 解像度・ピクセルフォーマットをセット
-			result = init_v4l2_locked(width, height, pixel_format);
+			result = init_v4l2_locked(m_buffersNums, width, height, pixel_format);
 			if (result) {
 				LOGD("以前の解像度・ピクセルフォーマットへ戻す,sz(%dx%d)@0x%08x",
 					cur_width, cur_height, cur_pixel_format);
-				result = init_v4l2_locked(cur_width, cur_height, cur_pixel_format);
+				result = init_v4l2_locked(m_buffersNums, cur_width, cur_height, cur_pixel_format);
 			}
 		}
 		if (LIKELY(!result)) {
