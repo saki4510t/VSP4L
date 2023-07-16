@@ -428,7 +428,6 @@ void EyeApp::on_render() {
 	// 描画処理
 	if (!req_freeze) {
 		// オフスクリーンへ描画
-		std::lock_guard<std::mutex> lock(image_lock);
 		offscreen->bind();
 		renderer_pipeline->on_draw();
 		offscreen->unbind();
@@ -439,9 +438,11 @@ void EyeApp::on_render() {
 #endif
 #if BUFFURING
 	if (!req_freeze) {
-		std::lock_guard<std::mutex> lock(image_lock);
 		offscreen->bind();
-		video_renderer->draw_frame(buffer);
+		{
+			std::lock_guard<std::mutex> lock(image_lock);
+			video_renderer->draw_frame(buffer);
+		}
 		offscreen->unbind();
 	}
 #endif
