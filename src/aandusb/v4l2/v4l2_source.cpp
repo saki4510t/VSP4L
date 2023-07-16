@@ -60,10 +60,6 @@ namespace serenegiant::v4l2 {
  * 実機だとV4L2_PIX_FMT_NV16が一番速そう(1フレームのサイズが小さいから？)
  */
 #define DEFAULT_PIX_FMT (V4L2_PIX_FMT_NV16)	// (V4L2_PIX_FMT_MJPEG)
-/**
- * 映像データ最大待ち時間
- */
-#define MAX_WAIT_FRAME_US (100000L)
 
 #if MEAS_TIME
 #define MEAS_TIME_INIT	nsecs_t _meas_time_ = 0; int _meas_count_ = 0;
@@ -1014,18 +1010,19 @@ int V4l2SourceBase::handle_resize(
 
 /**
  * 映像データの処理
- * 映像データがないときはMAX_WAIT_FRAME_USで指定した時間待機する
+ * 映像データがないときはmax_wait_frame_usで指定した時間待機する
  * ワーカースレッド上で呼ばれる
+ * @param max_wait_frame_us 最大映像待ち時間[マイクロ秒]
  * @return int 負:エラー 0以上:読み込んだデータバイト数
  */
 /*private*/
-int V4l2SourceBase::handle_frame() {
+int V4l2SourceBase::handle_frame(const suseconds_t &max_wait_frame_us) {
 
 	ENTER();
 
 	struct timeval tv {
 		.tv_sec = 0,
-	 	.tv_usec = MAX_WAIT_FRAME_US,
+	 	.tv_usec = max_wait_frame_us,
 	};
 
 	fd_set fds;

@@ -26,6 +26,11 @@ namespace uvc = serenegiant::usb::uvc;
 namespace serenegiant::v4l2 {
 
 /**
+ * 映像データ最大待ち時間
+ */
+#define MAX_WAIT_FRAME_US (100000L)
+
+/**
  * @brief V4L2から映像を取得するためのヘルパークラス
  *
  */
@@ -168,11 +173,12 @@ private:
 		const uint32_t &pixel_format);
 	/**
 	 * 映像データの処理
-	 * 映像データがないときはMAX_WAIT_FRAME_USで指定した時間待機する
+	 * 映像データがないときはmax_wait_frame_usで指定した時間待機する
 	 * ワーカースレッド上で呼ばれる
+	 * @param max_wait_frame_us 最大映像待ち時間[マイクロ秒]
 	 * @return 負:エラー 0以上:読み込んだデータバイト数
 	 */
-	int handle_frame();
+	int handle_frame(const suseconds_t &max_wait_frame_us = MAX_WAIT_FRAME_US);
 protected:
 	mutable Mutex v4l2_lock;
 
