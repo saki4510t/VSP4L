@@ -296,6 +296,11 @@ void GlfwWindow::key_callback(GLFWwindow *win, int key, int scancode, int action
 
 	// このインスタンスの this ポインタを得る
 	auto self = reinterpret_cast<GlfwWindow *>(glfwGetWindowUserPointer(win));
+    if (key == GLFW_KEY_ESCAPE) {
+        // 全画面で抜けれなくなると困るのでESCキーで終了するように実装
+        glfwSetWindowShouldClose(win, 1);
+    	EXIT();
+    }
 	if (self && self->on_key_event_func) {
 		const auto keycode = ImGui_ImplGlfw_TranslateUntranslatedKey(key, scancode);
 		LOGD("key=%d(%d),scancode=%d/%s,action=%d,mods=%d",
