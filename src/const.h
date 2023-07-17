@@ -27,6 +27,7 @@
 #define OPT_WIDTH_DEFAULT "1920"
 #define OPT_HEIGHT_DEFAULT "1080"
 
+const char *SHORT_OPTS = "Dd:f:u:n:w:h";
 const struct option LONG_OPTS[] = {
 	{ OPT_DEBUG,	no_argument,		nullptr,	'D' },
 	{ OPT_DEVICE,	required_argument,	nullptr,	'd' },

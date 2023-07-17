@@ -44,7 +44,7 @@ int main(int argc, char *const *argv) {
 	int longindex;
 	std::unordered_map<std::string, std::string> options = init_options();
 
-	while ((opt = getopt_long(argc, argv, "Dd:f:u:n:", LONG_OPTS, &longindex)) != -1) {
+	while ((opt = getopt_long(argc, argv, SHORT_OPTS, LONG_OPTS, &longindex)) != -1) {
 		LOGD("%d %s", longindex, LONG_OPTS[longindex].name);
 		// FIXME 値のチェックをしたほうがいいかも
 		options[LONG_OPTS[longindex].name] = optarg ? optarg : "";
