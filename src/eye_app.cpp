@@ -116,6 +116,14 @@ EyeApp::EyeApp(
 {
     ENTER();
 
+	// FIXME これだとワーキングディレクトリ(コマンドを実行したときの
+	//     カレントディレクトリになってしまってEyeAppの実行ファイルが
+	//     存在するディレクトリじゃない)
+	//     今のところEyeAppファイルが存在するディレクトリに移動してから
+	//     実行しないと正常にアイコンとフォントを読み込めない。
+	//     ・argv[0]が相対パスのときはcurrent_pathを追加、
+	//     ・argv[0]が絶対パス(/から始まる)ときはそのままで
+	//     　最後のEyeAppを除いたパスを使うようにすればいける？
 	char current_path[PATH_SIZE];
     getcwd(current_path, PATH_SIZE);
 	resources = format("%s/resources", current_path);
