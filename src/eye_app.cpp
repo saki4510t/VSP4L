@@ -23,6 +23,7 @@
 
 #include "utilbase.h"
 // common
+#include "charutils.h"
 #include "glutils.h"
 #include "image_helper.h"
 #include "times.h"
@@ -42,8 +43,6 @@ namespace serenegiant::app {
 // 自前でV4l2Source::handle_frameを呼び出すかどうか
 // 0: v4l2sourceのワーカースレッドでhandle_frameを呼び出す, 1:自前でhandle_frameを呼び出す
 #define HANDLE_FRAME (0)
-// v4l2で映像受取に使うバッファーの数, 多くしすぎると遅延が大きくなる可能性がある
-#define BUFFER_NUMS (2)
 
 // カメラ映像サイズ
 #define VIDEO_WIDTH (1920)
@@ -396,7 +395,8 @@ void EyeApp::on_resume() {
 	}
 	LOGV("supported=%s", source->get_supported_size().c_str());
 	source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
-	if (source->start(BUFFER_NUMS)) {
+	const auto buf_nums = to_int(options[OPT_BUF_NUMS], to_int(OPT_BUF_NUMS_DEFAULT, 4));
+	if (source->start(buf_nums)) {
 		LOGE("カメラを開始できなかった");
 		source.reset();
 		window.stop();
