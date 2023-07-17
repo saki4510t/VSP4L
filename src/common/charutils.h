@@ -9,6 +9,7 @@
 #define USBWEBCAMERAPROJ_CHARUTILS_H
 
 #include <string>
+#include <string_view>
 #include <cstring>
 #include <vector>
 
@@ -60,6 +61,16 @@ std::string format(const std::string& fmt, Args ... args) {
     std::snprintf(&buf[0], len + 1, fmt.c_str(), args ... );
     return std::string(&buf[0], &buf[0] + len);
 }
+
+/**
+ * @brief デフォルト値付きで文字列を整数へ変換する
+ * 
+ * @param str 変換する文字列, const char*, string, string_viewのいずれか
+ * @param default_value 変換できないときのデフォルト値
+ * @param radix 基数
+ * @return int 
+ */
+int to_int(const std::string_view str, const int &default_value, const int &radix = 10);
 
 }	// end of namespace serenegiant
 

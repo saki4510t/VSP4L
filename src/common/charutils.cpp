@@ -21,7 +21,9 @@
 #include <cstdio>
 #include <algorithm> // std::equal
 #include <iterator>  // std::rbegin, std::rend
+#include <charconv>
 
+#include "utilbase.h"
 #include "charutils.h"
 
 namespace serenegiant {
@@ -77,6 +79,26 @@ bool end_width(const char *text, const char *suffix) {
 			}
 		}
 	}
+	return result;
+}
+
+/**
+ * @brief デフォルト値付きで文字列を整数へ変換する
+ * 
+ * @param str 変換する文字列, const char*, string, string_viewのいずれか
+ * @param default_value 変換できないときのデフォルト値
+ * @param radix 基数
+ * @return int 
+ */
+int to_int(const std::string_view str, const int &default_value, const int &radix) {
+
+	int result = default_value;
+	const auto last = str.data() + str.size();
+    const auto [ptr, ec] = std::from_chars(std::begin(str), std::end(str), result, radix);
+	if (ec != std::errc{} || (ptr != last)) {
+		result = default_value;
+    }
+
 	return result;
 }
 
