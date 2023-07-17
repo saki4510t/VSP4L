@@ -7,7 +7,7 @@
 
 #define LOG_TAG "V4l2Source"
 
-#define MEAS_TIME 0				// 1フレーム当たりの描画時間を測定する時1
+#define MEAS_TIME (0)				// 1フレーム当たりの描画時間を測定する時1
 
 #if 0	// デバッグ情報を出さない時は1
 	#ifndef LOG_NDEBUG
