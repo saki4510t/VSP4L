@@ -9,7 +9,7 @@
 
 #define MEAS_TIME 0				// 1フレーム当たりの描画時間を測定する時1
 
-#if 1	// デバッグ情報を出さない時は1
+#if 0	// デバッグ情報を出さない時は1
 	#ifndef LOG_NDEBUG
 		#define	LOG_NDEBUG		// LOGV/LOGD/MARKを出力しない時
 	#endif
@@ -523,11 +523,17 @@ int V4l2SourceBase::start_stream_locked() {
 	if ((m_state == STATE_OPEN) || (m_state == STATE_INIT)) {
 		// 予めすべてのバッファをキューに入れておく
 		enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		const uint32_t memory = (m_udmabuf_fd ? V4L2_MEMORY_USERPTR : V4L2_MEMORY_MMAP);
 		for (uint32_t i = 0; i < m_buffersNums; ++i) {
 			struct v4l2_buffer buf {
 				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-				.memory = V4L2_MEMORY_MMAP,
+				.memory = memory,
 			};
+			if (memory == V4L2_MEMORY_USERPTR) {
+				// buffer must be casted to unsigned long type in order to assign it to V4L2 buffer
+				buf.m.userptr = reinterpret_cast<unsigned long>(m_buffers[i].start);
+				buf.length = m_buffers[i].length;
+			}
 			buf.index = i;
 			if (xioctl(m_fd, VIDIOC_QBUF, &buf) == -1) {
 				result = -errno;
@@ -743,6 +749,7 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 			memory = V4L2_MEMORY_USERPTR;
 		} else {
 			LOGD("Failed to open %s", udmabuf_name.c_str());
+			m_udmabuf_fd = 0;
 		}
 	}
 
@@ -819,6 +826,14 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 				result = -errno;
 				LOGE("mmap,err=%d", result);
 				break;
+			}
+			// 物理メモリーを割り当てるためにゼロクリアする
+			// memsetではだめらしい
+			{
+				auto word_ptr = (uint8_t *)m_buffers[i].start;
+				for (int j = 0; j < offset; j++) {
+					word_ptr[j] = 0;
+				}
 			}
 		}
 	} else {	// if (m_udmabuf_fd > 0)
@@ -981,9 +996,10 @@ int V4l2SourceBase::handle_frame(const suseconds_t &max_wait_frame_us) {
 		// 映像データの準備ができたかタイムアウトした時
 		if (FD_ISSET(m_fd, &fds)) {
 			// 映像データの処理
+			const uint32_t memory = (m_udmabuf_fd ? V4L2_MEMORY_USERPTR : V4L2_MEMORY_MMAP);
 			struct v4l2_buffer buf {
 				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-				.memory = V4L2_MEMORY_MMAP,
+				.memory = memory,
 			};
 
 			// 映像の入ったバッファを取得
