@@ -218,7 +218,8 @@ int GlfwWindow::initialize() {
 //	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 //	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);	// OpenGL3以降で前方互換プロファイルを使う
 #endif
-//  glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);	// マウス等でリサイズ可能
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);	// マウス等でリサイズ不可
+    glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);    // ウインドウを最大化する
 //	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// 終了時の処理登録
 	atexit(glfwTerminate);
@@ -228,7 +229,7 @@ int GlfwWindow::initialize() {
 
 GlfwWindow::GlfwWindow(const int width, const int height, const char *title)
 :	Window(width, height, title),
-	window(glfwCreateWindow(width, height, title, nullptr/*monitor*/, nullptr/*share*/)),
+	window(glfwCreateWindow(width, height, title, glfwGetPrimaryMonitor(), nullptr/*share*/)),
 	prev_key_callback(nullptr)
 {
 	ENTER();
