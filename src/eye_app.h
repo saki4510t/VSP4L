@@ -52,6 +52,7 @@ private:
 	const bool debug;
 	const uint32_t width;
 	const uint32_t height;
+	std::string resources;
 	AppSettings app_settings;
 	CameraSettings camera_settings;
 

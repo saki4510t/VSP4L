@@ -74,7 +74,6 @@ std::string get_serial() {
 std::unordered_map<std::string, std::string> init_options() {
 	std::unordered_map<std::string, std::string> options;
 	options[OPT_DEVICE] = OPT_DEVICE_DEFAULT;
-	options[OPT_FONT] = OPT_FONT_DEFAULT;
 	options[OPT_UDMABUF] = OPT_UDMABUF_DEFAULT;
 	options[OPT_BUF_NUMS] = OPT_BUF_NUMS_DEFAULT;
 	options[OPT_WIDTH] = OPT_WIDTH_DEFAULT;

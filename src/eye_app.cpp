@@ -116,6 +116,10 @@ EyeApp::EyeApp(
 {
     ENTER();
 
+	char current_path[PATH_SIZE];
+    getcwd(current_path, PATH_SIZE);
+	resources = format("%s/resources", current_path);
+
 	load(app_settings);
 	mvp_matrix.scale(ZOOM_FACTORS[zoom_ix]);
 	key_dispatcher
@@ -253,15 +257,14 @@ void EyeApp::run() {
 void EyeApp::on_start() {
     ENTER();
 
-	char current_path[PATH_SIZE];
-    getcwd(current_path, PATH_SIZE);
-	LOGD("current=%s", current_path);
+	std::string font = format("%s/fonts/DroidSans.ttf", resources.c_str());
+	LOGD("resources=%s,font=%s", resources.c_str(), font.c_str());
 	// imguiの追加設定
     ImGuiIO& io = ImGui::GetIO();
 	// 最初に読み込んだのがデフォルトのフォントになる
 	default_font = io.Fonts->AddFontDefault();
 	// 大きい文字用のフォント(FIXME 実働時はフォントファイルのパスを変えないといけない)
-	large_font = io.Fonts->AddFontFromFileTTF(options[OPT_FONT].c_str(), MODE_ICON_FONT_SZ);
+	large_font = io.Fonts->AddFontFromFileTTF(font.c_str(), MODE_ICON_FONT_SZ);
 	// 読み込めなければnulptrになる
 	LOGD("default_font=%p", default_font);
 	LOGD("large_font=%p", large_font);
@@ -617,8 +620,10 @@ void EyeApp::handle_draw_gui() {
 
 	if (show_brightness) {
 		if (UNLIKELY(!icon_brightness)) {
+			std::string icon = format("%s/ic_brightness.png", resources.c_str());
+			LOGD("resources=%s,icon=%s", resources.c_str(), icon.c_str());
 			media::Image bitmap;
-			if (!media::read_png_from_file(bitmap, "./src/resources/ic_brightness.png")) {
+			if (!media::read_png_from_file(bitmap, icon.c_str())) {
 				LOGD("success load png, assign to texture");
 				//  輝度アイコンをテクスチャへ読み込む
 				icon_brightness = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE0, MODE_ICON_TEX_SZ, MODE_ICON_TEX_SZ);
@@ -645,8 +650,10 @@ void EyeApp::handle_draw_gui() {
 	}
 	if (show_zoom) {
 		if (UNLIKELY(!icon_zoom)) {
+			std::string icon = format("%s/ic_zoom.png", resources.c_str());
+			LOGD("resources=%s,icon=%s", resources.c_str(), icon.c_str());
 			media::Image bitmap;
-			if (!media::read_png_from_file(bitmap, "./src/resources/ic_zoom.png")) {
+			if (!media::read_png_from_file(bitmap, icon.c_str())) {
 				LOGD("success load png, assign to texture");
 				// 拡大縮小アイコンをテクスチャへ読み込む
 				icon_zoom = std::make_unique<gl::GLTexture>(GL_TEXTURE_2D, GL_TEXTURE1, MODE_ICON_TEX_SZ, MODE_ICON_TEX_SZ);
