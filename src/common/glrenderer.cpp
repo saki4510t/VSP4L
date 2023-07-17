@@ -191,17 +191,17 @@ void GLRenderer::init(const bool &use_vbo) {
     muMVPMatrixLoc = glGetUniformLocation(mShaderProgram, "uMVPMatrix");
     GLCHECK("glGetUniformLocation:muMVPMatrixLoc");
     if (muMVPMatrixLoc < 0) {
-		LOGW("muMVPMatrixLoc undefined");
+		LOGD("muMVPMatrixLoc undefined");
     }
     muTexMatrixLoc = glGetUniformLocation(mShaderProgram, "uTexMatrix");
     GLCHECK("glGetUniformLocation:muTexMatrixLoc");
     if (muTexMatrixLoc < 0) {
-		LOGW("muTexMatrixLoc undefined");
+		LOGD("muTexMatrixLoc undefined");
     }
     muTextureSzLoc = glGetUniformLocation(mShaderProgram, "uTextureSz");
     GLCHECK("glGetUniformLocation:muTextureSzLoc");
     if (muTextureSzLoc < 0) {
-		LOGW("muTextureSzLoc undefined");	// フラグメントシェーダー内で使っていなければ最適化でなくなってしまうみたい
+		LOGD("muTextureSzLoc undefined");	// フラグメントシェーダー内で使っていなければ最適化でなくなってしまうみたい
     }
 	muFrameSzLoc =  glGetUniformLocation(mShaderProgram, "uFrameSz");
 	GLCHECK("glGetUniformLocation:muFrameSzLoc");
