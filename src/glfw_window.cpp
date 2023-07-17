@@ -218,7 +218,7 @@ int GlfwWindow::initialize() {
 //	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 //	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);	// OpenGL3以降で前方互換プロファイルを使う
 #endif
-	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);	// マウス等でリサイズ可能
+//  glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);	// マウス等でリサイズ可能
 //	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	// 終了時の処理登録
 	atexit(glfwTerminate);
