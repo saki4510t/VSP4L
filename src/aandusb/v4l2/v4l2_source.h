@@ -43,6 +43,8 @@ class V4l2SourceBase {
 private:
 	// v4l2機器名
 	const std::string device_name;
+	// udmabufデバイスファイル名
+	const std::string udmabuf_name;
 	/**
 	 * @brief 専用ワーカースレッドからhandle_frameを呼び出すかどうか
 	 *        1: 専用ワーカースレッドを使う,
@@ -54,12 +56,18 @@ private:
 	 * パイプライン処理実行中フラグ
 	 */
 	volatile bool m_running;
-
+	/**
+	 * v4l2機器のファイルディスクリプタ
+	 */
 	volatile int m_fd;
 	/**
 	 * v4l2の状態
 	 */
 	state_t m_state;
+	/**
+	 * udmabufのファイルディスクリプタ
+	 */
+	int m_udmabuf_fd;
 	/**
 	 * リサイズ要求フラグ
 	 */
@@ -116,6 +124,7 @@ private:
 
 	/**
 	 * 映像取得スレッドの実行関数
+	 * @param buf_nums
 	 */
 	void v4l2_thread_func(const int &buf_nums);
 	/**
@@ -168,6 +177,14 @@ private:
 	 * @param buf_nums
 	 */
 	int init_mmap_locked(const int &buf_nums);
+	/**
+	 * 画像データ読み込み用のメモリマップを初期化
+	 * ワーカースレッド上で呼ばれる
+	 * init_device_lockedの下請け
+	 * @param buf_nums 
+	 * @return int 
+	 */
+	int init_udmabuf_locked(const int &buf_nums);
 	/**
 	 * @brief 対応するピクセルフォーマット一覧を取得する
 	 *        v4l2_lockをロックした状態で呼び出すこと
@@ -231,8 +248,9 @@ public:
 	 *
 	 * @param device_name v4l2機器名
 	 * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
+	 * @param udmabuf_name udmabufのデバイスファイル名
 	 */
-	V4l2SourceBase(std::string device_name, const bool &async = true);
+	V4l2SourceBase(std::string device_name, const bool &async = true, std::string udmabuf_name = "");
 	/**
 	 * @brief デストラクタ
 	 *
@@ -923,8 +941,9 @@ public:
 	 *
 	 * @param device_name v4l2機器名
 	 * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
+	 * @param udmabuf_name udmabufのデバイスファイル名
 	 */
-	V4l2Source(std::string device_name, const bool &async = true);
+	V4l2Source(std::string device_name, const bool &async = true, std::string udmabuf_name = "");
 	/**
 	 * @brief デストラクタ
 	 *

@@ -28,6 +28,7 @@
 #include <cassert>
 #include <ctime>
 #include <cerrno>
+#include <cmath>
 #include <utility>
 
 #include <fcntl.h>              /* low-level i/o */
@@ -88,10 +89,14 @@ namespace serenegiant::v4l2 {
  * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
  */
 /*public*/
-V4l2SourceBase::V4l2SourceBase(std::string device_name, const bool &async)
+V4l2SourceBase::V4l2SourceBase(
+	std::string device_name,
+	const bool &async,
+	std::string udmabuf_name)
 :	device_name(std::move(device_name)), async(async),
+	udmabuf_name(std::move(udmabuf_name)),
 	m_running(false),
-	m_fd(0), m_state(STATE_CLOSE),
+	m_fd(0), m_state(STATE_CLOSE), m_udmabuf_fd(0),
 	request_resize(false),
 	request_pixel_format(DEFAULT_PIX_FMT),
 	request_width(DEFAULT_PREVIEW_WIDTH), request_height(DEFAULT_PREVIEW_HEIGHT),
@@ -412,6 +417,7 @@ int V4l2SourceBase::resize(
 //--------------------------------------------------------------------------------
 /**
  * 映像処理スレッドの実行関数
+ * @param buf_nums
  */
 /*private*/
 void V4l2SourceBase::v4l2_thread_func(const int &buf_nums) {
@@ -692,7 +698,25 @@ int V4l2SourceBase::release_mmap_locked() {
 		m_state = STATE_OPEN;
 	}
 
+	if (m_udmabuf_fd) {
+		::close(m_udmabuf_fd);
+		m_udmabuf_fd = 0;
+	}
+
 	RETURN(core::USB_SUCCESS, int);
+}
+
+/**
+ * @brief ceil3
+ * @details ceil num specifiy digit
+ * @param num number
+ * @param base ceil digit
+ * @return int32_t result
+ */
+static int32_t ceil3(int32_t num, int32_t base) {
+    double x = (double)(num) / (double)(base);
+    double y = ceil(x) * (double)(base);
+    return (int32_t)(y);
 }
 
 /**
@@ -710,12 +734,23 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 		_buf_nums = 1;
 	}
 
+	uint32_t memory = V4L2_MEMORY_MMAP;
+	if (!udmabuf_name.empty()) {
+		LOGD("try to open %s", udmabuf_name.c_str());
+		m_udmabuf_fd = ::open(udmabuf_name.c_str(), O_RDWR);
+		if (m_udmabuf_fd > 0) {
+			LOGD("use udmabuf");
+			memory = V4L2_MEMORY_USERPTR;
+		} else {
+			LOGD("Failed to open %s", udmabuf_name.c_str());
+		}
+	}
+
 	// 映像データ受取用のバッファを要求する
-	// 
 	struct v4l2_requestbuffers req {
 		.count = DEFAULT_BUFFER_NUMS,
 		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-		.memory = V4L2_MEMORY_MMAP,
+		.memory = memory,
 	};
 	for (int i = _buf_nums; i >= 1; i--) {
 		LOGD("VIDIOC_REQBUFS %d", i);
@@ -740,16 +775,6 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 		goto err;
 	}
 
-	req.memory = (req.capabilities & V4L2_BUF_CAP_SUPPORTS_DMABUF)
-		? V4L2_MEMORY_DMABUF : (req.capabilities & V4L2_BUF_CAP_SUPPORTS_MMAP ? V4L2_MEMORY_MMAP : 0);
-	if (!req.memory) {
-		LOGE("Unsupported memory type, capabilities=0x%08x", req.capabilities);
-		result = core::USB_ERROR_NO_MEM;
-		goto err;
-	}
-	LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
-	// req.count = MIN(req.count, _buf_nums);	// これうまく動かない
-
 	// 映像データ受け取り用バッファーを初期化
 	m_buffers = new buffer_t[req.count];
 	if (UNLIKELY(!m_buffers)) {
@@ -762,29 +787,70 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 	}
 	m_buffersNums = req.count;
 
-	for (uint32_t i = 0; i < req.count; i++) {
-		struct v4l2_buffer buf {
-			.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-			.memory = req.memory,
-		};
-		buf.index = i;
+	if (m_udmabuf_fd > 0) {
+		// udmabufを使うとき
+		LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
+		uint32_t image_size = 0;
+		for (uint32_t i = 0; i < req.count; i++) {
+			struct v4l2_buffer buf {
+				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+				.memory = req.memory,
+			};
+			buf.index = i;
 
-		LOGD("VIDIOC_QUERYBUF:%d", i);
-		if (xioctl(m_fd, VIDIOC_QUERYBUF, &buf) == -1) {
-			result = -errno;
-			LOGE("VIDIOC_QUERYBUF,err=%d", result);
-			break;
+			LOGD("VIDIOC_QUERYBUF:%d", i);
+			if (xioctl(m_fd, VIDIOC_QUERYBUF, &buf) == -1) {
+				result = -errno;
+				LOGE("VIDIOC_QUERYBUF,err=%d", result);
+				break;
+			}
+
+			image_size = MAX(image_size, buf.length);
 		}
+		// page size alignment.
+		const auto offset = ceil3(image_size, sysconf(_SC_PAGE_SIZE));
+		LOGD("image_size=%d,offset%d", image_size, offset);
+		for (int i = 0; i < req.count; i++) {
+			m_buffers[i].length = image_size;
+			m_buffers[i].start = mmap(nullptr /* start anywhere */, image_size,
+				PROT_READ | PROT_WRITE /* required */,
+				MAP_SHARED /* recommended */, m_udmabuf_fd, (off_t)(i * offset));
+			if (m_buffers[i].start == MAP_FAILED) {
+				result = -errno;
+				LOGE("mmap,err=%d", result);
+				break;
+			}
+		}
+	} else {	// if (m_udmabuf_fd > 0)
+		// カメラドライバー側でメモリーを確保するとき
+		req.memory = (req.capabilities & V4L2_BUF_CAP_SUPPORTS_DMABUF)
+			? V4L2_MEMORY_DMABUF : (req.capabilities & V4L2_BUF_CAP_SUPPORTS_MMAP ? V4L2_MEMORY_MMAP : 0);
+		LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
 
-		m_buffers[i].length = buf.length;
-		m_buffers[i].start = mmap(nullptr /* start anywhere */, buf.length,
-			PROT_READ | PROT_WRITE /* required */,
-			MAP_SHARED /* recommended */, m_fd, (off_t)buf.m.offset);
+		for (uint32_t i = 0; i < req.count; i++) {
+			struct v4l2_buffer buf {
+				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+				.memory = req.memory,
+			};
+			buf.index = i;
 
-		if (m_buffers[i].start == MAP_FAILED) {
-			result = -errno;
-			LOGE("mmap,err=%d", result);
-			break;
+			LOGD("VIDIOC_QUERYBUF:%d", i);
+			if (xioctl(m_fd, VIDIOC_QUERYBUF, &buf) == -1) {
+				result = -errno;
+				LOGE("VIDIOC_QUERYBUF,err=%d", result);
+				break;
+			}
+
+			m_buffers[i].length = buf.length;
+			m_buffers[i].start = mmap(nullptr /* start anywhere */, buf.length,
+				PROT_READ | PROT_WRITE /* required */,
+				MAP_SHARED /* recommended */, m_fd, (off_t)buf.m.offset);
+
+			if (m_buffers[i].start == MAP_FAILED) {
+				result = -errno;
+				LOGE("mmap,err=%d", result);
+				break;
+			}
 		}
 	}
 
@@ -1962,10 +2028,14 @@ int32_t V4l2SourceBase::get_iris_rel() {
  *
  * @param device_name v4l2機器名
  * @param async 映像データの受取りを専用ワーカースレッドで行うかどうか
+ * @param udmabuf_name udmabufのデバイスファイル名
  */
 /*public*/
-V4l2Source::V4l2Source(std::string device_name, const bool &async)
-:	V4l2SourceBase(device_name, async),
+V4l2Source::V4l2Source(
+	std::string device_name,
+	const bool &async,
+	std::string udmabuf_name)
+:	V4l2SourceBase(device_name, async, udmabuf_name),
 	on_frame_ready_callbac(nullptr)
 {
 	ENTER();

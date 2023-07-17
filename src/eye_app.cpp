@@ -276,7 +276,7 @@ void EyeApp::on_resume() {
 
 	// カメラ設定を読み込む
 	load(camera_settings);
-    source = std::make_unique<v4l2::V4l2Source>("/dev/video0", !HANDLE_FRAME);
+    source = std::make_unique<v4l2::V4l2Source>("/dev/video0", !HANDLE_FRAME, "/dev/udmabuf0");
 #if BUFFURING || HANDLE_FRAME
 	video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
 	frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
