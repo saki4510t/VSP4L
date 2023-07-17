@@ -44,12 +44,6 @@ namespace serenegiant::app {
 // 0: v4l2sourceのワーカースレッドでhandle_frameを呼び出す, 1:自前でhandle_frameを呼び出す
 #define HANDLE_FRAME (0)
 
-// カメラ映像サイズ
-#define VIDEO_WIDTH (1920)
-#define VIDEO_HEIGHT (1080)
-// 画面サイズ
-#define WINDOW_WIDTH (VIDEO_WIDTH)
-#define WINDOW_HEIGHT (VIDEO_HEIGHT)
 // 輝度調整・拡大縮小率モード表示の背景アルファ
 #define MODE_BK_ALPHA (0.3f)
 // 輝度調整モード・拡大縮小モード表示でアイコンと一緒に表示する文字のサイズ
@@ -102,8 +96,10 @@ EyeApp::EyeApp(
 	gl_version(gl_version),
 	initialized(!GlfwWindow::initialize()),
 	debug(options.find(OPT_DEBUG) != options.end()),
+	width(to_int(options[OPT_WIDTH], to_int(OPT_WIDTH_DEFAULT, 1920))),
+	height(to_int(options[OPT_HEIGHT], to_int(OPT_HEIGHT_DEFAULT, 1080))),
 	app_settings(), camera_settings(),
-	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
+	window(width, height, "BOV EyeApp"),
 	source(nullptr),
 	m_egl_display(EGL_NO_DISPLAY),
 	m_shared_context(EGL_NO_CONTEXT), m_egl_surface(EGL_NO_SURFACE),
@@ -317,7 +313,7 @@ void EyeApp::on_resume() {
 		const auto versionStr = (const char*)glGetString(GL_VERSION);
 		LOGD("gl_version=%s", versionStr);
 		// オフスクリーンを生成
-		offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
+		offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, width, height, false);
 	})
 	.set_on_stop([this]() {
 		video_renderer.reset();
@@ -364,7 +360,7 @@ void EyeApp::on_resume() {
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
 #endif
 			if (!req_freeze) {
-				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
+				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, width, height, source->get_frame_type());
 				offscreen->bind();
 				video_renderer->draw_frame(*frame_wrapper);
 				offscreen->unbind();
@@ -387,14 +383,14 @@ void EyeApp::on_resume() {
 		return bytes;
 	});
 
-	if (!source || source->open() || source->find_stream(VIDEO_WIDTH, VIDEO_HEIGHT)) {
+	if (!source || source->open() || source->find_stream(width, height)) {
 		LOGE("カメラをオープンできなかった");
 		source.reset();
 		window.stop();
 		EXIT();
 	}
 	LOGV("supported=%s", source->get_supported_size().c_str());
-	source->resize(VIDEO_WIDTH, VIDEO_HEIGHT);
+	source->resize(width, height);
 	const auto buf_nums = to_int(options[OPT_BUF_NUMS], to_int(OPT_BUF_NUMS_DEFAULT, 4));
 	if (source->start(buf_nums)) {
 		LOGE("カメラを開始できなかった");
@@ -410,7 +406,7 @@ void EyeApp::on_resume() {
 	const auto versionStr = (const char*)glGetString(GL_VERSION);
 	LOGD("GL_VERSION=%s", versionStr);
 	// オフスクリーンを生成
-	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, WINDOW_WIDTH, WINDOW_HEIGHT, false);
+	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, VIDEO_WIDTH, VIDEO_HEIGHT, false);
 #endif
 	req_change_matrix = true;
 

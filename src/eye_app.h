@@ -50,6 +50,8 @@ private:
 	const int gl_version;
 	const bool initialized;
 	const bool debug;
+	const uint32_t width;
+	const uint32_t height;
 	AppSettings app_settings;
 	CameraSettings camera_settings;
 

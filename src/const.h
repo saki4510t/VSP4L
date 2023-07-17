@@ -17,11 +17,15 @@
 #define OPT_FONT "font"
 #define OPT_UDMABUF "udmabuf"
 #define OPT_BUF_NUMS "buf_nums"
+#define OPT_WIDTH "width"
+#define OPT_HEIGHT "height"
 // コマンドラインオプションのデフォルト値
 #define OPT_DEVICE_DEFAULT "/dev/video0"
 #define OPT_FONT_DEFAULT "./src/imgui/misc/fonts/DroidSans.ttf"
 #define OPT_UDMABUF_DEFAULT "/dev/udmabuf0"
 #define OPT_BUF_NUMS_DEFAULT "4"
+#define OPT_WIDTH_DEFAULT "1920"
+#define OPT_HEIGHT_DEFAULT "1080"
 
 const struct option LONG_OPTS[] = {
 	{ OPT_DEBUG,	no_argument,		nullptr,	'D' },
@@ -29,6 +33,8 @@ const struct option LONG_OPTS[] = {
 	{ OPT_FONT,		required_argument,	nullptr,	'f' },
 	{ OPT_UDMABUF,	required_argument,	nullptr,	'u' },
 	{ OPT_BUF_NUMS,	required_argument,	nullptr,	'n' },
+	{ OPT_WIDTH,	required_argument,	nullptr,	'w' },
+	{ OPT_HEIGHT,	required_argument,	nullptr,	'h' },
 	{ 0,			0,					0,			0  },
 };
 
