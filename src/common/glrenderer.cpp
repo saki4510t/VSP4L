@@ -321,6 +321,7 @@ int GLRenderer::draw(GLTexture *texture, const GLfloat *tex_matrix, const GLfloa
     glDisableVertexAttribArray(maTextureCoordLoc);
     GLCHECK("glDisableVertexAttribArray:maTextureCoordLoc");
     texture->unbind();
+	texture->refresh();
     glUseProgram(0);
     GLCHECK("glUseProgram");
 
@@ -389,11 +390,14 @@ int GLRenderer::draw(
     glDisableVertexAttribArray(maTextureCoordLoc);
     GLCHECK("glDisableVertexAttribArray:maTextureCoordLoc");
     texture1->unbind();
+	texture1->refresh();
 	if (texture2) {
 		texture2->unbind();
+		texture2->refresh();
 	}
 	if (texture3) {
 		texture3->unbind();
+		texture3->refresh();
 	}
     glUseProgram(0);
     GLCHECK("glUseProgram");
