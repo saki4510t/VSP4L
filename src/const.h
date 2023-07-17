@@ -7,6 +7,37 @@
 #include <stdint.h>
 #include <string>
 #include <memory>
+#include <unordered_map>
+
+#include <getopt.h>
+
+// コマンドラインオプション
+#define OPT_DEBUG "debug"
+#define OPT_DEVICE "device"
+#define OPT_FONT "font"
+#define OPT_UDMABUF "udmabuf"
+#define OPT_BUF_NUMS "buf_nums"
+// コマンドラインオプションのデフォルト値
+#define OPT_DEVICE_DEFAULT "/dev/video0"
+#define OPT_FONT_DEFAULT "./src/imgui/misc/fonts/DroidSans.ttf"
+#define OPT_UDMABUF_DEFAULT "/dev/udmabuf0"
+#define OPT_BUF_NUMS_DEFAULT "4"
+
+const struct option LONG_OPTS[] = {
+	{ OPT_DEBUG,	no_argument,		nullptr,	'D' },
+	{ OPT_DEVICE,	required_argument,	nullptr,	'd' },
+	{ OPT_FONT,		required_argument,	nullptr,	'f' },
+	{ OPT_UDMABUF,	required_argument,	nullptr,	'u' },
+	{ OPT_BUF_NUMS,	required_argument,	nullptr,	'n' },
+	{ 0,			0,					0,			0  },
+};
+
+/**
+ * オプションを初期化
+ * 
+ * @return std::unordered_map<std::string, std::string> 
+ */
+std::unordered_map<std::string, std::string> init_options();
 
 /**
  * @brief モデル文字列

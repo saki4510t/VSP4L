@@ -38,10 +38,18 @@
 
 namespace serenegiant::app {
 
+#if USE_GL3
+#define DEFAULT_GL_VERSION (300)
+#else
+#define DEFAULT_GL_VERSION (200)
+#endif
+
 class EyeApp {
 private:
+	std::unordered_map<std::string, std::string> options;
 	const int gl_version;
 	const bool initialized;
+	const bool debug;
 	AppSettings app_settings;
 	CameraSettings camera_settings;
 
@@ -217,13 +225,13 @@ protected:
 public:
 	/**
 	 * @brief コンストラクタ
+	 * @param options
+	 * @param gl_version
 	 *
 	 */
-#if USE_GL3
-	EyeApp(const int &gl_version = 300);
-#else
-	EyeApp(const int &gl_version = 200);
-#endif
+	EyeApp(std::unordered_map<std::string, std::string> options,
+		const int &gl_version = DEFAULT_GL_VERSION);
+
 	/**
 	 * @brief デストラクタ
 	 *

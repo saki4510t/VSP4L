@@ -96,9 +96,13 @@ namespace serenegiant::app {
  *
  */
 /*public*/
-EyeApp::EyeApp(const int &gl_version)
-:   gl_version(gl_version),
+EyeApp::EyeApp(
+	std::unordered_map<std::string, std::string> _options,
+	const int &gl_version)
+:   options(std::move(_options)),
+	gl_version(gl_version),
 	initialized(!GlfwWindow::initialize()),
+	debug(options.find(OPT_DEBUG) != options.end()),
 	app_settings(), camera_settings(),
 	window(WINDOW_WIDTH, WINDOW_HEIGHT, "BOV EyeApp"),
 	source(nullptr),
@@ -262,7 +266,7 @@ void EyeApp::on_start() {
 	// 最初に読み込んだのがデフォルトのフォントになる
 	default_font = io.Fonts->AddFontDefault();
 	// 大きい文字用のフォント(FIXME 実働時はフォントファイルのパスを変えないといけない)
-	large_font = io.Fonts->AddFontFromFileTTF("./src/imgui/misc/fonts/DroidSans.ttf", MODE_ICON_FONT_SZ);
+	large_font = io.Fonts->AddFontFromFileTTF(options[OPT_FONT].c_str(), MODE_ICON_FONT_SZ);
 	// 読み込めなければnulptrになる
 	LOGD("default_font=%p", default_font);
 	LOGD("large_font=%p", large_font);
@@ -276,7 +280,7 @@ void EyeApp::on_resume() {
 
 	// カメラ設定を読み込む
 	load(camera_settings);
-    source = std::make_unique<v4l2::V4l2Source>("/dev/video0", !HANDLE_FRAME, "/dev/udmabuf0");
+    source = std::make_unique<v4l2::V4l2Source>(options[OPT_DEVICE].c_str(), !HANDLE_FRAME, options[OPT_UDMABUF].c_str());
 #if BUFFURING || HANDLE_FRAME
 	video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
 	frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
@@ -594,8 +598,7 @@ void EyeApp::handle_draw_gui() {
 
 	// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す
 	// ウインドウサイズを指定するにはImGui::Beginの前にImGui::SetNextWindowSizeを呼び出す
-#if !defined(NDEBUG)
-	{
+	if (debug) {
 		ImGui::Begin("DEBUG");
 		const auto fps = ImGui::GetIO().Framerate;
 		ImGui::Text("%.3f ms/frame(%.1f FPS)", 1000.0f / fps, fps);
@@ -603,7 +606,7 @@ void EyeApp::handle_draw_gui() {
 	}
 	// static bool show_demo = true;
 	// ImGui::ShowDemoWindow(&show_demo);
-#endif
+
 	const static ImVec2 icon_size(MODE_ICON_SZ, MODE_ICON_SZ);
 	const static ImVec2 pivot(0.5f, 0.5f);
 	const static ImVec2 uv_min = ImVec2(0.0f, 0.0f);                 // Top-left

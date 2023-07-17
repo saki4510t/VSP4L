@@ -65,3 +65,18 @@ std::string get_serial() {
 	// FIXME 未実装
 	return "0123456789";
 }
+
+/**
+ * @brief オプションを初期化
+ * 
+ * @return std::unordered_map<std::string, std::string> 
+ */
+std::unordered_map<std::string, std::string> init_options() {
+	std::unordered_map<std::string, std::string> options;
+	options[OPT_DEVICE] = OPT_DEVICE_DEFAULT;
+	options[OPT_FONT] = OPT_FONT_DEFAULT;
+	options[OPT_UDMABUF] = OPT_UDMABUF_DEFAULT;
+	options[OPT_BUF_NUMS] = OPT_BUF_NUMS_DEFAULT;
+
+	return options;
+}

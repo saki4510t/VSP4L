@@ -17,6 +17,11 @@
 	#undef NDEBUG
 #endif
 
+#include <string>
+#include <unordered_map>
+
+#include <getopt.h>
+
 #include "utilbase.h"
 // app
 #include "eye_app.h"
@@ -31,11 +36,21 @@ namespace app = serenegiant::app;
  * @param argv 
  * @return int 
  */
-int main(int argc, const char *argv[]) {
+int main(int argc, char *const *argv) {
 
 	ENTER();
 
-	app::EyeApp app;
+	int opt;
+	int longindex;
+	std::unordered_map<std::string, std::string> options = init_options();
+
+	while ((opt = getopt_long(argc, argv, "Dd:f:u:n:", LONG_OPTS, &longindex)) != -1) {
+		LOGD("%d %s", longindex, LONG_OPTS[longindex].name);
+		// FIXME 値のチェックをしたほうがいいかも
+		options[LONG_OPTS[longindex].name] = optarg;
+	}
+
+	app::EyeApp app(options);
 	if (app.is_initialized()) {
 		app.run();
 	} else {
