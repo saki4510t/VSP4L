@@ -13,7 +13,7 @@
 
 #define LOG_TAG "EyeApp"
 
-#define MEAS_TIME 0				// 1フレーム当たりの描画時間を測定する時1
+#define MEAS_TIME (0)				// 1フレーム当たりの描画時間を測定する時1
 
 #include <stdio.h>
 #include <string>
@@ -449,8 +449,11 @@ void EyeApp::on_stop() {
 void EyeApp::on_render() {
     ENTER();
 
+	MEAS_TIME_INIT
+
 	if (UNLIKELY(!source || !offscreen)) return;
 
+	MEAS_TIME_START
 #if HANDLE_FRAME
 	// V4L2から映像取得を試みる
 	source->handle_frame(10000L);
@@ -477,6 +480,8 @@ void EyeApp::on_render() {
 	// GUI(2D)描画処理を実行
 	handle_draw_gui();
 	reset_watchdog();
+
+	MEAS_TIME_STOP
 
     EXIT();
 }
