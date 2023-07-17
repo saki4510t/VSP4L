@@ -47,7 +47,7 @@ int main(int argc, char *const *argv) {
 	while ((opt = getopt_long(argc, argv, "Dd:f:u:n:", LONG_OPTS, &longindex)) != -1) {
 		LOGD("%d %s", longindex, LONG_OPTS[longindex].name);
 		// FIXME 値のチェックをしたほうがいいかも
-		options[LONG_OPTS[longindex].name] = optarg;
+		options[LONG_OPTS[longindex].name] = optarg ? optarg : "";
 	}
 
 	app::EyeApp app(options);
