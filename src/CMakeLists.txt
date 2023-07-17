@@ -157,6 +157,20 @@ target_link_libraries(${target} PRIVATE
     common_static
 )
 
+# アイコン用の画像をコピーする
+add_custom_command(
+    TARGET ${target} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/resources/
+            ${CMAKE_CURRENT_BINARY_DIR}/resources)
+
+# フォントファイルをコピーする
+add_custom_command(
+    TARGET ${target} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/imgui/misc/fonts/DroidSans.ttf
+            ${CMAKE_CURRENT_BINARY_DIR}/resources/fonts/DroidSans.ttf)
+            
 message("==================== All variables (EyeApp)  ====================")
 get_cmake_property(_variableNames CACHE_VARIABLES)
 list (SORT _variableNames)
