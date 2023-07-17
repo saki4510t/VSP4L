@@ -91,10 +91,13 @@ private:
 	// 自前で生成したAHardwareBufferかどうか
 	const bool own_hardware_buffer;
 	AHardwareBuffer *graphicBuffer;
-	EGLImageKHR eglImage;
 	// API16だとeglGetNativeClientBufferANDROIDは動的にリンクしないとビルドが通らない
 	PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC dynamicEglGetNativeClientBufferANDROID;
+#else
+	PFNEGLCREATEIMAGEKHRPROC dynamicEglCreateImageKHR;
+	PFNEGLDESTROYIMAGEKHRPROC dynamicEglDestroyImageKHR;
 #endif
+	EGLImageKHR eglImage;
 protected:
 	/**
 	 * 初期化処理

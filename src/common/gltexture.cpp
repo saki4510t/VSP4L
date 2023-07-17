@@ -238,13 +238,15 @@ GLTexture::GLTexture(
 	mTexWidth(width), mTexHeight(height),
 	mImageWidth(width), mImageHeight(height),
 	image_size(width * height * get_pixel_bytes(internal_pixel_format)),
+	eglImage(nullptr),
 #if __ANDROID__
 	m_use_powered2(_use_powered2 && (a_hardware_buffer == nullptr)),
 	own_hardware_buffer(a_hardware_buffer == nullptr),
 	graphicBuffer(a_hardware_buffer),
-	eglImage(nullptr),
 	dynamicEglGetNativeClientBufferANDROID(nullptr),
 #else
+	dynamicEglCreateImageKHR(nullptr),
+	dynamicEglDestroyImageKHR(nullptr),
 	m_use_powered2(_use_powered2),
 #endif
 	pbo_ix(0),
@@ -258,6 +260,17 @@ GLTexture::GLTexture(
  		= (PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC) eglGetProcAddress("eglGetNativeClientBufferANDROID");
  	if (!dynamicEglGetNativeClientBufferANDROID) {
 		LOGW("eglGetNativeClientBufferANDROID not found!");
+ 	}
+#else
+	dynamicEglCreateImageKHR
+ 		= (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+ 	if (!dynamicEglCreateImageKHR) {
+		LOGW("eglCreateImageKHR not found!");
+ 	}
+	dynamicEglDestroyImageKHR
+ 		= (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+ 	if (!dynamicEglDestroyImageKHR) {
+		LOGW("eglDestroyImageKHR not found!");
  	}
 #endif
 	init(width, height, use_pbo, m_use_powered2, try_hw_buf);
@@ -317,13 +330,18 @@ GLTexture::~GLTexture() {
 	if (eglImage) {
 		EGLDisplay display = eglGetCurrentDisplay();
 		eglDestroyImageKHR(display, eglImage);
-		eglImage = nullptr;
 	}
 	if (graphicBuffer) {
 		AAHardwareBuffer_release(graphicBuffer);
 		graphicBuffer = nullptr;
 	}
+#else
+	if (eglImage) {
+		EGLDisplay display = eglGetCurrentDisplay();
+		dynamicEglDestroyImageKHR(display, eglImage);
+	}
 #endif
+	eglImage = nullptr;
 	if (mTexId && is_own_tex) {
 		glDeleteTextures(1, &mTexId);
 		GLCHECK("glDeleteTextures");
@@ -419,58 +437,59 @@ void GLTexture::init(
 				LOGW("eglGetCurrentDisplay failed");
 				graphicBuffer = nullptr;
 			}
-		} else if (try_hw_buf && !use_pbo && dynamicEglGetNativeClientBufferANDROID && init_hardware_buffer()) {
-			// 自前でハードウエアバッファーを初期化してテクスチャに割り当てるとき
-			EGLDisplay display = eglGetCurrentDisplay();
-			if (display != EGL_NO_DISPLAY) {
-				MARK("create hardware buffer");
-				// filling in the usage for HardwareBuffer
-				AHardwareBuffer_Desc usage {
-					.width = static_cast<uint32_t>(mTexWidth),
-					.height = static_cast<uint32_t>(mTexHeight),
-					.layers = 1,
-					.format = get_hw_buffer_format(PIXEL_FORMAT_INTERNAL, DATA_TYPE),
-					.usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN	// CPUから書き込み用に頻繁にロックする
-						| AHARDWAREBUFFER_USAGE_CPU_READ_NEVER		// CPUから読み込み用にはロックしない
-						| AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE,	// GPUからテクスチャとして読み込む
-					.stride = static_cast<uint32_t>(mTexWidth * get_pixel_bytes(PIXEL_FORMAT_INTERNAL)),
-					.rfu0 = 0,
-					.rfu1 = 0,
-				};
-				AAHardwareBuffer_allocate(&usage, &graphicBuffer);
-				if (graphicBuffer) {
-					static const EGLint eglImageAttributes[] = {
-						EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
-						EGL_NONE
+		} else if (try_hw_buf && !use_pbo) {
+			if (dynamicEglGetNativeClientBufferANDROID && init_hardware_buffer()) {
+				// 自前でハードウエアバッファーを初期化してテクスチャに割り当てるとき
+				EGLDisplay display = eglGetCurrentDisplay();
+				if (display != EGL_NO_DISPLAY) {
+					MARK("create hardware buffer");
+					// filling in the usage for HardwareBuffer
+					AHardwareBuffer_Desc usage {
+						.width = static_cast<uint32_t>(mTexWidth),
+						.height = static_cast<uint32_t>(mTexHeight),
+						.layers = 1,
+						.format = get_hw_buffer_format(PIXEL_FORMAT_INTERNAL, DATA_TYPE),
+						.usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN	// CPUから書き込み用に頻繁にロックする
+							| AHARDWAREBUFFER_USAGE_CPU_READ_NEVER		// CPUから読み込み用にはロックしない
+							| AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE,	// GPUからテクスチャとして読み込む
+						.stride = static_cast<uint32_t>(mTexWidth * get_pixel_bytes(PIXEL_FORMAT_INTERNAL)),
+						.rfu0 = 0,
+						.rfu1 = 0,
 					};
-					AAHardwareBuffer_describe(graphicBuffer, &usage);
-					MARK("sz=(%dx%d),tex(%dx%d),usage=(%dx%d)",
-						mImageWidth, mImageHeight,
-						mTexWidth, mTexHeight,
-						usage.width, usage.height);
-					EGLClientBuffer clientBuf = dynamicEglGetNativeClientBufferANDROID(graphicBuffer);
-					if (!clientBuf) {
-						LOGW("failed to get EGLClientBuffer");
+					AAHardwareBuffer_allocate(&usage, &graphicBuffer);
+					if (graphicBuffer) {
+						static const EGLint eglImageAttributes[] = {
+							EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
+							EGL_NONE
+						};
+						AAHardwareBuffer_describe(graphicBuffer, &usage);
+						MARK("sz=(%dx%d),tex(%dx%d),usage=(%dx%d)",
+							mImageWidth, mImageHeight,
+							mTexWidth, mTexHeight,
+							usage.width, usage.height);
+						EGLClientBuffer clientBuf = dynamicEglGetNativeClientBufferANDROID(graphicBuffer);
+						if (!clientBuf) {
+							LOGW("failed to get EGLClientBuffer");
+						}
+						eglImage = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuf, eglImageAttributes);
+						if (eglImage) {
+							// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
+							glEGLImageTargetTexture2DOES(TEX_TARGET, eglImage);
+						} else {
+							LOGW("eglCreateImageKHR failed");
+							AAHardwareBuffer_release(graphicBuffer);
+							graphicBuffer = nullptr;
+						}
 					}
-					eglImage = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuf, eglImageAttributes);
-					if (eglImage) {
-						// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
-						glEGLImageTargetTexture2DOES(TEX_TARGET, eglImage);
-					} else {
-						LOGW("eglCreateImageKHR failed");
-						AAHardwareBuffer_release(graphicBuffer);
-						graphicBuffer = nullptr;
-					}
+				} else {
+					LOGW("eglGetCurrentDisplay() returned 'EGL_NO_DISPLAY', error = %x", eglGetError());
 				}
-			} else {
-				LOGW("eglGetCurrentDisplay() returned 'EGL_NO_DISPLAY', error = %x", eglGetError());
 			}
 		}
-#endif
-#if __ANDROID__
-		if (!graphicBuffer && !eglImage) {
+#else	// #if __ANDROID__
+#endif	// #if __ANDROID__
+		if (!eglImage) {
 			// ハードウエアバッファーを使わないとき
-#endif
 			MARK("allocate by glTexImage2D");
 			// テクスチャのメモリ領域を確保する
 			glTexImage2D(TEX_TARGET,
@@ -482,10 +501,8 @@ void GLTexture::init(
 				DATA_TYPE,				// データの型
 			  nullptr);			// ピクセルデータ
 			GLCHECK("glTexImage2D");
-#if __ANDROID__
 		}
-#endif
-	}
+	}	// if (is_own_tex)
     // テクスチャ変換行列を単位行列に初期化
 	setIdentityMatrix(mTexMatrix, 0);
 	// テクスチャ変換行列を設定
@@ -524,7 +541,8 @@ int GLTexture::assignTexture(const uint8_t *src) {
 		MARK("do nothing for wrapped hardware buffer");
 		RETURN(0, int);
 	}
-#endif
+#else	// #if __ANDROID__
+#endif	// #if __ANDROID__
     if (mPBO[0]) {
     	// PBOを使う時
 		const int write_ix = pbo_ix;
@@ -577,7 +595,10 @@ int GLTexture::assignTexture(const uint8_t *src) {
 			}
 		}
 		AAHardwareBuffer_unlock(graphicBuffer, nullptr);
-#endif
+#else	// #if __ANDROID__
+	// } else if (eglImage) {
+
+#endif	// #if __ANDROID__
 	} else {
 		// PBOを使わない時
 		glTexSubImage2D(TEX_TARGET,
