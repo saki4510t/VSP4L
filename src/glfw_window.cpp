@@ -187,6 +187,10 @@ int GlfwWindow::initialize() {
 	ENTER();
 
 	glfwSetErrorCallback(glfw_error_callback);
+    if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND)) {
+        LOGD("GLFW_PLATFORM_WAYLAND");
+        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
+    }
 	// GLFW の初期化
 	if (glfwInit() == GL_FALSE) {
 		// 初期化に失敗した処理
