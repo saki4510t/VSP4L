@@ -854,6 +854,10 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 
 			image_size = MAX(image_size, buf.length);
 		}
+		if (result || !image_size) {
+			LOGE("Failed to get image size");
+			goto err;
+		}
 		// page size alignment.
 		const auto offset = ceil3(image_size, sysconf(_SC_PAGE_SIZE));
 		LOGD("image_size=%d,offset=%d", image_size, offset);
