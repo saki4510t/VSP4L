@@ -140,6 +140,10 @@ private:
 	 */
 	int internal_stop();
 	/**
+	 * オープンしているudmabufやv4l2機器を閉じる
+	*/
+	int internal_close_locked();
+	/**
 	 * 映像ストリーム開始
 	 * ワーカースレッド上で呼ばれる
 	 * @return
@@ -177,14 +181,6 @@ private:
 	 * @param buf_nums
 	 */
 	int init_mmap_locked(const int &buf_nums);
-	/**
-	 * 画像データ読み込み用のメモリマップを初期化
-	 * ワーカースレッド上で呼ばれる
-	 * init_device_lockedの下請け
-	 * @param buf_nums 
-	 * @return int 
-	 */
-	int init_udmabuf_locked(const int &buf_nums);
 	/**
 	 * @brief 対応するピクセルフォーマット一覧を取得する
 	 *        v4l2_lockをロックした状態で呼び出すこと

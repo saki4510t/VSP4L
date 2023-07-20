@@ -56,7 +56,7 @@ namespace serenegiant::v4l2 {
  * V4L2_PIX_FMT_MJPEG, V4L2_PIX_FMT_UYVY
  * 実機だとV4L2_PIX_FMT_NV16が一番速そう(1フレームのサイズが小さいから？)
  */
-#define DEFAULT_PIX_FMT (V4L2_PIX_FMT_NV16)	// (V4L2_PIX_FMT_MJPEG)
+#define DEFAULT_PIX_FMT (0) // (V4L2_PIX_FMT_NV16)	// (V4L2_PIX_FMT_MJPEG)
 
 #if MEAS_TIME
 #define MEAS_TIME_INIT static nsecs_t _meas_time_ = 0;\
@@ -174,22 +174,6 @@ int V4l2SourceBase::close() {
 	v4l2_lock.lock();
 	{
 		supported.clear();
-		// udmabufを開いていれば閉じる
-		if (m_udmabuf_fd) {
-			result = ::close(m_udmabuf_fd);
-			if (UNLIKELY(result)) {
-				LOGE("failed to close m_udmabuf_fd, result=%d,errno=%d", result, errno);
-			}
-			m_udmabuf_fd = 0;
-		}
-		// v4l2機器をクローズ
-		if (m_fd) {
-			result = ::close(m_fd);
-			if (UNLIKELY(result)) {
-				LOGE("failed to close fd, result=%d,errno=%d", result, errno);
-			}
-			m_fd = 0;
-		}
 		m_state = STATE_CLOSE;
 	}
 	v4l2_lock.unlock();
@@ -348,6 +332,7 @@ int V4l2SourceBase::find_stream(
 			capture_format.fmt.pix.pixelformat, V4L2_PIX_FMT_to_string(capture_format.fmt.pix.pixelformat).c_str(),
 			capture_format.fmt.pix.field);
 
+		result = core::USB_ERROR_NOT_SUPPORTED;
 		int r = 0;
 		for (int i = 0 ; result && (r != -1); i++) {
 			struct v4l2_fmtdesc fmt {
@@ -361,7 +346,7 @@ int V4l2SourceBase::find_stream(
 					pxl_fmt, V4L2_PIX_FMT_to_string(pxl_fmt).c_str(),
 					fmt.description);
 				if (!_pixel_format || (_pixel_format == pxl_fmt)) {
-					// ピクセルフォーマットが一致したとき
+					// ピクセルフォーマット未指定かピクセルフォーマットが一致したとき
 					pixel_format = pxl_fmt;	// 最後に一致したピクセルフォーマットをセット
 					LOGD("found pixel format, try find video size");
 					result = find_frame_size(m_fd, pxl_fmt, width, height, min_fps, max_fps);
@@ -374,9 +359,11 @@ int V4l2SourceBase::find_stream(
 				}
 				if (!result) {
 					if (!request_pixel_format) {
+						LOGD("use 0x%08x/%s as request_pixel_format", pxl_fmt, V4L2_PIX_FMT_to_string(pxl_fmt).c_str());
 						request_pixel_format = pxl_fmt;
 					}
 					if (!stream_pixel_format) {
+						LOGD("use 0x%08x/%s as stream_pixel_format", pxl_fmt, V4L2_PIX_FMT_to_string(pxl_fmt).c_str());
 						stream_pixel_format = pxl_fmt;
 					}
 					LOGD("%i)0x%08x=%s(%s),sz(%dx%d)", fmt.index,
@@ -447,35 +434,45 @@ void V4l2SourceBase::v4l2_thread_func(const int &buf_nums) {
 		}
 	}
 	v4l2_lock.unlock();
-	if (UNLIKELY(result)) {
+
+	if (LIKELY(!result)) {
+		LOGD("映像取得ループ,is_running=%d,result=%d", is_running(), result);
+		for ( ; is_running() && !result; ) {
+			v4l2_lock.lock();
+			{
+				if (request_resize) {
+					request_resize = false;
+					// 解像度変更処理
+					result = handle_resize(request_width, request_height, request_pixel_format);
+				}
+			}
+			v4l2_lock.unlock();
+
+			if (UNLIKELY(result)) {
+				release_mmap_locked();
+				on_error();
+				break;
+			}
+
+			// 映像取得ループへ
+			if (!result && async) {
+				v4l2_loop();
+			}
+		}	// for ( ; is_running() && !result; )
+
+		MARK("映像取得ループ終了");
+	} else {
 		on_error();
 	}
-
-	LOGD("映像取得ループ,is_running=%d,result=%d", is_running(), result);
-	for ( ; is_running() && !result; ) {
-		v4l2_lock.lock();
-		{
-			if (request_resize) {
-				request_resize = false;
-				// 解像度変更処理
-				result = handle_resize(request_width, request_height, request_pixel_format);
-				// FIXME 解像度変更できなかったときは元に戻す？エラーコールバックする？
-			}
-		}
-		v4l2_lock.unlock();
-		// 映像取得ループへ
-		if (!result && async) {
-			v4l2_loop();
-		}
-	}	// for ( ; is_running() && !result; )
-
-	MARK("映像取得ループ終了");
 
 	// 終了処理
 	v4l2_lock.lock();
 	{
 		stop_stream_locked();
 		release_mmap_locked();
+		// start_stream_lockedが失敗するとVIDIOC_QUERYBUFが呼ばれたまま
+		// dequeueされないままになってしまうのでv4l2機器も含めてすべてcloseする
+		internal_close_locked();
 	}
 	v4l2_lock.unlock();
 
@@ -522,6 +519,33 @@ int V4l2SourceBase::internal_stop() {
 }
 
 /**
+ * オープンしているudmabufやv4l2機器を閉じる
+*/
+/*private*/
+int V4l2SourceBase::internal_close_locked() {
+	ENTER();
+
+	if (m_udmabuf_fd) {
+		// udmabufを開いていれば閉じる
+		const auto result = ::close(m_udmabuf_fd);
+		if (UNLIKELY(result)) {
+			LOGE("failed to close m_udmabuf_fd, result=%d,errno=%d", result, errno);
+		}
+		m_udmabuf_fd = 0;
+	}
+	if (m_fd) {
+		// v4l2機器を開いていれば閉じる
+		const auto result = ::close(m_fd);
+		if (UNLIKELY(result)) {
+			LOGE("failed to close fd, result=%d,errno=%d", result, errno);
+		}
+		m_fd = 0;
+	}
+
+	RETURN(core::USB_SUCCESS, int);
+}
+
+/**
  * 映像ストリーム開始
  */
 /*private*/
@@ -559,6 +583,7 @@ int V4l2SourceBase::start_stream_locked() {
 		if (xioctl(m_fd, VIDIOC_STREAMON, &type) == -1) {
 			result = -errno;
 			LOGE("VIDIOC_STREAMON: errno=%d", -result);
+			release_mmap_locked();
 			goto ret;
 		}
 		// success
