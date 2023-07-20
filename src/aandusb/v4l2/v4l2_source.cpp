@@ -824,7 +824,7 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 		}
 		// page size alignment.
 		const auto offset = ceil3(image_size, sysconf(_SC_PAGE_SIZE));
-		LOGD("image_size=%d,offset%d", image_size, offset);
+		LOGD("image_size=%d,offset=%d", image_size, offset);
 		for (int i = 0; i < req.count; i++) {
 			m_buffers[i].length = image_size;
 			m_buffers[i].start = mmap(nullptr /* start anywhere */, image_size,
