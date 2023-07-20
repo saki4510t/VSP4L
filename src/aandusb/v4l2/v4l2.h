@@ -178,6 +178,14 @@ int find_frame_size(int fd,
 	const uint32_t &width, const uint32_t &height,
 	const float &min_fps, const float &max_fps);
 
+/**
+ * 指定したピクセルフォーマットのフレームサイズ設定の数を取得する
+ * @param fd
+ * @param pixel_format
+ * @return VIDIOC_ENUM_FRAMESIZES呼び出しが成功した回数
+*/
+int get_frame_size_nums(int fd, const uint32_t &pixel_format);
+
 } // namespace serenegiant::v4l2
 
 #endif // AANDUSB_V4L2_H

@@ -732,4 +732,30 @@ int find_frame_size(int fd,
 	RETURN(result, int);
 }
 
+/**
+ * 指定したピクセルフォーマットのフレームサイズ設定の数を取得する
+ * @param fd
+ * @param pixel_format
+ * @return VIDIOC_ENUM_FRAMESIZES呼び出しが成功した回数
+*/
+int get_frame_size_nums(int fd, const uint32_t &pixel_format) {
+	ENTER();
+
+	int result = 0;
+	int r = 0;
+
+	for (int i = 0; result && (r != -1); i++) {
+		struct v4l2_frmsizeenum fmt {
+			.pixel_format = pixel_format,
+		};
+		fmt.index = i;
+		r = xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &fmt);
+		if (r != -1) {
+			result++;
+		}
+	}
+
+	RETURN(result, int);
+}
+
 }   // namespace serenegiant::v4l2
