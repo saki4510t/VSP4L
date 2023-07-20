@@ -588,7 +588,10 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
         MARK("cnt=%d", cnt);
     }
 #endif
-	offscreen->draw(renderer.get());
+	auto r = renderer.get();
+	if (r && offscreen) {
+		offscreen->draw(renderer.get());
+	}
 
 	EXIT();
 }
