@@ -100,6 +100,12 @@ public:
 	 */
 	int stop();
 
+	/**
+	 * アプリの終了要求をする
+	 * エラー時などにEyeAppから呼び出す
+	*/
+	virtual void terminate() = 0;
+
 	explicit operator bool();
 	virtual bool is_valid() const = 0;
 	inline bool is_running() const { return running; };

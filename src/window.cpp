@@ -115,6 +115,7 @@ int Window::stop() {
 	RETURN(0, int);
 }
 
+
 /*public*/
 Window::operator bool() {
 	return poll_events();

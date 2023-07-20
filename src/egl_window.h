@@ -60,6 +60,12 @@ public:
 	virtual ~EglWindow();
 
 	bool is_valid() const override;
+
+	/**
+	 * アプリの終了要求をする
+	 * エラー時などにEyeAppから呼び出す
+	*/
+	void terminate() override;
 };
 
 }	// end of namespace serenegiant::app

@@ -57,6 +57,12 @@ public:
 	bool is_valid() const override;
 
 	inline GLFWwindow *get_window() { return window; };
+
+	/**
+	 * アプリの終了要求をする
+	 * エラー時などにEyeAppから呼び出す
+	*/
+	void terminate() override;
 };
 
 }	// end of namespace serenegiant::app

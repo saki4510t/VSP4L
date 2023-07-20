@@ -56,14 +56,29 @@ bool EglWindow::is_valid() const {
 	return display != nullptr;
 };
 
+/**
+ * アプリの終了要求をする
+ * エラー時などにEyeAppから呼び出す
+*/
 /*public*/
+void GlfwWindow::terminate() {
+    ENTER();
+
+	// FIXME 未実装
+
+    EXIT();
+}
+
+//--------------------------------------------------------------------------------
+/*protected*/
 void EglWindow::swap_buffers() {
 	// ENTER();
+
+	// FIXME 未実装
 
 	// EXIT();
 }
 
-//--------------------------------------------------------------------------------
 /*protected*/
 bool EglWindow::poll_events() {
 	// イベントを確認

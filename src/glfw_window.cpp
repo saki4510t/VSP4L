@@ -265,7 +265,23 @@ bool GlfwWindow::is_valid() const {
 	return window != nullptr;
 };
 
+/**
+ * アプリの終了要求をする
+ * エラー時などにEyeAppから呼び出す
+*/
 /*public*/
+void GlfwWindow::terminate() {
+    ENTER();
+
+    if (window) {
+        glfwSetWindowShouldClose(window, 1);
+    } 
+
+    EXIT();
+}
+
+//--------------------------------------------------------------------------------
+/*protected*/
 void GlfwWindow::swap_buffers() {
 	if (window) {
 		glfwMakeContextCurrent(window);
