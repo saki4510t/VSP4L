@@ -346,6 +346,9 @@ void EyeApp::on_resume() {
 			eglDestroyContext(display, m_shared_context);
 			m_shared_context = EGL_NO_CONTEXT;
 		}
+	})
+	.set_on_error([this]() {
+		window.terminate();
 	});
 #endif // #if BUFFURING
 	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {

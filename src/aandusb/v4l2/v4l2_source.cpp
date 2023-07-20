@@ -441,12 +441,15 @@ void V4l2SourceBase::v4l2_thread_func(const int &buf_nums) {
 	{
 		LOGD("初期解像度・ピクセルフォーマットをセット");
 		result = init_v4l2_locked(buf_nums, request_width, request_height, request_pixel_format);
-		if (!result) {
+		if (LIKELY(!result)) {
 			LOGD("映像ストリーム開始");
 			result = start_stream_locked();
 		}
 	}
 	v4l2_lock.unlock();
+	if (UNLIKELY(result)) {
+		on_error();
+	}
 
 	LOGD("映像取得ループ,is_running=%d,result=%d", is_running(), result);
 	for ( ; is_running() && !result; ) {
@@ -456,6 +459,7 @@ void V4l2SourceBase::v4l2_thread_func(const int &buf_nums) {
 				request_resize = false;
 				// 解像度変更処理
 				result = handle_resize(request_width, request_height, request_pixel_format);
+				// FIXME 解像度変更できなかったときは元に戻す？エラーコールバックする？
 			}
 		}
 		v4l2_lock.unlock();
@@ -544,8 +548,10 @@ int V4l2SourceBase::start_stream_locked() {
 			}
 			buf.index = i;
 			if (xioctl(m_fd, VIDIOC_QBUF, &buf) == -1) {
+				// キューに入れれなかったとき
 				result = -errno;
 				LOGE("VIDIOC_QBUF: errno=%d", -errno);
+				release_mmap_locked();
 				goto ret;
 			}
 		}
@@ -2099,6 +2105,20 @@ void V4l2Source::on_stop() {
 
 	if (on_stop_callback) {
 		on_stop_callback();
+	}
+
+	EXIT();
+}
+
+/**
+ * 映像でエラーが発生したときの処理, 映像取得スレッド上で実行される
+ */
+/*protected*/
+void V4l2Source::on_error() {
+	ENTER();
+
+	if (on_error_callback) {
+		on_error_callback();
 	}
 
 	EXIT();

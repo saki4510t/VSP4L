@@ -218,6 +218,11 @@ protected:
 	 */
 	virtual void on_stop() = 0; 
 	/**
+	 * @brief 映像取得でエラーが発生したときの処理, 純粋仮想関数
+	 * ワーカースレッド上で呼ばれる
+	 */
+	virtual void on_error() = 0; 
+	/**
 	 * @brief 新しい映像を受け取ったときの処理, 純粋仮想関数
 	 *        ワーカースレッド上で呼ばれる
 	 *
@@ -914,6 +919,7 @@ class V4l2Source : virtual public V4l2SourceBase {
 private:
 	LifeCycletEventFunc on_start_callback;
 	LifeCycletEventFunc on_stop_callback;
+	LifeCycletEventFunc on_error_callback;
 	OnFrameReadyFunc on_frame_ready_callbac;
 protected:
 	/**
@@ -926,6 +932,11 @@ protected:
 	 * ワーカースレッド上で呼ばれる
 	 */
 	virtual void on_stop() override; 
+	/**
+	 * @brief 映像取得でエラーが発生したときの処理, 純粋仮想関数
+	 * ワーカースレッド上で呼ばれる
+	 */
+	virtual void on_error() override; 
 	/**
 	 * @brief 新しい映像を受け取ったときの処理, V4l2SourceBaseの純粋仮想関数を実装
 	 *        ワーカースレッド上で呼ばれる
@@ -968,6 +979,10 @@ public:
 	}
 	inline V4l2Source &set_on_stop(LifeCycletEventFunc callback) {
 		on_stop_callback = callback;
+		return *this;
+	}
+	inline V4l2Source &set_on_error(LifeCycletEventFunc callback) {
+		on_error_callback = callback;
 		return *this;
 	}
 	/**
