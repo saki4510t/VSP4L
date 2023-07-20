@@ -352,8 +352,9 @@ int V4l2SourceBase::find_stream(
 					result = find_frame_size(m_fd, pxl_fmt, width, height, min_fps, max_fps);
 					// XXX VIDIOC_ENUM_FRAMESIZESが常にエラーを返してfind_frame_sizeで判断できないV4L2機器があるので
 					//     デフォルトのキャプチャーフォーマットと一致すればOKとする
-					if (result && (capture_format.fmt.pix.pixelformat == pxl_fmt)
-						&& (capture_format.fmt.pix.width == width) && (capture_format.fmt.pix.height == height)) {
+					if (result
+						&& (capture_format.fmt.pix.width == width) && (capture_format.fmt.pix.height == height)
+						&& ((capture_format.fmt.pix.pixelformat == pxl_fmt) || !get_frame_size_nums(m_fd, pxl_fmt))) {
 						result = 0;
 					}
 				}
