@@ -174,6 +174,14 @@ int V4l2SourceBase::close() {
 	v4l2_lock.lock();
 	{
 		supported.clear();
+		// udmabufを開いていれば閉じる
+		if (m_udmabuf_fd) {
+			result = ::close(m_udmabuf_fd);
+			if (UNLIKELY(result)) {
+				LOGE("failed to close m_udmabuf_fd, result=%d,errno=%d", result, errno);
+			}
+			m_udmabuf_fd = 0;
+		}
 		// v4l2機器をクローズ
 		if (m_fd) {
 			result = ::close(m_fd);
