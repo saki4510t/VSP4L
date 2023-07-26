@@ -444,6 +444,14 @@ void EyeApp::on_resume() {
 	}
 	LOGV("supported=%s", source->get_supported_size().c_str());
 	source->resize(width, height);
+	if (source->is_ctrl_supported(V4L2_CID_FRAMERATE)) {
+		LOGD("set frame rate to 30");
+		source->set_ctrl_value(V4L2_CID_FRAMERATE, 30);
+	}
+	if (source->is_ctrl_supported(V4L2_CID_DENOISE)) {
+		LOGD("set denose to 1");
+		source->set_ctrl_value(V4L2_CID_DENOISE, 1);	// FIXME 設定で変更できるようにする
+	}
 	const auto buf_nums = to_int(options[OPT_BUF_NUMS], to_int(OPT_BUF_NUMS_DEFAULT, 4));
 	if (source->start(buf_nums)) {
 		LOGE("カメラを開始できなかった");
