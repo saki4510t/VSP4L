@@ -1,4 +1,4 @@
-#if 1    // set 0 if you need debug log, otherwise set 1
+#if 0    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
 	#endif
@@ -310,7 +310,11 @@ void EyeApp::on_resume() {
 			std::istream_iterator<std::string> {eglext_stream},
 			std::istream_iterator<std::string>{}
 		};
-
+#if !defined(LOG_NDEBUG)
+		for (auto itr = extensions.begin(); itr != extensions.end(); itr++) {
+			LOGD("extension=%s", (*itr).c_str());
+		}
+#endif
 		if (extensions.find("EGL_KHR_surfaceless_context") == extensions.end()) {
 			// GLコンテキストを保持するためにサーフェースが必要な場合は1x1のオフスクリーンサーフェースを生成
 			const EGLint surface_attrib_list[] = {
