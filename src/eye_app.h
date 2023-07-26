@@ -69,6 +69,12 @@ private:
 	EGLDisplay m_egl_display;
 	EGLContext m_shared_context;
 	EGLSurface m_egl_surface;
+	EGLSyncKHR m_sync;
+	PFNEGLCREATESYNCKHRPROC dynamicEglCreateSyncKHR;
+	PFNEGLDESTROYSYNCKHRPROC dynamicEglDestroySyncKHR;
+	PFNEGLSIGNALSYNCKHRPROC dynamicEglSignalSyncKHR;
+	PFNEGLWAITSYNCKHRPROC dynamicEglWaitSyncKHR;
+
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;
 #if BUFFURING

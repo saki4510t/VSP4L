@@ -103,6 +103,9 @@ EyeApp::EyeApp(
 	source(nullptr),
 	m_egl_display(EGL_NO_DISPLAY),
 	m_shared_context(EGL_NO_CONTEXT), m_egl_surface(EGL_NO_SURFACE),
+	m_sync(EGL_NO_SYNC_KHR),
+	dynamicEglCreateSyncKHR(nullptr), dynamicEglDestroySyncKHR(nullptr),
+	dynamicEglSignalSyncKHR(nullptr), dynamicEglWaitSyncKHR(nullptr),
 	video_renderer(nullptr),
 	offscreen(nullptr), gl_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
@@ -319,6 +322,29 @@ void EyeApp::on_resume() {
 			EGLCHECK("eglCreatePbufferSurface");
 		}
 		eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
+		dynamicEglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC)eglGetProcAddress("eglCreateSyncKHR");
+		if (!dynamicEglCreateSyncKHR) {
+			LOGW("eglCreateSyncKHR is not available!");
+		}
+		dynamicEglDestroySyncKHR = (PFNEGLDESTROYSYNCKHRPROC) eglGetProcAddress("eglDestroySyncKHR");
+		if (!dynamicEglDestroySyncKHR) {
+			LOGW("eglDestroySyncKHR is not available!");
+		}
+		dynamicEglSignalSyncKHR = (PFNEGLSIGNALSYNCKHRPROC)eglGetProcAddress("eglSignalSyncKHR");
+		if (!dynamicEglSignalSyncKHR) {
+			LOGW("eglSignalSyncKHR is not available!");
+		}
+		dynamicEglWaitSyncKHR = (PFNEGLWAITSYNCKHRPROC)eglGetProcAddress("eglWaitSyncKHR");
+		if (!dynamicEglWaitSyncKHR) {
+			LOGW("eglWaitSyncKHR is not available!");
+		}
+		if (dynamicEglCreateSyncKHR && dynamicEglDestroySyncKHR
+			&& dynamicEglSignalSyncKHR && dynamicEglWaitSyncKHR) {
+
+			LOGD("create sync");
+			m_sync = dynamicEglCreateSyncKHR(m_egl_display, EGL_SYNC_TYPE_KHR, nullptr);
+		}
+
 		video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
 		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
 		const auto versionStr = (const char*)glGetString(GL_VERSION);
@@ -336,6 +362,11 @@ void EyeApp::on_resume() {
 		if (m_shared_context != EGL_NO_CONTEXT) {
 			// 共有EGL/GLESコンテキストを破棄
 			auto display = glfwGetEGLDisplay();
+			if (m_sync != EGL_NO_SYNC_KHR) {
+				LOGD("release sync");
+				dynamicEglDestroySyncKHR(display, m_sync);
+			}
+			m_sync = EGL_NO_SYNC_KHR;
 			eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_shared_context);
 			if (m_egl_surface) {
 				LOGD("release surface");
@@ -361,7 +392,12 @@ void EyeApp::on_resume() {
 		memcpy(buffer.frame(), image, bytes);
 #else
 #if !HANDLE_FRAME
-		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+		if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
+			dynamicEglWaitSyncKHR(m_egl_display, m_sync, 0);
+			dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_UNSIGNALED_KHR);
+		} else {
+			glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+		}
 		if (m_egl_surface) {
 			eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
 			glClearColor(0, 0, 0, 1);
@@ -388,6 +424,9 @@ void EyeApp::on_resume() {
 				int err = eglGetError();
 				LOGW("eglSwapBuffers:err=%d", err);
 			}
+		}
+		if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
+			dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_SIGNALED_KHR);
 		}
 #endif // #if !HANDLE_FRAME
 #endif // #if BUFFURING
@@ -472,7 +511,12 @@ void EyeApp::on_render() {
 	// V4L2から映像取得を試みる
 	source->handle_frame(10000L);
 #else
-	glFlush();	// XXX これを入れておかないとV4L2スレッドと干渉して激重になる
+	if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
+		dynamicEglWaitSyncKHR(m_egl_display, m_sync, 0);
+		dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_UNSIGNALED_KHR);
+	} else {
+		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+	}
 #endif
 	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
@@ -494,6 +538,10 @@ void EyeApp::on_render() {
 	// GUI(2D)描画処理を実行
 	handle_draw_gui();
 	reset_watchdog();
+
+	if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
+		dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_SIGNALED_KHR);
+	}
 
 	MEAS_TIME_STOP
 
