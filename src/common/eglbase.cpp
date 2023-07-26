@@ -190,6 +190,9 @@ EGLint getConfig(
  * @param config 
  * @param client_version 
  * @param shared_context
+ * @param with_depth_buffer デフォルトはfalse
+ * @param with_stencil_buffer デフォルトはfalse
+ * @param isRecordable デフォルトはfalse
  * @return EGLContext 
  */
 /*public,global*/

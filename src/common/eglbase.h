@@ -66,6 +66,9 @@ EGLint getConfig(
  * @param config 
  * @param client_version 
  * @param shared_context デフォルトはEGL_NO_CONTEXT
+ * @param with_depth_buffer デフォルトはfalse
+ * @param with_stencil_buffer デフォルトはfalse
+ * @param isRecordable デフォルトはfalse
  * @return EGLContext 
  */
 EGLContext createEGLContext(
