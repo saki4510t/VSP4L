@@ -418,15 +418,15 @@ void EyeApp::on_resume() {
 		}
 
 #if !HANDLE_FRAME
+		if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
+			dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_SIGNALED_KHR);
+		}
 		if (m_egl_surface) {
 			const auto ret = eglSwapBuffers(m_egl_display, m_egl_surface);
 			if (UNLIKELY(!ret)) {
 				int err = eglGetError();
 				LOGW("eglSwapBuffers:err=%d", err);
 			}
-		}
-		if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
-			dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_SIGNALED_KHR);
 		}
 #endif // #if !HANDLE_FRAME
 #endif // #if BUFFURING
@@ -510,13 +510,6 @@ void EyeApp::on_render() {
 #if HANDLE_FRAME
 	// V4L2から映像取得を試みる
 	source->handle_frame(10000L);
-#else
-	if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
-		dynamicEglWaitSyncKHR(m_egl_display, m_sync, 0);
-		dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_UNSIGNALED_KHR);
-	} else {
-		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
-	}
 #endif
 	// 描画用の設定更新を適用
 	prepare_draw(offscreen, gl_renderer);
@@ -533,6 +526,14 @@ void EyeApp::on_render() {
 	// 縮小時に古い画面が見えてしまうのを防ぐために塗りつぶす
 	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
+#if !HANDLE_FRAME
+	if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
+		dynamicEglWaitSyncKHR(m_egl_display, m_sync, 0);
+		dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_UNSIGNALED_KHR);
+	} else {
+		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+	}
+#endif
 	// 画面へ転送
 	handle_draw(offscreen, gl_renderer);
 	// GUI(2D)描画処理を実行
