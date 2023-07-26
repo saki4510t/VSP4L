@@ -42,6 +42,7 @@ namespace serenegiant::egl {
  * @param func
  * @param op 実行した関数名
  */
+/*public,global*/
 void checkEglError(
 	const char *filename, const int &line, const char *func,
 	const char *op) {
@@ -69,6 +70,7 @@ void checkEglError(
  * @param isRecordable
  * @return 正常に選択できれば0, それ以外ならエラー
  */
+/*public,global*/
 EGLint getConfig(
 	EGLDisplay &display, EGLConfig &config,
 	const int &client_version,
@@ -190,6 +192,7 @@ EGLint getConfig(
  * @param shared_context
  * @return EGLContext 
  */
+/*public,global*/
 EGLContext createEGLContext(
 	EGLDisplay &display, EGLConfig &config,
 	int &client_version,
