@@ -11,6 +11,11 @@
 
 #include <getopt.h>
 
+// ノイズ低減コントロール
+#define V4L2_CID_DENOISE	(0x00980922)
+// フレームレートコントロール
+#define V4L2_CID_FRAMERATE	(0x00980923)
+
 // コマンドラインオプション
 #define OPT_DEBUG "debug"
 #define OPT_DEVICE "device"
