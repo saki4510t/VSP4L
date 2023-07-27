@@ -245,17 +245,21 @@ EGLContext createEGLContext(
 /**
  * コンストラクタ
  * @param client_version 2: OpenGL|ES2, 3:OpenGLES|3
+ * @param display EGLディスプレー,
+ *        nullptrなら内部でeglGetDisplay(EGL_DEFAULT_DISPLAY)を使って
+ *        デフォルトのディスプレーを使う
  * @param shared_context 共有コンテキスト, Nullable
  * @param with_depth_buffer デプスバッファを使用するかどうか
- * @param isRecordable RECORDABLEフラグを付けて初期化するかどうか
+ * @param with_stencil_buffer ステンシルバッファを使用するかどうか
+ * @param isRecordable RECORDABLEフラグを漬けて初期化するかどうか
  */
-/*public*/
-EGLBase::EGLBase(const int & client_version,
-	EGLBase *shared_context,
+EGLBase::EGLBase(int & client_version,
+	EGLDisplay display,
+	EGLContext shared_context,
 	const bool &with_depth_buffer,
 	const bool &with_stencil_buffer,
 	const bool &isRecordable)
-:	mEglDisplay(EGL_NO_DISPLAY),
+:	mEglDisplay(display),
 	mEglContext(EGL_NO_CONTEXT),
 	mEglSurface(EGL_NO_SURFACE),
  	mEglConfig(nullptr),
@@ -274,8 +278,9 @@ EGLBase::EGLBase(const int & client_version,
 	ENTER();
 
 	initEGLContext(client_version,
-		shared_context ? shared_context->mEglContext : EGL_NO_CONTEXT,
+		shared_context ? shared_context : EGL_NO_CONTEXT,
 		with_depth_buffer, with_stencil_buffer, isRecordable);
+	client_version = this->client_version;
 
 	LOGD("try to get eglPresentationTimeANDROID");
 	dynamicEglPresentationTimeANDROID
@@ -333,13 +338,22 @@ EGLBase::EGLBase(const int & client_version,
  * コンストラクタ
  * @param client_version 2: OpenGL|ES2, 3:OpenGLES|3
  * @param shared_context 共有コンテキスト, Nullable
+ * @param with_depth_buffer デプスバッファを使用するかどうか
+ * @param with_stencil_buffer ステンシルバッファを使用するかどうか
+ * @param isRecordable RECORDABLEフラグを付けて初期化するかどうか
  */
 /*public*/
-EGLBase::EGLBase(const int &client_version, EGLBase *shared_context)
-:	EGLBase(client_version, shared_context,
-	shared_context && shared_context->mWithDepthBuffer,
-	shared_context && shared_context->mWithStencilBuffer,
-	shared_context && shared_context->mIsRecordable) {
+EGLBase::EGLBase(int &client_version,
+	EGLBase *shared_context,
+	const bool &with_depth_buffer,
+	const bool &with_stencil_buffer,
+	const bool &isRecordable)
+:	EGLBase(client_version,
+		shared_context ? shared_context->display() : EGL_NO_DISPLAY,
+		shared_context ? shared_context->context() : EGL_NO_CONTEXT,
+		shared_context && shared_context->mWithDepthBuffer,
+		shared_context && shared_context->mWithStencilBuffer,
+		shared_context && shared_context->mIsRecordable) {
 }
 
 /**
@@ -376,21 +390,23 @@ int EGLBase::initEGLContext(const int &version,
 
 	EGLint ret;
 	EGLint err;
-	// EGLディスプレイコネクションを取得
-	mEglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-	if (UNLIKELY(mEglDisplay == EGL_NO_DISPLAY)) {
-		err = eglGetError();
-		LOGW("failed to eglGetDisplay:err=%d", err);
-		RETURN(-err, int);
+
+	if (!mEglDisplay || (mEglDisplay == EGL_NO_DISPLAY)) {
+		// EGLディスプレイコネクションを取得
+		mEglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+		if (UNLIKELY(mEglDisplay == EGL_NO_DISPLAY)) {
+			err = eglGetError();
+			LOGW("failed to eglGetDisplay:err=%d", err);
+			RETURN(-err, int);
+		}
+		// EGLディスプレイコネクションを初期化
+		ret = eglInitialize(mEglDisplay, &mMajor, &mMinor);
+		if (UNLIKELY(!ret)) {
+			err = eglGetError();
+			LOGW("failed to eglInitialize,err=%d", err);
+			RETURN(-err, int);
+		}
 	}
-	// EGLディスプレイコネクションを初期化
-	ret = eglInitialize(mEglDisplay, &mMajor, &mMinor);
-	if (UNLIKELY(!ret)) {
-		err = eglGetError();
-		LOGW("failed to eglInitialize,err=%d", err);
-		RETURN(-err, int);
-	}
-	MARK("EGL ver.%d.%d", mMajor, mMinor);
 
 	int client_version = version;
 	mEglContext = createEGLContext(
@@ -404,10 +420,14 @@ int EGLBase::initEGLContext(const int &version,
 		LOGW("failed to getConfig,err=%d", err);
 		RETURN(-err, int);
 	}
+
 	this->client_version = client_version;
 	EGLint value;
 	eglQueryContext(mEglDisplay, mEglContext, EGL_CONTEXT_CLIENT_VERSION, &value);
 	MARK("EGLContext created, client version %d", value);
+	eglQueryContext(mEglDisplay, mEglContext, EGL_CONTEXT_MAJOR_VERSION, &mMajor);
+	eglQueryContext(mEglDisplay, mEglContext, EGL_CONTEXT_MINOR_VERSION, &mMinor);
+	MARK("EGL ver.%d.%d", mMajor, mMinor);
 
 	// 対応しているEGL拡張を解析
 	std::istringstream eglext_stream(eglQueryString(mEglDisplay, EGL_EXTENSIONS));

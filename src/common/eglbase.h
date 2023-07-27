@@ -91,22 +91,35 @@ public:
 	/**
 	 * コンストラクタ
 	 * @param client_version 2: OpenGL|ES2, 3:OpenGLES|3
+	 * @param display EGLディスプレー,
+	 *        nullptrなら内部でeglGetDisplay(EGL_DEFAULT_DISPLAY)を使って
+	 *        デフォルトのディスプレーを使う
 	 * @param shared_context 共有コンテキスト, Nullable
 	 * @param with_depth_buffer デプスバッファを使用するかどうか
 	 * @param with_stencil_buffer ステンシルバッファを使用するかどうか
 	 * @param isRecordable RECORDABLEフラグを漬けて初期化するかどうか
 	 */
-	EGLBase(const int & client_version,
-		EGLBase *shared_context,
-		const bool &with_depth_buffer,
-		const bool &with_stencil_buffer,
-		const bool &isRecordable);
+	EGLBase(int &client_version,
+		EGLDisplay display,
+		EGLContext shared_context = nullptr,
+		const bool &with_depth_buffer = false,
+		const bool &with_stencil_buffer = false,
+		const bool &isRecordable = false);
+
 	/**
 	 * コンストラクタ
 	 * @param client_version 2: OpenGL|ES2, 3:OpenGLES|3
 	 * @param shared_context 共有コンテキスト, Nullable
+	 * @param with_depth_buffer デプスバッファを使用するかどうか
+	 * @param with_stencil_buffer ステンシルバッファを使用するかどうか
+	 * @param isRecordable RECORDABLEフラグを漬けて初期化するかどうか
 	 */
-	EGLBase(const int &client_version, EGLBase *shared_context = nullptr);
+	EGLBase(int &client_version,
+		EGLBase *shared_context = nullptr,
+		const bool &with_depth_buffer = false,
+		const bool &with_stencil_buffer = false,
+		const bool &isRecordable = false);
+
 	/**
 	 * デストラクタ
 	 */
