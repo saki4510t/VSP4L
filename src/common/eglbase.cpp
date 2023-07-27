@@ -394,6 +394,7 @@ int EGLBase::initEGLContext(const int &version,
 	EGLint err;
 
 	if (!mEglDisplay || (mEglDisplay == EGL_NO_DISPLAY)) {
+		LOGD("get default egl display");
 		// EGLディスプレイコネクションを取得
 		mEglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 		if (UNLIKELY(mEglDisplay == EGL_NO_DISPLAY)) {
@@ -437,6 +438,12 @@ int EGLBase::initEGLContext(const int &version,
 		std::istream_iterator<std::string> {eglext_stream},
 		std::istream_iterator<std::string>{}
 	};
+
+ #if !defined(LOG_NDEBUG)
+	for (auto itr = mEGLExtensions.begin(); itr != mEGLExtensions.end(); itr++) {
+		LOGD("extension=%s", (*itr).c_str());
+	}
+#endif
 
 	// GLコンテキストを保持するためにサーフェースが必要な場合は1x1のオフスクリーンサーフェースを生成
 	if (!hasEglExtension("EGL_KHR_surfaceless_context")) {
@@ -957,10 +964,15 @@ EglSync::EglSync(const EGLBase *egl, int fence_fd)
 			}
 		} else {
 			m_sync = egl->dynamicEglCreateSyncKHR(egl->display(), EGL_SYNC_TYPE_KHR, nullptr);
+			if (m_sync == EGL_NO_SYNC_KHR) {
+				const auto err = eglGetError();
+				LOGW("Failed to eglCreateSyncKHR:err=0x%08x", err);
+			}
 		}
 	} else {
 		LOGE("EGLSyncKHR not supported!!");
 	}
+	LOGD("msync=%p,is_valid=%d, can_signal=%d", m_sync, is_valid(), can_signal());
 
 	EXIT();
 }
