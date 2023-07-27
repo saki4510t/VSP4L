@@ -362,8 +362,8 @@ GLTexture::~GLTexture() {
  * @param width テクスチャに割り当てる映像の幅
  * @param height テクスチャに割り当てる映像の高さ
  * @param use_pbo pboを使ってテクスチャの読み書きを行うかどうか
- * @param try_hw_buf 可能であればhardware bufferを使う,use_pbo=trueなら無効
  * @param use_powered2 true: テクスチャを2の乗数サイズにする
+ * @param try_hw_buf 可能であればhardware bufferを使う,use_pbo=trueなら無効
  */
 /*protected*/
 void GLTexture::init(
