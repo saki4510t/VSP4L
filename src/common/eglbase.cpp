@@ -967,7 +967,7 @@ EglSync::EglSync(const EGLBase *egl, int fence_fd)
 				close(fence_fd);
 			}
 		} else {
-			m_sync = egl->dynamicEglCreateSyncKHR(egl->display(), EGL_SYNC_TYPE_KHR, nullptr);
+			m_sync = egl->dynamicEglCreateSyncKHR(egl->display(), EGL_SYNC_FENCE_KHR, nullptr);	// XXX EGL_SYNC_TYPE_KHRだとだめみたい
 			if (m_sync == EGL_NO_SYNC_KHR) {
 				const auto err = eglGetError();
 				LOGW("Failed to eglCreateSyncKHR:err=0x%08x", err);
