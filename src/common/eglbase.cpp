@@ -241,6 +241,49 @@ EGLContext createEGLContext(
 	RET(context);
 }
 
+/**
+ * udmabufをラップするEGLImageKHRを生成する
+ * @param display
+ * @param udmabuf_fd
+ * @param fourcc
+ * @param width
+ * @param height
+ * @param offset
+ * @param stride
+ * @return EGLImageKHR
+*/
+EGLImageKHR createEGLImage(
+	EGLDisplay &display,
+	int udmabuf_fd,
+	const EGLint &fourcc,
+	const EGLint &width, const EGLint &height,
+	const EGLint &offset, const EGLint &stride) {
+
+	ENTER();
+
+	EGLImageKHR image = EGL_NO_IMAGE_KHR;
+	PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHRFunc
+		=  (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+	if (eglCreateImageKHRFunc) {
+		const EGLint attribute_list[] = {
+			EGL_WIDTH, width,
+			EGL_HEIGHT, height,
+			EGL_LINUX_DRM_FOURCC_EXT, fourcc,
+			EGL_DMA_BUF_PLANE0_FD_EXT, udmabuf_fd,
+			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
+			EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
+			EGL_NONE
+		};
+		image = eglCreateImageKHRFunc(display,
+			nullptr, EGL_LINUX_DMA_BUF_EXT,
+			(EGLClientBuffer)nullptr, attribute_list);
+	} else {
+		LOGW("eglCreateImageKHR is not available!");
+	}
+
+	RET(image);
+}
+
 //--------------------------------------------------------------------------------
 /**
  * コンストラクタ
@@ -438,7 +481,7 @@ int EGLBase::initEGLContext(const int &version,
 		std::istream_iterator<std::string> {eglext_stream},
 		std::istream_iterator<std::string>{}
 	};
- #if !defined(LOG_NDEBUG)
+#if !defined(LOG_NDEBUG)
 	for (auto itr = mEGLExtensions.begin(); itr != mEGLExtensions.end(); itr++) {
 		LOGD("egl extension=%s", (*itr).c_str());
 	}
@@ -467,7 +510,7 @@ int EGLBase::initEGLContext(const int &version,
 		LOGD("gl extension=%s", (*itr).c_str());
 	}
 #endif
-	
+
     RETURN(0, int);
 }
 

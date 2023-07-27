@@ -79,6 +79,24 @@ EGLContext createEGLContext(
 	const bool &with_stencil_buffer = false,
 	const bool &isRecordable = false);
 
+/**
+ * udmabufをラップするEGLImageKHRを生成する
+ * @param display
+ * @param udmabuf_fd
+ * @param fourcc
+ * @param width
+ * @param height
+ * @param offset
+ * @param stride
+ * @return EGLImageKHR
+*/
+EGLImageKHR createEGLImage(
+	EGLDisplay &display,
+	int udmabuf_fd,
+	const EGLint &fourcc,
+	const EGLint &width, const EGLint &height,
+	const EGLint &offset, const EGLint &stride);
+
 //--------------------------------------------------------------------------------
 /**
  * EGLを使ってカレントスレッドにEGL/GLコンテキストを生成するクラス
