@@ -50,7 +50,7 @@ private:
 	std::unordered_map<std::string, std::string> options;
 	const int gl_version;
 	const bool initialized;
-	const bool debug;
+	const bool show_debug;
 	const uint32_t width;
 	const uint32_t height;
 	std::string resources;

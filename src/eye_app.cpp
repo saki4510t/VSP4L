@@ -99,7 +99,7 @@ EyeApp::EyeApp(
 :   options(std::move(_options)),
 	gl_version(gl_version),
 	initialized(!GlfwWindow::initialize()),
-	debug(options.find(OPT_DEBUG) != options.end()),
+	show_debug(options.find(OPT_DEBUG) != options.end()),
 	width(to_int(options[OPT_WIDTH], to_int(OPT_WIDTH_DEFAULT, 1920))),
 	height(to_int(options[OPT_HEIGHT], to_int(OPT_HEIGHT_DEFAULT, 1080))),
 	app_settings(), camera_settings(),
@@ -487,7 +487,7 @@ void EyeApp::on_render() {
 	// 画面へ転送
 	handle_draw(offscreen, gl_renderer);
 
-	if (debug || show_brightness || show_zoom || show_osd) {
+	if (show_debug || show_brightness || show_zoom || show_osd) {
 	// GUI(2D)描画処理を実行
 	handle_draw_gui();
 	}
@@ -609,7 +609,7 @@ void EyeApp::handle_draw_gui() {
 
 	// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す
 	// ウインドウサイズを指定するにはImGui::Beginの前にImGui::SetNextWindowSizeを呼び出す
-	if (debug) {
+	if (show_debug) {
 		ImGui::Begin("DEBUG");
 		const auto fps = ImGui::GetIO().Framerate;
 		ImGui::Text("%.3f ms/frame(%.1f FPS)", 1000.0f / fps, fps);
