@@ -14,6 +14,9 @@
 #define LOG_TAG "EyeApp"
 
 #define MEAS_TIME (0)				// 1フレーム当たりの描画時間を測定する時1
+// EGLSyncを使って同期するかどうか, 1: EGLSyncでの同期を試みる、0: glFlushを使う
+// 実機だとglFlushのほうが速いみたい
+#define USE_EGL_SYNC (0)
 
 #include <stdio.h>
 #include <string>
@@ -326,6 +329,7 @@ void EyeApp::on_resume() {
 		memcpy(buffer.frame(), image, bytes);
 #else
 #if !HANDLE_FRAME
+#if USE_EGL_SYNC
 		auto fence = std::make_unique<egl::EglSync>(m_egl.get());
 		if (LIKELY(fence)) {
 			fence->wait_sync();
@@ -333,10 +337,13 @@ void EyeApp::on_resume() {
 		} else {
 			glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 		}
+#else
+		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+#endif	// #if USE_EGL_SYNC
 		if (LIKELY(m_egl)) {
 			m_egl->makeDefault();
 		}
-#endif
+#endif	// #if !HANDLE_FRAME
 
 		if (LIKELY(frame_wrapper && offscreen && video_renderer)) {
 #if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)
@@ -458,6 +465,7 @@ void EyeApp::on_render() {
 	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
 #if !HANDLE_FRAME
+#if USE_EGL_SYNC
 	auto fence = std::make_unique<egl::EglSync>(m_egl.get());
 	if (LIKELY(fence)) {
 		fence->wait_sync();
@@ -465,7 +473,11 @@ void EyeApp::on_render() {
 	} else {
 		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 	}
-#endif
+#else
+		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
+#endif	// #if USE_EGL_SYNC
+#endif	// #if !HANDLE_FRAME
+
 	// 画面へ転送
 	handle_draw(offscreen, gl_renderer);
 	// GUI(2D)描画処理を実行
