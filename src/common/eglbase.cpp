@@ -649,7 +649,7 @@ int EGLBase::makeDefault() {
 
 	// EGLレンダリングコンテキストとEGLサーフェースをデタッチ
 	if (LIKELY(mEglDisplay != EGL_NO_DISPLAY)) {
-		MARK("eglMakeCurrent");
+		LOGD("eglMakeCurrent");
 		EGLBoolean ret = eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext);
 		EGLCHECK("eglMakeCurrent");
 		if (UNLIKELY(ret == EGL_FALSE)) {

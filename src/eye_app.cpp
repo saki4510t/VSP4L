@@ -298,7 +298,7 @@ void EyeApp::on_resume() {
 		m_egl = std::make_unique<egl::EGLBase>(client_version, display, context);
 		m_sync = std::make_unique<egl::EglSync>(m_egl.get());
 		if (UNLIKELY(!m_sync || !m_sync->can_signal())) {
-			LOGW("Unfortunately could't use EGLSyncKHR,is_valid=%d,can_signal=%d", m_sync->is_valid(), m_sync->can_signal());
+			LOGD("Unfortunately could't use EGLSyncKHR,is_valid=%d,can_signal=%d", m_sync->is_valid(), m_sync->can_signal());
 			m_sync.reset();
 		}
 
