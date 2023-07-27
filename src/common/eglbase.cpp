@@ -275,7 +275,7 @@ EGLImageKHR createEGLImage(
 			EGL_NONE
 		};
 		image = eglCreateImageKHRFunc(display,
-			nullptr, EGL_LINUX_DMA_BUF_EXT,
+			EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT,
 			(EGLClientBuffer)nullptr, attribute_list);
 	} else {
 		LOGW("eglCreateImageKHR is not available!");
