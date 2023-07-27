@@ -346,6 +346,7 @@ void EyeApp::on_resume() {
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
 #endif
 			if (!req_freeze) {
+				// FIXME PCだとバッファリングありよりカメラ映像の画角が狭い、ビューポートがおかしい？
 				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, width, height, source->get_frame_type());
 				offscreen->bind();
 				video_renderer->draw_frame(*frame_wrapper);
