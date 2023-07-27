@@ -243,6 +243,9 @@ GlfwWindow::GlfwWindow(const int width, const int height, const char *title)
 		glfwSetWindowUserPointer(window, this);
 		// ウインドウサイズが変更されたときのコールバックをセット
 		glfwSetWindowSizeCallback(window, resize);
+        // マウスカーソルが表示されないように設定
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 	}
 
 	EXIT();
