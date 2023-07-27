@@ -325,7 +325,7 @@ void EyeApp::on_resume() {
 	MEAS_TIME_START
 #if BUFFURING
 		std::lock_guard<std::mutex> lock(image_lock);
-		buffer.resize(VIDEO_WIDTH, VIDEO_HEIGHT, source->get_frame_type());
+		buffer.resize(width, height, source->get_frame_type());
 		memcpy(buffer.frame(), image, bytes);
 #else
 #if !HANDLE_FRAME
@@ -396,7 +396,7 @@ void EyeApp::on_resume() {
 	const auto versionStr = (const char*)glGetString(GL_VERSION);
 	LOGD("GL_VERSION=%s", versionStr);
 	// オフスクリーンを生成
-	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, VIDEO_WIDTH, VIDEO_HEIGHT, false);
+	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, width, height, false);
 #endif
 	req_change_matrix = true;
 
