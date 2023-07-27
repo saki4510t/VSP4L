@@ -16,7 +16,6 @@
 #include <vector>
 
 // common
-#include "glutils.h"
 #include "mutex.h"
 #include "condition.h"
 // v4l2
