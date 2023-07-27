@@ -97,6 +97,7 @@ private:
 	PFNEGLCREATEIMAGEKHRPROC dynamicEglCreateImageKHR;
 	PFNEGLDESTROYIMAGEKHRPROC dynamicEglDestroyImageKHR;
 #endif
+	PFNGLEGLIMAGETARGETTEXTURE2DOESPROC dynamicGlEGLImageTargetTexture2DOES;
 	EGLImageKHR eglImage;
 protected:
 	/**
@@ -111,6 +112,10 @@ protected:
 		const bool &use_pbo,
 		const bool &use_powered2,
 		const bool &try_hw_buf);
+	void init(const GLint &width, const GLint &height,
+		const bool &use_pbo,
+		EGLImageKHR image);
+
 	/**
 	 * コンストラクタ
 	 * internal_formatまたはformatのデフォルトはGL_RGBA,

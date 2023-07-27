@@ -238,7 +238,6 @@ GLTexture::GLTexture(
 	mTexWidth(width), mTexHeight(height),
 	mImageWidth(width), mImageHeight(height),
 	image_size(width * height * get_pixel_bytes(internal_pixel_format)),
-	eglImage(nullptr),
 #if __ANDROID__
 	m_use_powered2(_use_powered2 && (a_hardware_buffer == nullptr)),
 	own_hardware_buffer(a_hardware_buffer == nullptr),
@@ -249,6 +248,8 @@ GLTexture::GLTexture(
 	dynamicEglDestroyImageKHR(nullptr),
 	m_use_powered2(_use_powered2),
 #endif
+	eglImage(nullptr),
+	dynamicGlEGLImageTargetTexture2DOES(nullptr),
 	pbo_ix(0),
 	pbo_sync(nullptr), pbo_need_write(false) {
 
@@ -271,8 +272,16 @@ GLTexture::GLTexture(
  		= (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
  	if (!dynamicEglDestroyImageKHR) {
 		LOGW("eglDestroyImageKHR not found!");
- 	}
+	}
 #endif
+	dynamicGlEGLImageTargetTexture2DOES
+		= (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
+ 	if (!dynamicGlEGLImageTargetTexture2DOES) {
+		LOGW("glEGLImageTargetTexture2DOES not found!");
+ 	} else {
+		LOGD("glEGLImageTargetTexture2DOES found, %p", dynamicGlEGLImageTargetTexture2DOES);
+	}
+
 	init(width, height, use_pbo, m_use_powered2, try_hw_buf);
 
 	EXIT();
@@ -398,8 +407,8 @@ void GLTexture::init(
 				this->m_use_powered2 = true;
 			}
 		}
-    }
-	bind();
+    }	// if (!mTexId)
+	EGLImageKHR image = EGL_NO_IMAGE_KHR;
 	if (is_own_tex) {
 		// FIXME Android以外の時もEGL Imageを使ったテクスチャ転送が可能なはず
 #if __ANDROID__
@@ -424,11 +433,8 @@ void GLTexture::init(
 				if (!clientBuf) {
 					LOGW("failed to get EGLClientBuffer");
 				}
-				eglImage = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuf, eglImageAttributes);
-				if (eglImage) {
-					// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
-					glEGLImageTargetTexture2DOES(TEX_TARGET, eglImage);
-				} else {
+				image = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuf, eglImageAttributes);
+				if (!image) {
 					LOGW("eglCreateImageKHR failed");
 					AAHardwareBuffer_release(graphicBuffer);
 					graphicBuffer = nullptr;
@@ -471,11 +477,8 @@ void GLTexture::init(
 						if (!clientBuf) {
 							LOGW("failed to get EGLClientBuffer");
 						}
-						eglImage = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuf, eglImageAttributes);
-						if (eglImage) {
-							// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
-							glEGLImageTargetTexture2DOES(TEX_TARGET, eglImage);
-						} else {
+						image = eglCreateImageKHR(display, EGL_NO_CONTEXT, EGL_NATIVE_BUFFER_ANDROID, clientBuf, eglImageAttributes);
+						if (!eglImage) {
 							LOGW("eglCreateImageKHR failed");
 							AAHardwareBuffer_release(graphicBuffer);
 							graphicBuffer = nullptr;
@@ -487,9 +490,11 @@ void GLTexture::init(
 			}
 		}
 #else	// #if __ANDROID__
+		if (dynamicGlEGLImageTargetTexture2DOES) {
+			// FIXME 未実装
+		}
 #endif	// #if __ANDROID__
 		if (!eglImage) {
-			// ハードウエアバッファーを使わないとき
 			MARK("allocate by glTexImage2D");
 			// テクスチャのメモリ領域を確保する
 			glTexImage2D(TEX_TARGET,
@@ -499,10 +504,32 @@ void GLTexture::init(
 				0,				// 境界幅
 				PIXEL_FORMAT,			// 引き渡すデータのフォーマット
 				DATA_TYPE,				// データの型
-			  nullptr);			// ピクセルデータ
+				nullptr);			// ピクセルデータ
 			GLCHECK("glTexImage2D");
 		}
 	}	// if (is_own_tex)
+	init(width, height, use_pbo, image);
+
+    EXIT();
+}
+
+void GLTexture::init(const GLint &width, const GLint &height,
+	const bool &use_pbo,
+	EGLImageKHR image) {
+
+	ENTER();
+
+	bind();
+	eglImage = image;
+	if (image && (image != EGL_NO_IMAGE_KHR)) {
+		// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
+		if (LIKELY(dynamicGlEGLImageTargetTexture2DOES)) {
+			dynamicGlEGLImageTargetTexture2DOES(TEX_TARGET, image);
+			GLCHECK("glEGLImageTargetTexture2DOES");
+		} else {
+			LOGW("Unexpectedly glEGLImageTargetTexture2DOES not found");
+		}
+	}
     // テクスチャ変換行列を単位行列に初期化
 	setIdentityMatrix(mTexMatrix, 0);
 	// テクスチャ変換行列を設定
@@ -522,7 +549,7 @@ void GLTexture::init(
 	MARK("tex(%d,%d),request(%d,%d)", mTexWidth, mTexHeight, width, height);
 //	printMatrix(mTexMatrix);
 
-    EXIT();
+	EXIT();
 }
 
 /**
