@@ -916,6 +916,7 @@ int V4l2SourceBase::init_mmap_locked_udmabuf(struct v4l2_requestbuffers &req) {
 			LOGE("mmap,err=%d", result);
 			break;
 		}
+		m_buffers[i].fd = m_udmabuf_fd;
 		// 物理メモリーを割り当てるためにゼロクリアする
 		// memsetではだめらしい
 		{
@@ -1101,11 +1102,7 @@ int V4l2SourceBase::handle_frame(const suseconds_t &max_wait_frame_us) {
 			if (result >= 0) {
 				// バッファを取得できた時
 				if (buf.index < m_buffersNums) {
-					const auto try_egl_image = m_udmabuf_fd && (eglGetCurrentContext() != EGL_NO_CONTEXT);
-					if (try_egl_image) {
-						// FIXME 未実装
-					}
-					result = on_frame_ready((const uint8_t *)m_buffers[buf.index].start, buf.bytesused);
+					result = on_frame_ready(m_buffers[buf.index], buf.bytesused);
 				}
 				// 読み込み終わったバッファをキューに追加
 				if (xioctl(m_fd, VIDIOC_QBUF, &buf) == -1) {
@@ -2213,11 +2210,11 @@ void V4l2Source::on_error() {
  * @brief 新しい映像を受け取ったときの処理, 純粋仮想関数
  *        ワーカースレッド上で呼ばれる
  *
- * @param iamge 映像データの入った共有メモリーへのポインター
+ * @param buf 共有メモリー情報
  * @param bytes 映像データのサイズ
  * @return int 負:エラー 0以上:読み込んだデータバイト数
  */
-int V4l2Source::on_frame_ready(const uint8_t *image, const size_t &bytes) {
+int V4l2Source::on_frame_ready(const buffer_t &buf, const size_t &bytes) {
 	ENTER();
 
     MEAS_TIME_INIT
@@ -2226,7 +2223,8 @@ int V4l2Source::on_frame_ready(const uint8_t *image, const size_t &bytes) {
 
 	int result = -1;
 	if (LIKELY(on_frame_ready_callbac)) {
-		result = on_frame_ready_callbac(image, bytes);
+		const auto image = (const uint8_t *)buf.start;
+		result = on_frame_ready_callbac(image, bytes, buf);
 	}
 
 	MEAS_TIME_STOP

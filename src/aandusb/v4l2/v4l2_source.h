@@ -239,11 +239,11 @@ protected:
 	 * @brief 新しい映像を受け取ったときの処理, 純粋仮想関数
 	 *        ワーカースレッド上で呼ばれる
 	 *
-	 * @param iamge 映像データの入った共有メモリーへのポインター
+	 * @param buf 共有メモリー情報
 	 * @param bytes 映像データのサイズ
 	 * @return int 負:エラー 0以上:読み込んだデータバイト数
 	 */
-	virtual int on_frame_ready(const uint8_t *image, const size_t &bytes) = 0;
+	virtual int on_frame_ready(const buffer_t &buf, const size_t &bytes) = 0;
 
 	/**
 	 * 映像データの処理
@@ -921,7 +921,7 @@ public:
 };
 
 //--------------------------------------------------------------------------------
-typedef std::function<int(const uint8_t *image, const size_t &bytes)> OnFrameReadyFunc;
+typedef std::function<int(const uint8_t *image, const size_t &bytes, const buffer_t &buffer)> OnFrameReadyFunc;
 typedef std::function<void()> LifeCycletEventFunc;
 
 /**
@@ -954,11 +954,11 @@ protected:
 	 * @brief 新しい映像を受け取ったときの処理, V4l2SourceBaseの純粋仮想関数を実装
 	 *        ワーカースレッド上で呼ばれる
 	 *
-	 * @param iamge 映像データの入った共有メモリーへのポインター
+	 * @param buf 共有メモリー情報
 	 * @param bytes 映像データのサイズ
 	 * @return int 負:エラー 0以上:読み込んだデータバイト数
 	 */
-	virtual int on_frame_ready(const uint8_t *image, const size_t &bytes) override;
+	virtual int on_frame_ready(const buffer_t &buf, const size_t &bytes) override;
 public:
 	/**
 	 * @brief コンストラクタ

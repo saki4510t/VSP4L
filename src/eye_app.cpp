@@ -321,7 +321,7 @@ void EyeApp::on_resume() {
 		window.terminate();
 	});
 #endif // #if BUFFURING
-	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes) {
+	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes, const v4l2::buffer_t &buf) {
     MEAS_TIME_INIT
 
 	MEAS_TIME_START
@@ -353,6 +353,10 @@ void EyeApp::on_resume() {
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
 #endif
 			if (!req_freeze) {
+				const auto try_egl_image = buf.fd != 0;
+				if (try_egl_image) {
+					// FIXME 未実装
+				}
 				// FIXME PCだとバッファリングありよりカメラ映像の画角が狭い、ビューポートがおかしい？
 				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, width, height, source->get_frame_type());
 				offscreen->bind();
