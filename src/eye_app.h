@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 // common
+#include "eglbase.h"
 #include "handler.h"
 #include "gloffscreen.h"
 #include "glrenderer.h"
@@ -66,14 +67,8 @@ private:
 	GlfwWindow window;
 	// V4L2からの映像取得用
 	v4l2::V4l2SourceUp source;
-	EGLDisplay m_egl_display;
-	EGLContext m_shared_context;
-	EGLSurface m_egl_surface;
-	EGLSyncKHR m_sync;
-	PFNEGLCREATESYNCKHRPROC dynamicEglCreateSyncKHR;
-	PFNEGLDESTROYSYNCKHRPROC dynamicEglDestroySyncKHR;
-	PFNEGLSIGNALSYNCKHRPROC dynamicEglSignalSyncKHR;
-	PFNEGLWAITSYNCKHRPROC dynamicEglWaitSyncKHR;
+	egl::EGLBaseUp m_egl;
+	egl::EglSyncSp m_sync;
 
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;

@@ -1,4 +1,4 @@
-#if 0    // set 0 if you need debug log, otherwise set 1
+#if 1    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
 	#endif
@@ -27,7 +27,6 @@
 #include "glutils.h"
 #include "image_helper.h"
 #include "times.h"
-#include "eglbase.h"
 // gl
 #include "gl/texture_vsh.h"
 #include "gl/rgba_fsh.h"
@@ -101,11 +100,7 @@ EyeApp::EyeApp(
 	app_settings(), camera_settings(),
 	window(width, height, "BOV EyeApp"),
 	source(nullptr),
-	m_egl_display(EGL_NO_DISPLAY),
-	m_shared_context(EGL_NO_CONTEXT), m_egl_surface(EGL_NO_SURFACE),
-	m_sync(EGL_NO_SYNC_KHR),
-	dynamicEglCreateSyncKHR(nullptr), dynamicEglDestroySyncKHR(nullptr),
-	dynamicEglSignalSyncKHR(nullptr), dynamicEglWaitSyncKHR(nullptr),
+	m_egl(nullptr), m_sync(nullptr),
 	video_renderer(nullptr),
 	offscreen(nullptr), gl_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
@@ -297,57 +292,12 @@ void EyeApp::on_resume() {
 	source->set_on_start([this]() {
 		// 共有EGL/GLESコンテキストを生成してこのスレッドに割り当てる
 		LOGD("create shared context");
-		m_egl_display = glfwGetEGLDisplay();
+		auto display = glfwGetEGLDisplay();
 		auto context = glfwGetEGLContext(window.get_window());
-		EGLConfig config;
 		int client_version = 3;
-		m_shared_context = egl::createEGLContext(m_egl_display, config, client_version, context);
-		LOGD("shared context gles%d", client_version);
+		m_egl = std::make_unique<egl::EGLBase>(client_version, display, context);
+		m_sync = std::make_unique<egl::EglSync>(m_egl.get());
 
-		// 対応しているEGL拡張を解析
-		std::istringstream eglext_stream(eglQueryString(m_egl_display, EGL_EXTENSIONS));
-		auto extensions = std::set<std::string> {
-			std::istream_iterator<std::string> {eglext_stream},
-			std::istream_iterator<std::string>{}
-		};
-#if !defined(LOG_NDEBUG)
-		for (auto itr = extensions.begin(); itr != extensions.end(); itr++) {
-			LOGD("extension=%s", (*itr).c_str());
-		}
-#endif
-		if (extensions.find("EGL_KHR_surfaceless_context") == extensions.end()) {
-			// GLコンテキストを保持するためにサーフェースが必要な場合は1x1のオフスクリーンサーフェースを生成
-			const EGLint surface_attrib_list[] = {
-				EGL_WIDTH, 1,
-				EGL_HEIGHT, 1,
-				EGL_NONE
-			};
-			m_egl_surface = eglCreatePbufferSurface(m_egl_display, config, surface_attrib_list);
-			EGLCHECK("eglCreatePbufferSurface");
-		}
-		eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
-		dynamicEglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC)eglGetProcAddress("eglCreateSyncKHR");
-		if (!dynamicEglCreateSyncKHR) {
-			LOGW("eglCreateSyncKHR is not available!");
-		}
-		dynamicEglDestroySyncKHR = (PFNEGLDESTROYSYNCKHRPROC) eglGetProcAddress("eglDestroySyncKHR");
-		if (!dynamicEglDestroySyncKHR) {
-			LOGW("eglDestroySyncKHR is not available!");
-		}
-		dynamicEglSignalSyncKHR = (PFNEGLSIGNALSYNCKHRPROC)eglGetProcAddress("eglSignalSyncKHR");
-		if (!dynamicEglSignalSyncKHR) {
-			LOGW("eglSignalSyncKHR is not available!");
-		}
-		dynamicEglWaitSyncKHR = (PFNEGLWAITSYNCKHRPROC)eglGetProcAddress("eglWaitSyncKHR");
-		if (!dynamicEglWaitSyncKHR) {
-			LOGW("eglWaitSyncKHR is not available!");
-		}
-		if (dynamicEglCreateSyncKHR && dynamicEglDestroySyncKHR
-			&& dynamicEglSignalSyncKHR && dynamicEglWaitSyncKHR) {
-
-			LOGD("create sync");
-			m_sync = dynamicEglCreateSyncKHR(m_egl_display, EGL_SYNC_TYPE_KHR, nullptr);
-		}
 
 		video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
 		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
@@ -362,25 +312,8 @@ void EyeApp::on_resume() {
 #if !BUFFURING
 		offscreen.reset();
 #endif
-		m_egl_display = EGL_NO_DISPLAY;
-		if (m_shared_context != EGL_NO_CONTEXT) {
-			// 共有EGL/GLESコンテキストを破棄
-			auto display = glfwGetEGLDisplay();
-			if (m_sync != EGL_NO_SYNC_KHR) {
-				LOGD("release sync");
-				dynamicEglDestroySyncKHR(display, m_sync);
-			}
-			m_sync = EGL_NO_SYNC_KHR;
-			eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, m_shared_context);
-			if (m_egl_surface) {
-				LOGD("release surface");
-				eglDestroySurface(display, m_egl_surface);
-				m_egl_surface = EGL_NO_SURFACE;
-			}
-			LOGD("release shared context");
-			eglDestroyContext(display, m_shared_context);
-			m_shared_context = EGL_NO_CONTEXT;
-		}
+		m_sync.reset();
+		m_egl.reset();
 	})
 	.set_on_error([this]() {
 		window.terminate();
@@ -396,15 +329,14 @@ void EyeApp::on_resume() {
 		memcpy(buffer.frame(), image, bytes);
 #else
 #if !HANDLE_FRAME
-		if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
-			dynamicEglWaitSyncKHR(m_egl_display, m_sync, 0);
-			dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_UNSIGNALED_KHR);
+		if (LIKELY(m_sync)) {
+			m_sync->wait_sync();
+			m_sync->signal(false);
 		} else {
 			glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 		}
-		if (m_egl_surface) {
-			eglMakeCurrent(m_egl_display, m_egl_surface, m_egl_surface, m_shared_context);
-			glClearColor(0, 0, 0, 1);
+		if (LIKELY(m_egl)) {
+			m_egl->makeDefault();
 		}
 #endif
 
@@ -422,15 +354,8 @@ void EyeApp::on_resume() {
 		}
 
 #if !HANDLE_FRAME
-		if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
-			dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_SIGNALED_KHR);
-		}
-		if (m_egl_surface) {
-			const auto ret = eglSwapBuffers(m_egl_display, m_egl_surface);
-			if (UNLIKELY(!ret)) {
-				int err = eglGetError();
-				LOGW("eglSwapBuffers:err=%d", err);
-			}
+		if (LIKELY(m_sync)) {
+			m_sync->signal();
 		}
 #endif // #if !HANDLE_FRAME
 #endif // #if BUFFURING
@@ -539,9 +464,9 @@ void EyeApp::on_render() {
 	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
 #if !HANDLE_FRAME
-	if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
-		dynamicEglWaitSyncKHR(m_egl_display, m_sync, 0);
-		dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_UNSIGNALED_KHR);
+	if (LIKELY(m_sync)) {
+		m_sync->wait_sync();
+		m_sync->signal(false);
 	} else {
 		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 	}
@@ -552,8 +477,8 @@ void EyeApp::on_render() {
 	handle_draw_gui();
 	reset_watchdog();
 
-	if (LIKELY(m_sync != EGL_NO_SYNC_KHR)) {
-		dynamicEglSignalSyncKHR(m_egl_display, m_sync, EGL_SIGNALED_KHR);
+	if (LIKELY(m_sync)) {
+		m_sync->signal();
 	}
 
 	MEAS_TIME_STOP
