@@ -297,7 +297,10 @@ void EyeApp::on_resume() {
 		int client_version = 3;
 		m_egl = std::make_unique<egl::EGLBase>(client_version, display, context);
 		m_sync = std::make_unique<egl::EglSync>(m_egl.get());
-
+		if (UNLIKELY(!m_sync || !m_sync->can_signal())) {
+			LOGW("Unfortunately could't use EGLSyncKHR,is_valid=%d,can_signal=%d", m_sync->is_valid(), m_sync->can_signal());
+			m_sync.reset();
+		}
 
 		video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
 		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
@@ -329,7 +332,7 @@ void EyeApp::on_resume() {
 		memcpy(buffer.frame(), image, bytes);
 #else
 #if !HANDLE_FRAME
-		if (LIKELY(m_sync)) {
+		if (m_sync) {
 			m_sync->wait_sync();
 			m_sync->signal(false);
 		} else {
@@ -355,7 +358,7 @@ void EyeApp::on_resume() {
 		}
 
 #if !HANDLE_FRAME
-		if (LIKELY(m_sync)) {
+		if (m_sync) {
 			m_sync->signal();
 		}
 #endif // #if !HANDLE_FRAME
@@ -465,7 +468,7 @@ void EyeApp::on_render() {
 	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
 #if !HANDLE_FRAME
-	if (LIKELY(m_sync)) {
+	if (m_sync) {
 		m_sync->wait_sync();
 		m_sync->signal(false);
 	} else {
@@ -478,7 +481,7 @@ void EyeApp::on_render() {
 	handle_draw_gui();
 	reset_watchdog();
 
-	if (LIKELY(m_sync)) {
+	if (m_sync) {
 		m_sync->signal();
 	}
 
