@@ -438,10 +438,9 @@ int EGLBase::initEGLContext(const int &version,
 		std::istream_iterator<std::string> {eglext_stream},
 		std::istream_iterator<std::string>{}
 	};
-
  #if !defined(LOG_NDEBUG)
 	for (auto itr = mEGLExtensions.begin(); itr != mEGLExtensions.end(); itr++) {
-		LOGD("extension=%s", (*itr).c_str());
+		LOGD("egl extension=%s", (*itr).c_str());
 	}
 #endif
 
@@ -463,6 +462,11 @@ int EGLBase::initEGLContext(const int &version,
 		std::istream_iterator<std::string>{glext_stream},
 		std::istream_iterator<std::string>{}
 	};
+#if !defined(LOG_NDEBUG)
+	for (auto itr = mGLExtensions.begin(); itr != mGLExtensions.end(); itr++) {
+		LOGD("gl extension=%s", (*itr).c_str());
+	}
+#endif
 	
     RETURN(0, int);
 }
