@@ -486,8 +486,11 @@ void EyeApp::on_render() {
 
 	// 画面へ転送
 	handle_draw(offscreen, gl_renderer);
+
+	if (debug || show_brightness || show_zoom || show_osd) {
 	// GUI(2D)描画処理を実行
 	handle_draw_gui();
+	}
 	reset_watchdog();
 
 	MEAS_TIME_STOP
