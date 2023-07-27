@@ -100,7 +100,7 @@ EyeApp::EyeApp(
 	app_settings(), camera_settings(),
 	window(width, height, "BOV EyeApp"),
 	source(nullptr),
-	m_egl(nullptr), m_sync(nullptr),
+	m_egl(nullptr),
 	video_renderer(nullptr),
 	offscreen(nullptr), gl_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
@@ -296,11 +296,6 @@ void EyeApp::on_resume() {
 		auto context = glfwGetEGLContext(window.get_window());
 		int client_version = 3;
 		m_egl = std::make_unique<egl::EGLBase>(client_version, display, context);
-		m_sync = std::make_unique<egl::EglSync>(m_egl.get());
-		if (UNLIKELY(!m_sync || !m_sync->can_signal())) {
-			LOGD("Unfortunately could't use EGLSyncKHR,is_valid=%d,can_signal=%d", m_sync->is_valid(), m_sync->can_signal());
-			m_sync.reset();
-		}
 
 		video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
 		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
@@ -315,7 +310,6 @@ void EyeApp::on_resume() {
 #if !BUFFURING
 		offscreen.reset();
 #endif
-		m_sync.reset();
 		m_egl.reset();
 	})
 	.set_on_error([this]() {
@@ -332,9 +326,10 @@ void EyeApp::on_resume() {
 		memcpy(buffer.frame(), image, bytes);
 #else
 #if !HANDLE_FRAME
-		if (m_sync) {
-			m_sync->wait_sync();
-			m_sync->signal(false);
+		auto fence = std::make_unique<egl::EglSync>(m_egl.get());
+		if (LIKELY(fence)) {
+			fence->wait_sync();
+			fence.reset();
 		} else {
 			glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 		}
@@ -357,11 +352,6 @@ void EyeApp::on_resume() {
 			}
 		}
 
-#if !HANDLE_FRAME
-		if (m_sync) {
-			m_sync->signal();
-		}
-#endif // #if !HANDLE_FRAME
 #endif // #if BUFFURING
 
 		MEAS_TIME_STOP
@@ -468,9 +458,10 @@ void EyeApp::on_render() {
 	glClearColor(0, 0 , 0 , 1.0f);	// RGBA
 	glClear(GL_COLOR_BUFFER_BIT);
 #if !HANDLE_FRAME
-	if (m_sync) {
-		m_sync->wait_sync();
-		m_sync->signal(false);
+	auto fence = std::make_unique<egl::EglSync>(m_egl.get());
+	if (LIKELY(fence)) {
+		fence->wait_sync();
+		fence.reset();
 	} else {
 		glFlush();	// XXX これを入れておかないと描画スレッドと干渉して激重になる
 	}
@@ -480,10 +471,6 @@ void EyeApp::on_render() {
 	// GUI(2D)描画処理を実行
 	handle_draw_gui();
 	reset_watchdog();
-
-	if (m_sync) {
-		m_sync->signal();
-	}
 
 	MEAS_TIME_STOP
 

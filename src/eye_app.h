@@ -68,7 +68,6 @@ private:
 	// V4L2からの映像取得用
 	v4l2::V4l2SourceUp source;
 	egl::EGLBaseUp m_egl;
-	egl::EglSyncSp m_sync;
 
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;
