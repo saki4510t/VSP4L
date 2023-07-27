@@ -940,11 +940,11 @@ void GLSurface::updateWindowSize() {
  * @param fence_fd
  */
 EglSync::EglSync(const EGLBase *egl, int fence_fd)
-:	m_egl(egl), m_sync(nullptr)
+:	m_egl(egl), m_sync(EGL_NO_SYNC_KHR)
 {
 	ENTER();
 
-	if (egl && egl->dynamicEglCreateSyncKHR) {
+	if (egl && egl->dynamicEglCreateSyncKHR && egl->dynamicEglDestroySyncKHR) {
 		if (fence_fd != -1) {
 			EGLint attribs[] = {
 				EGL_SYNC_NATIVE_FENCE_FD_ANDROID, fence_fd,
@@ -975,7 +975,7 @@ EglSync::~EglSync() {
 		m_egl->dynamicEglDestroySyncKHR(m_egl->display(), m_sync);
 		m_sync = EGL_NO_SYNC_KHR;
 	}
-	m_sync = nullptr;
+	m_sync = EGL_NO_SYNC_KHR;
 	m_egl = nullptr;
 
 	EXIT();

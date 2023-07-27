@@ -386,6 +386,14 @@ public:
 	EglSync(const EGLBase *egl, int fence_fd = -1);
 	~EglSync();
 
+	/**
+	 * 有効なEGLSyncKHRを保持しているかどうかを取得
+	*/
+	inline bool is_valid() const { return m_sync != EGL_NO_SYNC_KHR; };
+	/**
+	 * signal関数が有効かどうかを取得
+	*/
+	inline bool can_signal() const { return is_valid() && m_egl->dynamicEglSignalSyncKHR != nullptr; }
 	inline EGLSyncKHR sync() const { return m_sync; };
 
 	/**
