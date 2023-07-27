@@ -14,7 +14,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES3/gl3.h>
-// #include <GLES3/gl3ext.h> 	// ターゲット機だと無いみたい
+#include <GLES2/gl2ext.h>
 
 #undef GLCHECK
 #ifdef DEBUG_GL_CHECK
