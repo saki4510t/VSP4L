@@ -846,6 +846,7 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 	for (uint32_t i = 0; i < req.count; i++) {
 		m_buffers[i].fd = 0;
 		m_buffers[i].start = MAP_FAILED;
+		m_buffers[i].offset = 0;
 		m_buffers[i].length = 0;
 	}
 	m_buffersNums = req.count;
@@ -906,6 +907,7 @@ int V4l2SourceBase::init_mmap_locked_udmabuf(struct v4l2_requestbuffers &req) {
 	LOGD("image_size=%d,offset=%d", image_size, offset);
 	for (int i = 0; i < req.count; i++) {
 		m_buffers[i].length = image_size;
+		m_buffers[i].offset = i * offset;
 		m_buffers[i].start = mmap(nullptr /* start anywhere */, image_size,
 			PROT_READ | PROT_WRITE /* required */,
 			MAP_SHARED /* recommended */, m_udmabuf_fd, (off_t)(i * offset));
@@ -956,6 +958,7 @@ int V4l2SourceBase::init_mmap_udmabuf_other(struct v4l2_requestbuffers &req) {
 		}
 
 		m_buffers[i].length = buf.length;
+		m_buffers[i].offset = buf.m.offset;
 		m_buffers[i].start = mmap(nullptr /* start anywhere */, buf.length,
 			PROT_READ | PROT_WRITE /* required */,
 			MAP_SHARED /* recommended */, m_fd, (off_t)buf.m.offset);
