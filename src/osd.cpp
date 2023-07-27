@@ -12,16 +12,47 @@
 
 #include "utilbase.h"
 
+// aandusb/v4l2
+#include "v4l2/v4l2.h"
+// app
 #include "const.h"
 #include "osd.h"
 
 namespace serenegiant::app {
 
-// 輝度調整・拡大縮小率モード表示の背景アルファ
+// OSDモード表示中の背景アルファ
 #define OSD_BK_ALPHA (0.5f)
+// OSDモード表示中の外周パディング
 #define OSD_FRAME_PADDING (30)
 // デフォルトの表示ページ
 #define DEFAULE_PAGE (PAGE_SETTINGS_1)
+
+/**
+ * OSD画面で対応可能なカメラコントロール
+*/
+const static uint32_t SUPPORTED_CTRLS[] {
+	// 調整１
+	V4L2_CID_BRIGHTNESS,
+	V4L2_CID_HUE,
+	V4L2_CID_SATURATION,
+	V4L2_CID_CONTRAST,
+	V4L2_CID_SHARPNESS,
+	V4L2_CID_GAMMA,
+	// 調整2
+	V4L2_CID_DENOISE,
+	V4L2_CID_GAIN,
+	V4L2_CID_AUTOGAIN,
+	V4L2_CID_EXPOSURE,
+	V4L2_CID_EXPOSURE_AUTO,
+	0,
+	// 調整3
+	V4L2_CID_AUTO_WHITE_BALANCE,
+	V4L2_CID_POWER_LINE_FREQUENCY,
+	0,
+	0,
+	0,
+	0,
+};
 
 /**
  * @brief コンストラクタ
@@ -91,13 +122,6 @@ void OSD::on_key(const KeyEvent &event) {
 void OSD::draw(ImFont *large_font) {
 	ENTER();
 
-	float old_size;
-	if (LIKELY(large_font)) {
-		old_size = large_font->Scale;
-		large_font->Scale /= 2;
-		ImGui::PushFont(large_font);
-	}
-
 	static bool visible = true;	// ダミー
 	const static ImVec2 pivot(0.5f, 0.5f);
 	const static ImGuiWindowFlags window_flags
@@ -105,6 +129,14 @@ void OSD::draw(ImFont *large_font) {
 		| ImGuiWindowFlags_NoMove
 		| ImGuiWindowFlags_NoTitleBar
 		| ImGuiWindowFlags_NoSavedSettings;
+
+	float old_size;
+	if (LIKELY(large_font)) {
+		old_size = large_font->Scale;
+		large_font->Scale /= 2;
+		ImGui::PushFont(large_font);
+	}
+
 	const auto viewport = ImGui::GetMainViewport();
 	const auto work_size = viewport->WorkSize;
 	ImGui::SetNextWindowPos(viewport->GetWorkCenter(), ImGuiCond_Always, pivot);
@@ -121,6 +153,12 @@ void OSD::draw(ImFont *large_font) {
 			break;
 		case PAGE_ADJUST_1:
 			draw_adjust_1();
+			break;
+		case PAGE_ADJUST_2:
+			draw_adjust_2();
+			break;
+		case PAGE_ADJUST_3:
+			draw_adjust_3();
 			break;
 		default:
 			LOGD("unknown osd page,%d", page);
@@ -328,6 +366,100 @@ void OSD::draw_adjust_1() {
 		ImGui::SliderFloat("CONTRAST", &contrast, 0.0f, 100.0f, "%.0f");
 		ImGui::SliderFloat("SHARPNESS", &sharpness, 0.0f, 100.0f, "%.0f");
 		ImGui::SliderFloat("GAMMA", &gamma, 0.0f, 100.0f, "%.0f");
+		ImGui::Spacing();
+		ImGui::PopItemWidth();
+	}
+	ImGui::EndGroup();
+
+	draw_buttons_default();
+
+	EXIT();
+}
+
+/**
+ * @brief 調整画面2
+ * 
+ */
+/*private*/
+void OSD::draw_adjust_2() {
+	ENTER();
+
+	const auto button_width = get_button_width();
+
+	// ラベルを描画(左半分)
+	ImGui::BeginGroup();
+	{
+		ImGui::LabelText("", "DENOISE");
+		ImGui::LabelText("", "GAIN");
+		ImGui::LabelText("", "AUTOGAIN");
+		ImGui::LabelText("", "EXPOSUER");
+		ImGui::LabelText("", "EXPOSURE_AUTO");
+		ImGui::LabelText("", "");
+		ImGui::Spacing();
+	}
+	ImGui::EndGroup(); ImGui::SameLine();
+	// 値を描画(右半分)
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
+	ImGui::BeginGroup();
+	{	// FIXME 未実装
+		static float brightness = 10;
+		static float hue = 20;
+		static float saturation = 30;
+		static float contrast = 40;
+		static float sharpness = 50;
+		static float gamma = 60;
+		ImGui::PushItemWidth(button_width * 2);
+		ImGui::SliderFloat("DENOISE", &brightness, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("GAIN", &hue, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("AUTOGAIN", &saturation, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("EXPOSUER", &contrast, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("EXPOSURE_AUTO", &sharpness, 0.0f, 100.0f, "%.0f");
+		ImGui::LabelText("", "");
+		ImGui::Spacing();
+		ImGui::PopItemWidth();
+	}
+	ImGui::EndGroup();
+
+	draw_buttons_default();
+
+	EXIT();
+}
+
+/**
+ * @brief 調整画面3
+ * 
+ */
+/*private*/
+void OSD::draw_adjust_3() {
+	ENTER();
+
+	const auto button_width = get_button_width();
+
+	// ラベルを描画(左半分)
+	ImGui::BeginGroup();
+	{
+		ImGui::LabelText("", "AWB");
+		ImGui::LabelText("", "PLF");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::Spacing();
+	}
+	ImGui::EndGroup(); ImGui::SameLine();
+	// 値を描画(右半分)
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
+	ImGui::BeginGroup();
+	{	// FIXME 未実装
+		static float brightness = 10;
+		static float hue = 20;
+		ImGui::PushItemWidth(button_width * 2);
+		ImGui::SliderFloat("AWB", &brightness, 0.0f, 100.0f, "%.0f");
+		ImGui::SliderFloat("PLF", &hue, 0.0f, 100.0f, "%.0f");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
+		ImGui::LabelText("", "");
 		ImGui::Spacing();
 		ImGui::PopItemWidth();
 	}

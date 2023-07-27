@@ -13,6 +13,8 @@ enum {
 	PAGE_VERSION = 0,
 	PAGE_SETTINGS_1,
 	PAGE_ADJUST_1,
+	PAGE_ADJUST_2,
+	PAGE_ADJUST_3,
 	PAGE_NUM,
 } osd_page_t;
 
@@ -63,6 +65,16 @@ private:
 	 * 
 	 */
 	void draw_adjust_1();
+	/**
+	 * @brief 調整画面2
+	 * 
+	 */
+	void draw_adjust_2();
+	/**
+	 * @brief 調整画面3
+	 * 
+	 */
+	void draw_adjust_3();
 
 	/**
 	 * @brief デフォルトのボタン幅を取得
