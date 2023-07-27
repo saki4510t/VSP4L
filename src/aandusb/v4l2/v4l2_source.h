@@ -16,6 +16,7 @@
 #include <vector>
 
 // common
+#include "glutils.h"
 #include "mutex.h"
 #include "condition.h"
 // v4l2
@@ -185,6 +186,18 @@ private:
 	 * @param buf_nums
 	 */
 	int init_mmap_locked(const int &buf_nums);
+	/**
+	 * udmabufを使うとき
+	 * init_mmap_lockedの下請け
+	 * @param req
+	*/
+	int init_mmap_locked_udmabuf(struct v4l2_requestbuffers &req);
+	/**
+	 * V4L2_MEMORY_DMABUFまたはV4L2_MEMORY_MMAPを使うとき
+	 * init_mmap_lockedの下請け
+	 * @param req
+	*/
+	int init_mmap_udmabuf_other(struct v4l2_requestbuffers &req);
 	/**
 	 * @brief 対応するピクセルフォーマット一覧を取得する
 	 *        v4l2_lockをロックした状態で呼び出すこと

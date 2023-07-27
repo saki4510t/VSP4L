@@ -851,92 +851,120 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 	m_buffersNums = req.count;
 
 	if (m_udmabuf_fd > 0) {
-		// udmabufを使うとき
-		LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
-		uint32_t image_size = 0;
-		for (uint32_t i = 0; i < req.count; i++) {
-			struct v4l2_buffer buf {
-				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-				.memory = req.memory,
-			};
-			buf.index = i;
-
-			LOGD("VIDIOC_QUERYBUF:%d", i);
-			if (xioctl(m_fd, VIDIOC_QUERYBUF, &buf) == -1) {
-				result = -errno;
-				LOGE("VIDIOC_QUERYBUF,err=%d", result);
-				break;
-			}
-
-			image_size = MAX(image_size, buf.length);
-
-			LOGD("buf:index=%d,type=%d,used=%d,flags=0x%08x,field=0x%08x,seq=%d,mem=%d,m=%lu,len=%d",
-				buf.index, buf.type, buf.bytesused, buf.flags, buf.field, buf.sequence,
-				buf.memory, buf.m.userptr, buf.length);
-		}
-		if (result || !image_size) {
-			LOGE("Failed to get image size");
-			goto err;
-		}
-		// page size alignment.
-		const auto offset = ceil3(image_size, sysconf(_SC_PAGE_SIZE));
-		LOGD("image_size=%d,offset=%d", image_size, offset);
-		for (int i = 0; i < req.count; i++) {
-			m_buffers[i].length = image_size;
-			m_buffers[i].start = mmap(nullptr /* start anywhere */, image_size,
-				PROT_READ | PROT_WRITE /* required */,
-				MAP_SHARED /* recommended */, m_udmabuf_fd, (off_t)(i * offset));
-			if (m_buffers[i].start == MAP_FAILED) {
-				result = -errno;
-				LOGE("mmap,err=%d", result);
-				break;
-			}
-			// 物理メモリーを割り当てるためにゼロクリアする
-			// memsetではだめらしい
-			{
-				auto word_ptr = (uint8_t *)m_buffers[i].start;
-				for (int j = 0; j < offset; j++) {
-					word_ptr[j] = 0;
-				}
-			}
-		}
+		result = init_mmap_locked_udmabuf(req);
 	} else {	// if (m_udmabuf_fd > 0)
-		// カメラドライバー側でメモリーを確保するとき
-		req.memory = (req.capabilities & V4L2_BUF_CAP_SUPPORTS_DMABUF)
-			? V4L2_MEMORY_DMABUF : (req.capabilities & V4L2_BUF_CAP_SUPPORTS_MMAP ? V4L2_MEMORY_MMAP : 0);
-		LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
-
-		for (uint32_t i = 0; i < req.count; i++) {
-			struct v4l2_buffer buf {
-				.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
-				.memory = req.memory,
-			};
-			buf.index = i;
-
-			LOGD("VIDIOC_QUERYBUF:%d", i);
-			if (xioctl(m_fd, VIDIOC_QUERYBUF, &buf) == -1) {
-				result = -errno;
-				LOGE("VIDIOC_QUERYBUF,err=%d", result);
-				break;
-			}
-
-			m_buffers[i].length = buf.length;
-			m_buffers[i].start = mmap(nullptr /* start anywhere */, buf.length,
-				PROT_READ | PROT_WRITE /* required */,
-				MAP_SHARED /* recommended */, m_fd, (off_t)buf.m.offset);
-
-			if (m_buffers[i].start == MAP_FAILED) {
-				result = -errno;
-				LOGE("mmap,err=%d", result);
-				break;
-			}
-		}
+		result = init_mmap_udmabuf_other(req);
 	}
 
 err:
 	if (result) {
 		LOGD("something error occurred, release buffers,result=%d", result);
 		internal_release_mmap_buffers();
+	}
+
+	RETURN(result, int);
+}
+
+/**
+ * udmabufを使うとき
+ * init_mmap_lockedの下請け
+ * @param req
+*/
+int V4l2SourceBase::init_mmap_locked_udmabuf(struct v4l2_requestbuffers &req) {
+	ENTER();
+
+	int result = 0;
+	// 
+	LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
+	uint32_t image_size = 0;
+	for (uint32_t i = 0; i < req.count; i++) {
+		struct v4l2_buffer buf {
+			.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+			.memory = req.memory,
+		};
+		buf.index = i;
+
+		LOGD("VIDIOC_QUERYBUF:%d", i);
+		if (xioctl(m_fd, VIDIOC_QUERYBUF, &buf) == -1) {
+			result = -errno;
+			LOGE("VIDIOC_QUERYBUF,err=%d", result);
+			break;
+		}
+
+		image_size = MAX(image_size, buf.length);
+
+		LOGD("buf:index=%d,type=%d,used=%d,flags=0x%08x,field=0x%08x,seq=%d,mem=%d,m=%lu,len=%d",
+			buf.index, buf.type, buf.bytesused, buf.flags, buf.field, buf.sequence,
+			buf.memory, buf.m.userptr, buf.length);
+	}
+	if (result || !image_size) {
+		LOGE("Failed to get image size");
+		RETURN(result, int);
+	}
+	// DMA転送できるようにページサイズの倍数になるように調整する
+	const auto offset = ceil3(image_size, sysconf(_SC_PAGE_SIZE));
+	LOGD("image_size=%d,offset=%d", image_size, offset);
+	for (int i = 0; i < req.count; i++) {
+		m_buffers[i].length = image_size;
+		m_buffers[i].start = mmap(nullptr /* start anywhere */, image_size,
+			PROT_READ | PROT_WRITE /* required */,
+			MAP_SHARED /* recommended */, m_udmabuf_fd, (off_t)(i * offset));
+		if (m_buffers[i].start == MAP_FAILED) {
+			result = -errno;
+			LOGE("mmap,err=%d", result);
+			break;
+		}
+		// 物理メモリーを割り当てるためにゼロクリアする
+		// memsetではだめらしい
+		{
+			auto word_ptr = (uint8_t *)m_buffers[i].start;
+			for (int j = 0; j < offset; j++) {
+				word_ptr[j] = 0;
+			}
+		}
+	}
+
+	RETURN(result, int);
+}
+
+/**
+ * V4L2_MEMORY_DMABUFまたはV4L2_MEMORY_MMAPを使うとき
+ * init_mmap_lockedの下請け
+ * @param req
+*/
+int V4l2SourceBase::init_mmap_udmabuf_other(struct v4l2_requestbuffers &req) {
+	ENTER();
+
+	int result = 0;
+	// カメラドライバー側でメモリーを確保するとき
+	req.memory = (req.capabilities & V4L2_BUF_CAP_SUPPORTS_DMABUF)
+		? V4L2_MEMORY_DMABUF : (req.capabilities & V4L2_BUF_CAP_SUPPORTS_MMAP ? V4L2_MEMORY_MMAP : 0);
+	LOGD("num=%d,capabilities=0x%08x,mem=%d", req.count, req.capabilities, req.memory);
+
+	for (uint32_t i = 0; i < req.count; i++) {
+		struct v4l2_buffer buf {
+			.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
+			.memory = req.memory,
+		};
+		buf.index = i;
+
+		LOGD("VIDIOC_QUERYBUF:%d", i);
+		if (xioctl(m_fd, VIDIOC_QUERYBUF, &buf) == -1) {
+			result = -errno;
+			LOGE("VIDIOC_QUERYBUF,err=%d", result);
+			break;
+		}
+
+		m_buffers[i].length = buf.length;
+		m_buffers[i].start = mmap(nullptr /* start anywhere */, buf.length,
+			PROT_READ | PROT_WRITE /* required */,
+			MAP_SHARED /* recommended */, m_fd, (off_t)buf.m.offset);
+
+		if (m_buffers[i].start == MAP_FAILED) {
+			result = -errno;
+			LOGE("mmap,err=%d", result);
+			break;
+		}
 	}
 
 	RETURN(result, int);
@@ -1070,6 +1098,10 @@ int V4l2SourceBase::handle_frame(const suseconds_t &max_wait_frame_us) {
 			if (result >= 0) {
 				// バッファを取得できた時
 				if (buf.index < m_buffersNums) {
+					const auto try_egl_image = m_udmabuf_fd && (eglGetCurrentContext() != EGL_NO_CONTEXT);
+					if (try_egl_image) {
+						// FIXME 未実装
+					}
 					result = on_frame_ready((const uint8_t *)m_buffers[buf.index].start, buf.bytesused);
 				}
 				// 読み込み終わったバッファをキューに追加
