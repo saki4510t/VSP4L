@@ -41,6 +41,7 @@ typedef enum _state {
 } state_t;
 
 typedef struct _buffer {
+	int fd;
 	void *start;
 	size_t length;
 } buffer_t;

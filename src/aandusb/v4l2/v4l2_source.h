@@ -175,6 +175,10 @@ private:
 	 */
 	int release_mmap_locked();
 	/**
+	 * m_buffersの破棄処理
+	*/
+	void internal_release_mmap_buffers();
+	/**
 	 * 画像データ読み込み用のメモリマップを初期化
 	 * ワーカースレッド上で呼ばれる
 	 * init_device_lockedの下請け

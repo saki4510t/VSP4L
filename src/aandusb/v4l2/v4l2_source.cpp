@@ -728,17 +728,7 @@ int V4l2SourceBase::release_mmap_locked() {
 
 	ENTER();
 
-	if (m_buffersNums && m_buffers) {
-		for (uint32_t i = 0; i < m_buffersNums; ++i) {
-			if (m_buffers[i].start != MAP_FAILED) {
-				if (munmap(m_buffers[i].start, m_buffers[i].length) == -1) {
-					LOGE("munmap");
-				}
-			}
-		}
-		SAFE_DELETE_ARRAY(m_buffers);
-		m_buffersNums = 0;
-	}
+	internal_release_mmap_buffers();
 	stream_width = stream_height = 0;
 	if (m_state > STATE_OPEN) {
 		m_state = STATE_OPEN;
@@ -750,6 +740,30 @@ int V4l2SourceBase::release_mmap_locked() {
 	}
 
 	RETURN(core::USB_SUCCESS, int);
+}
+
+/**
+ * m_buffersの破棄処理
+*/
+void V4l2SourceBase::internal_release_mmap_buffers() {
+	ENTER();
+
+	if (m_buffersNums && m_buffers) {
+		for (uint32_t i = 0; i < m_buffersNums; ++i) {
+			if (m_buffers[i].start != MAP_FAILED) {
+				if (munmap(m_buffers[i].start, m_buffers[i].length) == -1) {
+					LOGE("munmap");
+				}
+			}
+			if (m_buffers[i].fd) {
+				::close(m_buffers[i].fd);
+			}
+		}
+		SAFE_DELETE_ARRAY(m_buffers);
+		m_buffersNums = 0;
+	}
+
+	EXIT();
 }
 
 /**
@@ -830,7 +844,9 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 		goto err;
 	}
 	for (uint32_t i = 0; i < req.count; i++) {
+		m_buffers[i].fd = 0;
 		m_buffers[i].start = MAP_FAILED;
+		m_buffers[i].length = 0;
 	}
 	m_buffersNums = req.count;
 
@@ -916,8 +932,7 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 err:
 	if (result) {
 		LOGD("something error occurred, release buffers,result=%d", result);
-		SAFE_DELETE_ARRAY(m_buffers)
-		m_buffersNums = 0;
+		internal_release_mmap_buffers();
 	}
 
 	RETURN(result, int);
