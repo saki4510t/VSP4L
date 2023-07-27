@@ -302,7 +302,7 @@ void EyeApp::on_resume() {
 			m_sync.reset();
 		}
 
-		video_renderer = std::make_unique<core::VideoGLRenderer>(300, 0, false);
+		video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
 		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
 		const auto versionStr = (const char*)glGetString(GL_VERSION);
 		LOGD("gl_version=%s", versionStr);
