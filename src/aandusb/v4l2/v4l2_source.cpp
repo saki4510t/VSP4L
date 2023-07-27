@@ -869,6 +869,10 @@ int V4l2SourceBase::init_mmap_locked(const int &buf_nums) {
 			}
 
 			image_size = MAX(image_size, buf.length);
+
+			LOGD("buf:index=%d,type=%d,used=%d,flags=0x%08x,field=0x%08x,seq=%d,mem=%d,m=%lu,len=%d",
+				buf.index, buf.type, buf.bytesused, buf.flags, buf.field, buf.sequence,
+				buf.memory, buf.m.userptr, buf.length);
 		}
 		if (result || !image_size) {
 			LOGE("Failed to get image size");
