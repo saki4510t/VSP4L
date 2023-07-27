@@ -15,7 +15,9 @@
 
 #define MEAS_TIME (0)				// 1フレーム当たりの描画時間を測定する時1
 // EGLSyncを使って同期するかどうか, 1: EGLSyncでの同期を試みる、0: glFlushを使う
-// 実機だとglFlushのほうが速いみたい
+// 実機だとglFlushのほうが速いみたい,
+// テクスチャへの転送は変わらない(約24fps)だけど、
+// 表示側がglFlushだと20fpsぐらい、EGLSyncだと15fpsぐらいになる
 #define USE_EGL_SYNC (0)
 
 #include <stdio.h>
