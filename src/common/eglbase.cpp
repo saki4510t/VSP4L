@@ -282,6 +282,7 @@ EGLBase::EGLBase(int & client_version,
 		with_depth_buffer, with_stencil_buffer, isRecordable);
 	client_version = this->client_version;
 
+#if __ANDROID__
 	LOGD("try to get eglPresentationTimeANDROID");
 	dynamicEglPresentationTimeANDROID
     	= (PFNEGLPRESENTATIONTIMEANDROIDPROC) eglGetProcAddress("eglPresentationTimeANDROID");
@@ -290,6 +291,15 @@ EGLBase::EGLBase(int & client_version,
 	} else {
 		LOGD("successfully could get eglPresentationTimeANDROID");
 	}
+
+	dynamicEglDupNativeFenceFDANDROID = (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)
+		eglGetProcAddress("eglDupNativeFenceFDANDROID");
+	if (!dynamicEglDupNativeFenceFDANDROID) {
+		LOGW("eglDupNativeFenceFDANDROID is not available!");
+	} else {
+		LOGD("successfully could get eglDupNativeFenceFDANDROID");
+	}
+#endif
 
 	dynamicEglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC)
 		eglGetProcAddress("eglCreateSyncKHR");
@@ -305,14 +315,6 @@ EGLBase::EGLBase(int & client_version,
 		LOGW("eglDestroySyncKHR is not available!");
 	} else {
 		LOGD("successfully could get eglDestroySyncKHR");
-	}
-
-	dynamicEglDupNativeFenceFDANDROID = (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)
-		eglGetProcAddress("eglDupNativeFenceFDANDROID");
-	if (!dynamicEglDupNativeFenceFDANDROID) {
-		LOGW("eglDupNativeFenceFDANDROID is not available!");
-	} else {
-		LOGD("successfully could get eglDupNativeFenceFDANDROID");
 	}
 
 	dynamicEglSignalSyncKHR = (PFNEGLSIGNALSYNCKHRPROC)
