@@ -12,9 +12,7 @@
 
 #include <memory>
 
-#if __ANDROID__
-#include "eglbase.h"
-#endif
+#include "egl_image_wrapper.h"
 #include "gltexture.h"
 
 namespace serenegiant::gl {
@@ -83,7 +81,6 @@ public:
 	 * @return
 	 */
 	int draw(GLTexture *texture1, GLTexture *texture2, GLTexture *texture3 = nullptr, const GLfloat *mvp_matrix = IDENTITY_MATRIX);
-#if __ANDROID__
 	/**
 	 * 描画実行
 	 * yuyvをrgbaに対応させる(2ピクセルの元データをテクスチャ1テクセルに代入する)時はview_widthを1/2にして呼び出すこと
@@ -93,7 +90,6 @@ public:
 	 * @return
 	 */
 	int draw(egl::EglImageWrapper *texture, const GLfloat *tex_matrix = nullptr, const GLfloat *mvp_matrix = IDENTITY_MATRIX);
-#endif
 };
 
 typedef std::shared_ptr<GLRenderer> GLRendererSp;

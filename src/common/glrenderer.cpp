@@ -405,7 +405,6 @@ int GLRenderer::draw(
     RETURN(0, int);
 }
 
-#if __ANDROID__
 /**
  * 描画実行
  * yuyvをrgbaに対応させる(2ピクセルの元データをテクスチャ1テクセルに代入する)時はview_widthを1/2にして呼び出すこと
@@ -468,6 +467,5 @@ int GLRenderer::draw(egl::EglImageWrapper *texture, const GLfloat *tex_matrix, c
 
     RETURN(0, int);
 }
-#endif
 
 }	// namespace serenegiant::gl
