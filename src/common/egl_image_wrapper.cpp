@@ -32,7 +32,6 @@
 
 namespace serenegiant::egl {
 
-#if __ANDROID__
 /**
  * コンストラクタ
  * @param tex_target
@@ -44,17 +43,20 @@ EglImageWrapper::EglImageWrapper(
 	const GLenum &tex_target,
 	const GLenum &tex_unit,
 	const GLuint &tex_id)
-:	m_supported(init_hardware_buffer()),
-	m_tex_target(tex_target), m_tex_unit(tex_unit),
+:   m_tex_target(tex_target), m_tex_unit(tex_unit),
 	own_tex_id(tex_id == 0), m_tex_id(tex_id),
-	m_buffer(nullptr), m_egl_image(nullptr),
-	m_desc(),
-	dynamicEglGetNativeClientBufferANDROID(nullptr)
+	m_egl_image(nullptr),
+#if __ANDROID__
+    m_buffer(nullptr),  m_desc(),
+	dynamicEglGetNativeClientBufferANDROID(nullptr),
+    m_supported(init_hardware_buffer())
+#else
+    m_supported(true)
+#endif
 {
 	ENTER();
 
-	// テクスチャ変換行列を単位行列に初期化
-	gl::setIdentityMatrix(m_tex_matrix, 0);
+#if __ANDROID__
 	dynamicEglGetNativeClientBufferANDROID
  		= (PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC)
  			eglGetProcAddress("eglGetNativeClientBufferANDROID");
@@ -62,6 +64,29 @@ EglImageWrapper::EglImageWrapper(
  		m_supported = false;
 		LOGW("eglGetNativeClientBufferANDROID not found!");
  	}
+    m_supported &= (dynamicEglGetNativeClientBufferANDROID != nullptr);
+#endif
+	dynamicEglCreateImageKHR
+ 		= (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+ 	if (!dynamicEglCreateImageKHR) {
+		LOGW("eglCreateImageKHR not found!");
+ 	}
+	dynamicEglDestroyImageKHR
+ 		= (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+ 	if (!dynamicEglDestroyImageKHR) {
+		LOGW("eglDestroyImageKHR not found!");
+	}
+	dynamicGlEGLImageTargetTexture2DOES
+		= (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
+ 	if (!dynamicGlEGLImageTargetTexture2DOES) {
+		LOGW("glEGLImageTargetTexture2DOES not found!");
+	}
+    m_supported &= (dynamicEglCreateImageKHR != nullptr)
+        && (dynamicEglDestroyImageKHR != nullptr)
+        && (dynamicGlEGLImageTargetTexture2DOES != nullptr);
+
+	// テクスチャ変換行列を単位行列に初期化
+	gl::setIdentityMatrix(m_tex_matrix, 0);
 	if (!m_tex_id) {
 		m_tex_id = gl::createTexture(m_tex_target, m_tex_unit, 1);
 	}
@@ -86,6 +111,7 @@ EglImageWrapper::~EglImageWrapper() {
 	EXIT();
 }
 
+#if __ANDROID__
 /**
  * AHardwareBufferとメモリーを共有するEGLImageKHRを生成して
  * テクスチャとして利用できるようにする
@@ -109,10 +135,14 @@ int EglImageWrapper::wrap(AHardwareBuffer *buffer) {
 			AAHardwareBuffer_describe(buffer, &m_desc);
 			MARK("desc=(%dx%d),stride=%d",
 				desc.width, desc.height, desc.stride);
+            m_tex_width = m_desc.width;
+            m_tex_height = m_desc.height;
 			if (LIKELY(m_desc.width && m_desc.stride)) {
 				m_tex_matrix[0] = (float)m_desc.width / (float)m_desc.stride;
+                m_tex_stride = m_desc.stride;
 			} else {
 				m_tex_matrix[0] = 1.0f;
+                m_tex_stride = m_tex_width;
 			}
 			
 			static const EGLint eglImageAttributes[] = {
@@ -128,21 +158,39 @@ int EglImageWrapper::wrap(AHardwareBuffer *buffer) {
 			if (m_egl_image) {
 				bind();
 				// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
-				glEGLImageTargetTexture2DOES(m_tex_target, m_egl_image);
+				dynamicGlEGLImageTargetTexture2DOES(m_tex_target, m_egl_image);
 				result = 0;
 			} else {
 				LOGW("eglCreateImageKHR failed");
 				AAHardwareBuffer_release(buffer);
 				m_buffer = nullptr;
+                m_tex_width = m_tex_height = m_tex_stride = 0;
 			}
 		} else {	// if (display != EGL_NO_DISPLAY)
 			LOGW("eglGetCurrentDisplay failed");
 			m_buffer = nullptr;
+            m_tex_width = m_tex_height = m_tex_stride = 0;
 		}	// if (display != EGL_NO_DISPLAY)
 	}
 
 	RETURN(result, int);
 }
+#else
+    /**
+     * EGLImageKHRが保持するメモリーをテクスチャとでして利用できるようにする
+     * @param image
+	 * @return 0: 正常終了, それ以外: エラー
+    */
+	int EglImageWrapper::wrap(EGLImageKHR image) {
+        ENTER();
+
+    	int result = -1;
+        m_tex_width = m_tex_height = m_tex_stride = 0;
+        m_egl_image = image;
+
+	    RETURN(result, int);
+    }
+#endif
 
 /**
  * wrapで生成したEGLImageKHRを解放、AHardwareBufferの参照も解放する
@@ -154,14 +202,18 @@ int EglImageWrapper::unwrap() {
 
 	if (m_egl_image) {
 		EGLDisplay display = eglGetCurrentDisplay();
-		eglDestroyImageKHR(display, m_egl_image);
+		EGLCHECK("eglGetCurrentDisplay");
+		dynamicEglDestroyImageKHR(display, m_egl_image);
+		EGLCHECK("eglDestroyImageKHR");
 		m_egl_image = nullptr;
 	}
+#if __ANDROID__
 	if (m_buffer) {
 		AAHardwareBuffer_release(m_buffer);
 		m_buffer = nullptr;
 	}
-	
+#endif
+
 	RETURN(0, int);
 }
 
@@ -202,7 +254,5 @@ int EglImageWrapper::unbind() {
 
 	RETURN(0, int);
 }
-
-#endif  // #if __ANDROID__
 
 }   // namespace serenegiant::egl

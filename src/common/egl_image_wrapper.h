@@ -18,7 +18,6 @@
 
 namespace serenegiant::egl {
 
-#if __ANDROID__
 /**
  * AHardwareBufferとメモリーを共有するEGLImageKHRを生成してGL|ESのテクスチャとして
  * アクセスできるようにするためのヘルパークラス
@@ -44,32 +43,49 @@ private:
 	 * AHardwareBuffer_xxxとeglGetNativeClientBufferANDROIDが使用可能な場合にtrueになる
 	 */
 	bool m_supported;
+    /**
+     * テクスチャの幅
+    */
+    uint32_t m_tex_width;
+    /**
+     * テクスチャの高さ
+    */
+    uint32_t m_tex_height;
+    /**
+     * テクスチャのストライド
+    */
+    uint32_t m_tex_stride;
 	/**
 	 * テクスチャID
 	 */
 	GLuint m_tex_id;
-	/**
-	 * ラップしているAHardwareBufferオブジェクト
-	 */
-	AHardwareBuffer *m_buffer;
 	/**
 	 * AHardwareBufferとメモリーを共有してテクスチャとしてアクセスできるようにするための
 	 * EGLImageKHRオブジェクト
 	 */
 	EGLImageKHR m_egl_image;
 	/**
+	 * テクスチャ変換行列
+	 */
+	GLfloat m_tex_matrix[16]{};
+#if __ANDROID__
+	/**
+	 * ラップしているAHardwareBufferオブジェクト
+	 */
+	AHardwareBuffer *m_buffer;
+	/**
 	 * AHardwareBufferをラップしている間のみ有効
 	 * #wrap実行時にAAHardwareBuffer_describeで更新する
 	 */
 	AHardwareBuffer_Desc m_desc;
 	/**
-	 * テクスチャ変換行列
-	 */
-	GLfloat m_tex_matrix[16]{};
-	/**
 	 * API16だとeglGetNativeClientBufferANDROIDは動的にリンクしないとビルドが通らないので動的にリンク
 	 */
 	PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC dynamicEglGetNativeClientBufferANDROID;
+#endif
+	PFNEGLCREATEIMAGEKHRPROC dynamicEglCreateImageKHR;
+	PFNEGLDESTROYIMAGEKHRPROC dynamicEglDestroyImageKHR;
+	PFNGLEGLIMAGETARGETTEXTURE2DOESPROC dynamicGlEGLImageTargetTexture2DOES;
 protected:
 public:
 	/**
@@ -93,11 +109,10 @@ public:
 	 */
 	inline bool is_supported() const { return m_supported; };
 	/**
-	 * AHardwareBufferをラップしていて使用可能かどうか
-	 * AHardwareBuffer_xxxとeglGetNativeClientBufferANDROIDが使用可能な場合にtrueを返す
+	 * EGLImageをラップしていて使用可能かどうか
 	 * @return
 	 */
-	inline bool is_wrapped() const { return m_buffer && m_egl_image; };
+	inline bool is_wrapped() const { return m_egl_image; };
 	/**
 	 * テクスチャターゲットを取得
 	 * @return
@@ -114,34 +129,23 @@ public:
 	 */
 	inline GLuint tex_id() const { return m_tex_id; };
 	/**
-	 * #wrap実行時にAAHardwareBuffer_describeで取得した
-	 * AHardwareBuffer_Desc構造体を返す
-	 * @return
-	 */
-	inline const AHardwareBuffer_Desc &description() const { return m_desc; };
-	/**
 	 * テクスチャサイズ(幅)を取得
-	 * AHardwareBufferをラップしている間のみ有効
-	 * #wrap実行時にAAHardwareBuffer_describeで取得した
-	 * AHardwareBuffer_Desc構造体のwidthフィールドを返す
+     * is_wrapped==trueの間のみ有効
 	 * @return
 	 */
-	inline uint32_t width() const { return m_desc.width; };
+	inline uint32_t width() const { return m_tex_width; };
 	/**
 	 * テクスチャサイズ(高さ)を取得
-	 * AHardwareBufferをラップしている間のみ有効
-	 * #wrap実行時にAAHardwareBuffer_describeで取得した
-	 * AHardwareBuffer_Desc構造体のheightフィールドを返す
+     * is_wrapped==trueの間のみ有効
 	 * @return
 	 */
-	inline uint32_t height() const { return m_desc.height; };
+	inline uint32_t height() const { return m_tex_height; };
 	/**
 	 * ストライドを取得
-	 * #wrap実行時にAAHardwareBuffer_describeで取得した
-	 * AHardwareBuffer_Desc構造体のstrideフィールドを返す
+     * is_wrapped==trueの間のみ有効
 	 * @return
 	 */
-	inline uint32_t stride() const { return m_desc.stride; };
+	inline uint32_t stride() const { return m_tex_stride; };
 	/**
 	 * テクスチャ変換行列を取得
 	 * widthとstrideに応じて幅方向のスケーリングをした変換行列を返す
@@ -149,19 +153,6 @@ public:
 	 */
 	inline const GLfloat *tex_matrix() const { return m_tex_matrix; }
 	
-	/**
-	 * AHardwareBufferとメモリーを共有するEGLImageKHRを生成して
-	 * テクスチャとして利用できるようにする
-	 * @param buffer
-	 * @return 0: 正常終了, それ以外: エラー
-	 */
-	int wrap(AHardwareBuffer *buffer);
-	/**
-	 * wrapで生成したEGLImageKHRを解放、AHardwareBufferの参照も解放する
-	 * @return
-	 */
-	int unwrap();
-
 	/**
 	 * テクスチャをバインド
 	 * @return
@@ -172,12 +163,38 @@ public:
 	 * @return
 	 */
 	int unbind();
+
+#if __ANDROID__
+	/**
+	 * #wrap実行時にAAHardwareBuffer_describeで取得した
+	 * AHardwareBuffer_Desc構造体を返す
+	 * @return
+	 */
+	inline const AHardwareBuffer_Desc &description() const { return m_desc; };
+	/**
+	 * AHardwareBufferとメモリーを共有するEGLImageKHRを生成して
+	 * テクスチャとして利用できるようにする
+	 * @param buffer
+	 * @return 0: 正常終了, それ以外: エラー
+	 */
+	int wrap(AHardwareBuffer *buffer);
+#else
+    /**
+     * EGLImageKHRが保持するメモリーをテクスチャとでして利用できるようにする
+     * @param image
+	 * @return 0: 正常終了, それ以外: エラー
+    */
+	int wrap(EGLImageKHR image);
+#endif
+	/**
+	 * wrapで生成したEGLImageKHRを解放、AHardwareBufferの参照も解放する
+	 * @return
+	 */
+	int unwrap();
 };
 
 typedef std::shared_ptr<EglImageWrapper> EglImageWrapperSp;
 typedef std::unique_ptr<EglImageWrapper> EglImageWrapperUp;
-
-#endif  // #if __ANDROID__
 
 }   // namespace serenegiant::egl
 
