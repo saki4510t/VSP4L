@@ -75,7 +75,7 @@ private:
 	core::BaseVideoFrame buffer;
 #endif
 	// オフスクリーン描画用
-	gl::GLRendererUp gl_renderer;
+	gl::GLRendererUp screen_renderer;
 	// 拡大縮小・映像効果付与・フリーズ用オフスクリーン
 	gl::GLOffScreenUp offscreen;
 	// 排他制御用

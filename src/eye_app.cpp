@@ -107,7 +107,7 @@ EyeApp::EyeApp(
 	source(nullptr),
 	m_egl(nullptr),
 	video_renderer(nullptr),
-	offscreen(nullptr), gl_renderer(nullptr),
+	offscreen(nullptr), screen_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
 	req_effect_type(EFFECT_NON), current_effect(req_effect_type),
 	key_dispatcher(handler),
@@ -456,7 +456,7 @@ void EyeApp::on_render() {
 	source->handle_frame(10000L);
 #endif
 	// 描画用の設定更新を適用
-	prepare_draw(offscreen, gl_renderer);
+	prepare_draw(offscreen, screen_renderer);
 #if BUFFURING
 	if (!req_freeze) {
 		offscreen->bind();
@@ -485,7 +485,7 @@ void EyeApp::on_render() {
 #endif	// #if !HANDLE_FRAME
 
 	// 画面へ転送
-	handle_draw(offscreen, gl_renderer);
+	handle_draw(offscreen, screen_renderer);
 
 	if (show_debug || show_brightness || show_zoom || show_osd) {
 	// GUI(2D)描画処理を実行
@@ -539,7 +539,7 @@ gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
  * @brief 描画用の設定更新を適用
  *
  * @param offscreen
- * @param gl_renderer
+ * @param renderer
  */
 /*private,@WorkerThread*/
 void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer) {
