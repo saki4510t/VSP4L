@@ -47,7 +47,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti")
 # load the module to use pkg-config
 find_package(PkgConfig)
 # search library with pkg-config and name its results "GLES"
-# pkg_check_modules(LIBGLES REQUIRED glesv2)
+pkg_check_modules(LIBGLES REQUIRED glesv2)
+pkg_check_modules(LIBEGL REQUIRED egl)
 add_definitions("-DENABLE_GLES")
 
 # search library with pkg-config and name its results "LIBPNG"
@@ -144,11 +145,11 @@ target_link_libraries(${target} PRIVATE
     ${LIBUDEV_LIBRARIES}
     ${LIBPNG_LIBRARIES}
     ${LIBJPEG_TURBO_LIBRARIES}
+    ${LIBEGL_LIBRARIES}
+    ${LIBGLES_LIBRARIES}
     ${APP_LIBS}
     dl
     pthread
-    GLESv2
-    EGL
     yuv
     imgui
     aandusb_core
@@ -170,7 +171,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_SOURCE_DIR}/imgui/misc/fonts/DroidSans.ttf
             ${CMAKE_CURRENT_BINARY_DIR}/resources/fonts/DroidSans.ttf)
-            
+
 message("==================== All variables (EyeApp)  ====================")
 get_cmake_property(_variableNames CACHE_VARIABLES)
 list (SORT _variableNames)

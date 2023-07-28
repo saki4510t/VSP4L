@@ -57,6 +57,8 @@ target_link_libraries(common_static PRIVATE
     atomic
     ${LIBGLES_LIBRARIES}
     ${LIBPNG_LIBRARIES}
+    ${LIBEGL_LIBRARIES}
+    ${LIBGLES_LIBRARIES}
 )
 
 target_link_libraries(common_static PUBLIC
