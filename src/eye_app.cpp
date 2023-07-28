@@ -106,7 +106,7 @@ EyeApp::EyeApp(
 	window(width, height, "BOV EyeApp"),
 	source(nullptr),
 	m_egl(nullptr),
-	video_renderer(nullptr),
+	video_renderer(nullptr), image_renderer(nullptr),
 	offscreen(nullptr), screen_renderer(nullptr),
     req_change_effect(false), req_freeze(false),
 	req_effect_type(EFFECT_NON), current_effect(req_effect_type),
@@ -304,12 +304,14 @@ void EyeApp::on_resume() {
 
 		video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
 		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
+		// FIXME image_rendererの初期化
 		const auto versionStr = (const char*)glGetString(GL_VERSION);
 		LOGD("gl_version=%s", versionStr);
 		// オフスクリーンを生成
 		offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, width, height, false);
 	})
 	.set_on_stop([this]() {
+		image_renderer.reset();
 		video_renderer.reset();
 		frame_wrapper.reset();
 #if !BUFFURING
@@ -421,6 +423,7 @@ void EyeApp::on_pause() {
 
 #if BUFFURING || HANDLE_FRAME
 	video_renderer.reset();
+	image_renderer.reset();
 	frame_wrapper.reset();
 	offscreen.reset();
 #endif
