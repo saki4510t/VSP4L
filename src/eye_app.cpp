@@ -311,12 +311,7 @@ void EyeApp::on_resume() {
 		offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, width, height, false);
 	})
 	.set_on_stop([this]() {
-		image_renderer.reset();
-		video_renderer.reset();
-		frame_wrapper.reset();
-#if !BUFFURING
-		offscreen.reset();
-#endif
+		reset_renderers();
 		m_egl.reset();
 	})
 	.set_on_error([this]() {
@@ -359,13 +354,13 @@ void EyeApp::on_resume() {
 				if (try_egl_image) {
 					// FIXME 未実装
 				}
-				// FIXME PCだとバッファリングありよりカメラ映像の画角が狭い、ビューポートがおかしい？
-				frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, width, height, source->get_frame_type());
-				offscreen->bind();
-				video_renderer->draw_frame(*frame_wrapper);
-				offscreen->unbind();
+					// FIXME PCだとバッファリングありよりカメラ映像の画角が狭い、ビューポートがおかしい？
+					frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, width, height, source->get_frame_type());
+					offscreen->bind();
+					video_renderer->draw_frame(*frame_wrapper);
+					offscreen->unbind();
+				}
 			}
-		}
 
 #endif // #if BUFFURING
 
@@ -420,13 +415,7 @@ void EyeApp::on_pause() {
 		source->stop();
 		source.reset();
 	}
-
-#if BUFFURING || HANDLE_FRAME
-	video_renderer.reset();
-	image_renderer.reset();
-	frame_wrapper.reset();
-	offscreen.reset();
-#endif
+	reset_renderers();
 
 	EXIT();
 }
@@ -491,8 +480,8 @@ void EyeApp::on_render() {
 	handle_draw(offscreen, screen_renderer);
 
 	if (show_debug || show_brightness || show_zoom || show_osd) {
-	// GUI(2D)描画処理を実行
-	handle_draw_gui();
+		// GUI(2D)描画処理を実行
+		handle_draw_gui();
 	}
 	reset_watchdog();
 
@@ -536,6 +525,20 @@ gl::GLRendererUp EyeApp::create_renderer(const effect_t &effect) {
 		LOGD("create GLRenderer GL2");
 		return std::make_unique<gl::GLRenderer>(texture_gl2_vsh, fsh, true);
 	}
+}
+
+/**
+ * 描画用のオブジェクトやオフスクリーンン等を破棄する
+*/
+void EyeApp::reset_renderers() {
+	ENTER();
+
+	video_renderer.reset();
+	image_renderer.reset();
+	frame_wrapper.reset();
+	offscreen.reset();
+
+	EXIT();
 }
 
 /**

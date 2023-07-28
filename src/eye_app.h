@@ -182,6 +182,10 @@ private:
 	 */
 	gl::GLRendererUp create_renderer(const effect_t &effect);
 	/**
+	 * 描画用のオブジェクトやオフスクリーンン等を破棄する
+	*/
+	void reset_renderers();
+	/**
 	 * @brief 描画用の設定更新を適用
 	 * 
 	 * @param offscreen 
