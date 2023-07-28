@@ -15,6 +15,7 @@ add_library(objlib OBJECT
     binutils.cpp
     charutils.cpp
     eglbase.cpp
+    egl_image_wrapper.cpp
     gloffscreen.cpp
     gltexture.cpp
     glrenderer.cpp
