@@ -178,15 +178,34 @@ int EglImageWrapper::wrap(AHardwareBuffer *buffer) {
 #else
     /**
      * EGLImageKHRが保持するメモリーをテクスチャとでして利用できるようにする
+	 * FIXME width, height, strideを指定しないとだめ
      * @param image
+	 * @param width
+	 * @param height
+	 * @param stride
 	 * @return 0: 正常終了, それ以外: エラー
     */
-	int EglImageWrapper::wrap(EGLImageKHR image) {
+	int EglImageWrapper::wrap(EGLImageKHR image, const uint32_t &width, const uint32_t &height, const uint32_t &stride) {
         ENTER();
 
     	int result = -1;
-        m_tex_width = m_tex_height = m_tex_stride = 0;
+        m_tex_width = width;
+		m_tex_height = height;
+		if (!stride) {
+			m_tex_stride = width;
+		} else {
+			m_tex_stride = stride;
+		}
         m_egl_image = image;
+		if (LIKELY(image && m_tex_width && m_tex_stride)) {
+			m_tex_matrix[0] = (float)m_tex_width / (float)m_tex_stride;
+			bind();
+			// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
+			dynamicGlEGLImageTargetTexture2DOES(m_tex_target, m_egl_image);
+			result = 0;
+		} else {
+			m_tex_matrix[0] = 1.0f;
+		}
 
 	    RETURN(result, int);
     }

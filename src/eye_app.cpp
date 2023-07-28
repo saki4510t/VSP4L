@@ -350,17 +350,38 @@ void EyeApp::on_resume() {
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
 #endif
 			if (!req_freeze) {
+				// フリーズ中でなければオフスクリーンテクスチャをカメラ映像で更新する
 				const auto try_egl_image = buf.fd != 0;
+				EGLImageKHR egl_iamge = EGL_NO_IMAGE_KHR;
 				if (try_egl_image) {
-					// FIXME 未実装
+					// EGLImageKHRを使ったゼロコピーテクスチャでの描画を試みる場合
+					// FIXME 未実装 EGLIMageKHRを生成
 				}
-					// FIXME PCだとバッファリングありよりカメラ映像の画角が狭い、ビューポートがおかしい？
+				if (egl_iamge) {
+					// EGLImageKHRを生成できたとき
+					// FIXME 未実装 EGLIMageWrapperでラップ、image_rendererで描画する
+					image_wrapper->wrap(egl_iamge, width, height, width);
+					{
+						offscreen->bind();
+						{
+							image_renderer->draw(image_wrapper.get());
+						}
+						offscreen->unbind();
+					}
+					image_wrapper->unwrap();
+				} else {
+					// 4K2Kのディスプレーだとglfwのウインドウが画面全体へ広がらないのに
+					// ウインドウサイズとして画面全体を返すのでビューポートの設定がおかしくなって
+					// バッファリングありよりカメラ映像の画角が狭くなってしまう
 					frame_wrapper->assign(const_cast<uint8_t *>(image), bytes, width, height, source->get_frame_type());
 					offscreen->bind();
-					video_renderer->draw_frame(*frame_wrapper);
+					{
+						video_renderer->draw_frame(*frame_wrapper);
+					}
 					offscreen->unbind();
 				}
 			}
+		}
 
 #endif // #if BUFFURING
 
@@ -534,8 +555,9 @@ void EyeApp::reset_renderers() {
 	ENTER();
 
 	video_renderer.reset();
-	image_renderer.reset();
 	frame_wrapper.reset();
+	image_renderer.reset();
+	image_wrapper.reset();
 	offscreen.reset();
 
 	EXIT();

@@ -72,6 +72,7 @@ private:
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;
 	gl::GLRendererUp image_renderer;
+	egl::EglImageWrapperUp image_wrapper;
 #if BUFFURING
 	core::BaseVideoFrame buffer;
 #endif

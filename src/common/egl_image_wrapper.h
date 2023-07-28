@@ -182,9 +182,12 @@ public:
     /**
      * EGLImageKHRが保持するメモリーをテクスチャとでして利用できるようにする
      * @param image
+	 * @param width
+	 * @param height
+	 * @param stride
 	 * @return 0: 正常終了, それ以外: エラー
     */
-	int wrap(EGLImageKHR image);
+	int wrap(EGLImageKHR image, const uint32_t &width, const uint32_t &height, const uint32_t &stride);
 #endif
 	/**
 	 * wrapで生成したEGLImageKHRを解放、AHardwareBufferの参照も解放する
