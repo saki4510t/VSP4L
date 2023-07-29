@@ -3,6 +3,8 @@
 
 #include <functional>
 
+#include "v4l2/v4l2_source.h"
+
 #include "const.h"
 #include "key_event.h"
 #include "settings.h"
@@ -104,7 +106,7 @@ public:
 	 * @brief OSD表示の準備
 	 * 
 	 */
-	void prepare();
+	void prepare(v4l2::V4l2SourceUp &source);
 
 	/**
 	 * @brief OSD表示中のキー入力

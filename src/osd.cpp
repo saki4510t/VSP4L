@@ -87,7 +87,7 @@ OSD::~OSD() {
  * @brief OSD表示の準備
  * 
  */
-void OSD::prepare() {
+void OSD::prepare(v4l2::V4l2SourceUp &source) {
 	ENTER();
 
 	// とりあえずデフォルトの表示ページに変更するだけ
