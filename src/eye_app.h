@@ -67,8 +67,9 @@ private:
 	GlfwWindow window;
 	// V4L2からの映像取得用
 	v4l2::V4l2SourceUp source;
+	// ワーカースレッド上での共有EGL/GLコンテキスト用
 	egl::EGLBaseUp m_egl;
-
+	// V4L2からの映像データを描画用にIVideoFrameとして扱えるようにする
 	core::WrappedVideoFrameUp frame_wrapper;
 	core::VideoGLRendererUp video_renderer;
 	gl::GLRendererUp image_renderer;
@@ -76,17 +77,14 @@ private:
 #if BUFFURING
 	core::BaseVideoFrame buffer;
 #endif
-	// オフスクリーン描画用
+	// オフスクリーンを画面表示用に描画するGLRenderer
 	gl::GLRendererUp screen_renderer;
 	// 拡大縮小・映像効果付与・フリーズ用オフスクリーン
 	gl::GLOffScreenUp offscreen;
 	// 排他制御用
 	mutable std::mutex state_lock;
 	mutable std::mutex image_lock;
-	/**
-	 * @brief キー操作用
-	 * 
-	 */
+	// キー操作用
 	KeyDispatcher key_dispatcher;
 	// 映像効果変更要求
 	volatile bool req_change_effect;
@@ -94,6 +92,7 @@ private:
 	volatile bool req_change_matrix;
 	// 映像フリーズ要求
 	volatile bool req_freeze;
+	// 映像効果付与
 	effect_t req_effect_type;
 	effect_t current_effect;
 	// モデルビュー変換行列
@@ -194,11 +193,12 @@ private:
 	 */
 	void prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer);
 	/**
-	 * @brief 描画処理を実行
+	 * @brief オフスクリーンを画面表示用に描画処理する
 	 *
+	 * @param off 
 	 * @param renderer
 	 */
-	void handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer);
+	void handle_draw(gl::GLOffScreenUp &off, gl::GLRendererUp &renderer);
 	/**
 	 * @brief GUI(2D)描画処理を実行
 	 * 

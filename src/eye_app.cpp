@@ -292,10 +292,15 @@ void EyeApp::on_resume() {
 
 	// カメラ設定を読み込む
 	load(camera_settings);
+
+	frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
     source = std::make_unique<v4l2::V4l2Source>(options[OPT_DEVICE].c_str(), !HANDLE_FRAME, options[OPT_UDMABUF].c_str());
 #if BUFFURING || HANDLE_FRAME
+	const auto versionStr = (const char*)glGetString(GL_VERSION);
+	LOGD("GL_VERSION=%s", versionStr);
+	// オフスクリーンを生成
+	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, width, height, false);
 	video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
-	frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
 #else
 	source->set_on_start([this]() {
 		// 共有EGL/GLESコンテキストを生成してこのスレッドに割り当てる
@@ -304,27 +309,28 @@ void EyeApp::on_resume() {
 		auto context = glfwGetEGLContext(window.get_window());
 		int client_version = 3;
 		m_egl = std::make_unique<egl::EGLBase>(client_version, display, context);
-
-		video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
-		frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
-		// FIXME image_rendererの初期化
 		const auto versionStr = (const char*)glGetString(GL_VERSION);
 		LOGD("gl_version=%s", versionStr);
+
+		// 共有EGL/GLコンテキスト上でvideo_rendererとimage_rendererを初期化
+		video_renderer = std::make_unique<core::VideoGLRenderer>(gl_version, 0, false);
+		image_renderer = create_renderer(EFFECT_NON);
 		// オフスクリーンを生成
 		offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, width, height, false);
 	})
 	.set_on_stop([this]() {
 		reset_renderers();
 		m_egl.reset();
-	})
-	.set_on_error([this]() {
-		window.terminate();
 	});
-#endif // #if BUFFURING
-	source->set_on_frame_ready([this](const uint8_t *image, const size_t &bytes, const v4l2::buffer_t &buf) {
-    MEAS_TIME_INIT
+#endif // #if BUFFURING || HANDLE_FRAME
 
-	MEAS_TIME_START
+	source->set_on_error([this]() {
+		window.terminate();
+	})
+	.set_on_frame_ready([this](const uint8_t *image, const size_t &bytes, const v4l2::buffer_t &buf) {
+    	MEAS_TIME_INIT
+
+		MEAS_TIME_START
 #if BUFFURING
 		std::lock_guard<std::mutex> lock(image_lock);
 		buffer.resize(width, height, source->get_frame_type());
@@ -347,7 +353,7 @@ void EyeApp::on_resume() {
 		}
 #endif	// #if !HANDLE_FRAME
 
-		if (LIKELY(frame_wrapper && offscreen && video_renderer)) {
+		if (LIKELY(offscreen)) {
 #if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)
 			static int cnt = 0;
 			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
@@ -377,7 +383,7 @@ void EyeApp::on_resume() {
 					image_wrapper->unwrap();
 					egl::EGL.eglDestroyImageKHR(display, egl_image);
 					EGLCHECK("eglDestroyImageKHR");
-				} else {
+				} else if (frame_wrapper && video_renderer) {
 					// 4K2Kのディスプレーだとglfwのウインドウが画面全体へ広がらないのに
 					// ウインドウサイズとして画面全体を返すのでビューポートの設定がおかしくなって
 					// バッファリングありよりカメラ映像の画角が狭くなってしまう
@@ -389,14 +395,14 @@ void EyeApp::on_resume() {
 					offscreen->unbind();
 				}
 			}
-		}
+		}	// if (LIKELY(offscreen))
 
 #endif // #if BUFFURING
 
 		MEAS_TIME_STOP
 
 		return bytes;
-	});
+	});	// source->set_on_frame_ready
 
 	if (!source || source->open() || source->find_stream(width, height)) {
 		LOGE("カメラをオープンできなかった");
@@ -404,6 +410,7 @@ void EyeApp::on_resume() {
 		window.stop();
 		EXIT();
 	}
+
 	LOGV("supported=%s", source->get_supported_size().c_str());
 	source->resize(width, height);
 	if (source->is_ctrl_supported(V4L2_CID_FRAMERATE)) {
@@ -425,12 +432,6 @@ void EyeApp::on_resume() {
 	// カメラ設定を適用
 	apply_settings(camera_settings);
 
-#if BUFFURING || HANDLE_FRAME
-	const auto versionStr = (const char*)glGetString(GL_VERSION);
-	LOGD("GL_VERSION=%s", versionStr);
-	// オフスクリーンを生成
-	offscreen = std::make_unique<gl::GLOffScreen>(GL_TEXTURE0, width, height, false);
-#endif
 	req_change_matrix = true;
 
 	EXIT();
@@ -512,6 +513,7 @@ void EyeApp::on_render() {
 		// GUI(2D)描画処理を実行
 		handle_draw_gui();
 	}
+
 	reset_watchdog();
 
 	MEAS_TIME_STOP
@@ -608,12 +610,13 @@ void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &render
 }
 
 /**
- * @brief 描画処理を実行
+ * @brief オフスクリーンを画面表示用に描画処理する
  *
+ * @param off
  * @param renderer
  */
 /*private,@WorkerThread*/
-void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &renderer) {
+void EyeApp::handle_draw(gl::GLOffScreenUp &off, gl::GLRendererUp &renderer) {
 	ENTER();
 
 #if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)
@@ -623,8 +626,9 @@ void EyeApp::handle_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &rendere
     }
 #endif
 	auto r = renderer.get();
-	if (r && offscreen) {
-		offscreen->draw(renderer.get());
+	auto o = off.get();
+	if (r && o) {
+		o->draw(r);
 	}
 
 	EXIT();
