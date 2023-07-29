@@ -8,9 +8,6 @@
 #ifndef AANDUSB_WINDOW_H
 #define AANDUSB_WINDOW_H
 
-// Open GL3を使うかどうか, 1: GL3を使う, 0: 使わない(GL2を使う)
-#define USE_GL3 (0)
-
 #include <cstdlib>
 
 #include "eglbase.h"

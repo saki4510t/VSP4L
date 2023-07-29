@@ -11,6 +11,9 @@
 
 #include <getopt.h>
 
+// Open GL3を使うかどうか, 1: GL3を使う, 0: 使わない(GL2を使う)
+#define USE_GL3 (0)
+
 // ノイズ低減コントロール
 #define V4L2_CID_DENOISE	(0x00980922)
 // フレームレートコントロール
