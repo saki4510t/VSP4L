@@ -1179,6 +1179,7 @@ int V4l2SourceBase::get_ctrl(
 			? supported[ctrl_id] : nullptr;
 	if (query) {
 		values.id = query->id;
+		values.type = query->type;
 		values.min = query->minimum;
 		values.max = query->maximum;
 		values.step = query->step;
