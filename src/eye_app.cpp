@@ -224,20 +224,6 @@ void EyeApp::run() {
 
 	window.start([this]() { on_render(); });
 
-#if 0
-	// XXX ラムダ式内でラムダ式自体へアクセスする場合はstd::functionで受けないといけない
-	//     ラムダ式内でラムダ式自体へアクセスしないのであればautoにしたほうがオーバーヘッドが少ない
-	test_task = [&]() {
-		LOGD("run %ld", systemTime());
-		if (test_task) {
-			handler.post_delayed(test_task, 1000);
-		}
-	};
-	LOGD("post_delayed %ld", systemTime());
-	handler.post_delayed(test_task, 10000);
-	handler.remove(test_task);
-	handler.post_delayed(test_task, 10000);
-#endif
 	// ステータス更新開始
 	handler.post(update_state_task);
 
