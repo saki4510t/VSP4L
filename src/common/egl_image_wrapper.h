@@ -78,14 +78,7 @@ private:
 	 * #wrap実行時にAAHardwareBuffer_describeで更新する
 	 */
 	AHardwareBuffer_Desc m_desc;
-	/**
-	 * API16だとeglGetNativeClientBufferANDROIDは動的にリンクしないとビルドが通らないので動的にリンク
-	 */
-	PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC dynamicEglGetNativeClientBufferANDROID;
 #endif
-	PFNEGLCREATEIMAGEKHRPROC dynamicEglCreateImageKHR;
-	PFNEGLDESTROYIMAGEKHRPROC dynamicEglDestroyImageKHR;
-	PFNGLEGLIMAGETARGETTEXTURE2DOESPROC dynamicGlEGLImageTargetTexture2DOES;
 protected:
 public:
 	/**

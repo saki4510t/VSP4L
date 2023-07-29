@@ -22,6 +22,8 @@
 #include <cstring>
 
 #include "utilbase.h"
+
+#include "eglbase.h"
 #include "gltexture.h"
 
 namespace serenegiant::gl {
@@ -242,45 +244,16 @@ GLTexture::GLTexture(
 	m_use_powered2(_use_powered2 && (a_hardware_buffer == nullptr)),
 	own_hardware_buffer(a_hardware_buffer == nullptr),
 	graphicBuffer(a_hardware_buffer),
-	dynamicEglGetNativeClientBufferANDROID(nullptr),
 #else
-	dynamicEglCreateImageKHR(nullptr),
-	dynamicEglDestroyImageKHR(nullptr),
 	m_use_powered2(_use_powered2),
 #endif
 	eglImage(nullptr),
-	dynamicGlEGLImageTargetTexture2DOES(nullptr),
 	pbo_ix(0),
 	pbo_sync(nullptr), pbo_need_write(false) {
 
 	ENTER();
 
 	MARK("size(%d,%d)", width, height);
-#if __ANDROID__
-	dynamicEglGetNativeClientBufferANDROID
- 		= (PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC) eglGetProcAddress("eglGetNativeClientBufferANDROID");
- 	if (!dynamicEglGetNativeClientBufferANDROID) {
-		LOGW("eglGetNativeClientBufferANDROID not found!");
- 	}
-#else
-	dynamicEglCreateImageKHR
- 		= (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
- 	if (!dynamicEglCreateImageKHR) {
-		LOGW("eglCreateImageKHR not found!");
- 	}
-	dynamicEglDestroyImageKHR
- 		= (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
- 	if (!dynamicEglDestroyImageKHR) {
-		LOGW("eglDestroyImageKHR not found!");
-	}
-#endif
-	dynamicGlEGLImageTargetTexture2DOES
-		= (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
- 	if (!dynamicGlEGLImageTargetTexture2DOES) {
-		LOGW("glEGLImageTargetTexture2DOES not found!");
- 	} else {
-		LOGD("glEGLImageTargetTexture2DOES found, %p", dynamicGlEGLImageTargetTexture2DOES);
-	}
 
 	init(width, height, use_pbo, m_use_powered2, try_hw_buf);
 
@@ -347,7 +320,7 @@ GLTexture::~GLTexture() {
 #else
 	if (eglImage) {
 		EGLDisplay display = eglGetCurrentDisplay();
-		dynamicEglDestroyImageKHR(display, eglImage);
+		egl::EGL.eglDestroyImageKHR(display, eglImage);
 	}
 #endif
 	eglImage = nullptr;
@@ -429,7 +402,7 @@ void GLTexture::init(
 					EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
 					EGL_NONE
 				};
-				EGLClientBuffer clientBuf = dynamicEglGetNativeClientBufferANDROID(graphicBuffer);
+				EGLClientBuffer clientBuf = egl::EGL.eglGetNativeClientBufferANDROID(graphicBuffer);
 				if (!clientBuf) {
 					LOGW("failed to get EGLClientBuffer");
 				}
@@ -444,7 +417,7 @@ void GLTexture::init(
 				graphicBuffer = nullptr;
 			}
 		} else if (try_hw_buf && !use_pbo) {
-			if (dynamicEglGetNativeClientBufferANDROID && init_hardware_buffer()) {
+			if (init_hardware_buffer()) {
 				// 自前でハードウエアバッファーを初期化してテクスチャに割り当てるとき
 				EGLDisplay display = eglGetCurrentDisplay();
 				if (display != EGL_NO_DISPLAY) {
@@ -473,7 +446,7 @@ void GLTexture::init(
 							mImageWidth, mImageHeight,
 							mTexWidth, mTexHeight,
 							usage.width, usage.height);
-						EGLClientBuffer clientBuf = dynamicEglGetNativeClientBufferANDROID(graphicBuffer);
+						EGLClientBuffer clientBuf = egl::EGL.eglGetNativeClientBufferANDROID(graphicBuffer);
 						if (!clientBuf) {
 							LOGW("failed to get EGLClientBuffer");
 						}
@@ -490,9 +463,7 @@ void GLTexture::init(
 			}
 		}
 #else	// #if __ANDROID__
-		if (dynamicGlEGLImageTargetTexture2DOES) {
-			// FIXME 未実装
-		}
+		// FIXME 未実装
 #endif	// #if __ANDROID__
 		if (!eglImage) {
 			MARK("allocate by glTexImage2D");
@@ -523,12 +494,8 @@ void GLTexture::init(const GLint &width, const GLint &height,
 	eglImage = image;
 	if (image && (image != EGL_NO_IMAGE_KHR)) {
 		// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
-		if (LIKELY(dynamicGlEGLImageTargetTexture2DOES)) {
-			dynamicGlEGLImageTargetTexture2DOES(TEX_TARGET, image);
-			GLCHECK("glEGLImageTargetTexture2DOES");
-		} else {
-			LOGW("Unexpectedly glEGLImageTargetTexture2DOES not found");
-		}
+		egl::EGL.glEGLImageTargetTexture2DOES(TEX_TARGET, image);
+		GLCHECK("glEGLImageTargetTexture2DOES");
 	}
     // テクスチャ変換行列を単位行列に初期化
 	setIdentityMatrix(mTexMatrix, 0);

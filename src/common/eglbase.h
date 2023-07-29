@@ -97,6 +97,52 @@ EGLImageKHR createEGLImage(
 	const EGLint &width, const EGLint &height,
 	const EGLint &offset, const EGLint &stride);
 
+class EGLBase;
+class GLSurface;
+class EglSync;
+
+class EGLStub {
+friend class EGLBase;
+friend class EglSync;
+private:
+	EGLint egl_error;
+	GLenum gl_error;
+
+	PFNEGLCREATEIMAGEKHRPROC dynamicEglCreateImageKHR;
+	PFNEGLDESTROYIMAGEKHRPROC dynamicEglDestroyImageKHR;
+	PFNGLEGLIMAGETARGETTEXTURE2DOESPROC dynamicGlEGLImageTargetTexture2DOES;
+	PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC dynamicGlEGLImageTargetRenderbufferStorageOES;
+	PFNEGLCREATESYNCKHRPROC dynamicEglCreateSyncKHR;
+	PFNEGLDESTROYSYNCKHRPROC dynamicEglDestroySyncKHR;
+	PFNEGLCLIENTWAITSYNCKHRPROC dynamicEglClientWaitSyncKHR;
+	PFNEGLWAITSYNCKHRPROC dynamicEglWaitSyncKHR;
+	PFNEGLSIGNALSYNCKHRPROC dynamicEglSignalSyncKHR;
+	PFNEGLPRESENTATIONTIMEANDROIDPROC dynamicEglPresentationTimeANDROID;
+	PFNEGLDUPNATIVEFENCEFDANDROIDPROC dynamicEglDupNativeFenceFDANDROID;
+	PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC dynamicEglGetNativeClientBufferANDROID;
+protected:
+public:
+	EGLStub();
+	~EGLStub();
+
+	EGLAPI EGLint EGLAPIENTRY eglGetError (void);
+
+	EGLAPI EGLImageKHR EGLAPIENTRY eglCreateImageKHR (EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
+	EGLAPI EGLBoolean EGLAPIENTRY eglDestroyImageKHR (EGLDisplay dpy, EGLImageKHR image);
+	GL_APICALL void GL_APIENTRY glEGLImageTargetTexture2DOES (GLenum target, GLeglImageOES image);
+	GL_APICALL void GL_APIENTRY glEGLImageTargetRenderbufferStorageOES (GLenum target, GLeglImageOES image);
+	EGLAPI EGLSyncKHR EGLAPIENTRY eglCreateSyncKHR (EGLDisplay dpy, EGLenum type, const EGLint *attrib_list);
+	EGLAPI EGLBoolean EGLAPIENTRY eglDestroySyncKHR (EGLDisplay dpy, EGLSyncKHR sync);
+	EGLAPI EGLint EGLAPIENTRY eglClientWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags, EGLTimeKHR timeout);
+	EGLAPI EGLint EGLAPIENTRY eglWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags);
+	EGLAPI EGLBoolean EGLAPIENTRY eglSignalSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode);
+	EGLAPI EGLBoolean EGLAPIENTRY eglPresentationTimeANDROID (EGLDisplay dpy, EGLSurface surface, EGLnsecsANDROID time);
+	EGLAPI EGLint EGLAPIENTRY eglDupNativeFenceFDANDROID (EGLDisplay dpy, EGLSyncKHR sync);
+	EGLAPI EGLClientBuffer EGLAPIENTRY eglGetNativeClientBufferANDROID (const struct AHardwareBuffer *buffer);
+};
+
+extern EGLStub EGL;
+
 //--------------------------------------------------------------------------------
 /**
  * EGLを使ってカレントスレッドにEGL/GLコンテキストを生成するクラス
@@ -186,14 +232,6 @@ private:
 	bool mWithDepthBuffer;
 	bool mWithStencilBuffer;
 	bool mIsRecordable;
-
-	// API16だとeglPresentationTimeANDROIDは動的にリンクしないとビルドが通らない
-	PFNEGLPRESENTATIONTIMEANDROIDPROC dynamicEglPresentationTimeANDROID;
-	PFNEGLDUPNATIVEFENCEFDANDROIDPROC dynamicEglDupNativeFenceFDANDROID;
-	PFNEGLCREATESYNCKHRPROC dynamicEglCreateSyncKHR;
-	PFNEGLDESTROYSYNCKHRPROC dynamicEglDestroySyncKHR;
-	PFNEGLSIGNALSYNCKHRPROC dynamicEglSignalSyncKHR;
-	PFNEGLWAITSYNCKHRPROC dynamicEglWaitSyncKHR;
 
 	std::set<std::string> mEGLExtensions;
 	std::set<std::string> mGLExtensions;
@@ -411,7 +449,7 @@ public:
 	/**
 	 * signal関数が有効かどうかを取得
 	*/
-	inline bool can_signal() const { return is_valid() && m_egl->dynamicEglSignalSyncKHR != nullptr; }
+	inline bool can_signal() const { return is_valid() && EGL.dynamicEglSignalSyncKHR != nullptr; }
 	inline EGLSyncKHR sync() const { return m_sync; };
 
 	/**

@@ -284,6 +284,241 @@ EGLImageKHR createEGLImage(
 }
 
 //--------------------------------------------------------------------------------
+EGLStub EGL;
+
+EGLStub::EGLStub()
+:	dynamicEglPresentationTimeANDROID(nullptr),
+	dynamicEglDupNativeFenceFDANDROID(nullptr),
+	dynamicEglCreateImageKHR(nullptr),
+	dynamicEglDestroyImageKHR(nullptr),
+	dynamicGlEGLImageTargetTexture2DOES(nullptr),
+	dynamicGlEGLImageTargetRenderbufferStorageOES(nullptr),
+	dynamicEglCreateSyncKHR(nullptr),
+	dynamicEglDestroySyncKHR(nullptr),
+	dynamicEglClientWaitSyncKHR(nullptr),
+	dynamicEglSignalSyncKHR(nullptr),
+	dynamicEglWaitSyncKHR(nullptr)
+{
+	ENTER();
+
+#if __ANDROID__
+	dynamicEglGetNativeClientBufferANDROID
+ 		= (PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC)
+ 			eglGetProcAddress("eglGetNativeClientBufferANDROID");
+ 	if (!dynamicEglGetNativeClientBufferANDROID) {
+ 		m_supported = false;
+		LOGW("eglGetNativeClientBufferANDROID not found!");
+ 	}
+	dynamicEglPresentationTimeANDROID
+    	= (PFNEGLPRESENTATIONTIMEANDROIDPROC) eglGetProcAddress("eglPresentationTimeANDROID");
+	if (!dynamicEglPresentationTimeANDROID) {
+		LOGW("eglPresentationTimeANDROID is not available!");
+	} else {
+		LOGD("successfully could get eglPresentationTimeANDROID");
+	}
+	dynamicEglDupNativeFenceFDANDROID = (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)
+		eglGetProcAddress("eglDupNativeFenceFDANDROID");
+	if (!dynamicEglDupNativeFenceFDANDROID) {
+		LOGW("eglDupNativeFenceFDANDROID is not available!");
+	} else {
+		LOGD("successfully could get eglDupNativeFenceFDANDROID");
+	}
+#endif
+	dynamicEglCreateImageKHR
+		= (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
+ 	if (!dynamicEglCreateImageKHR) {
+		LOGW("eglCreateImageKHR not found!");
+ 	}
+
+	dynamicEglDestroyImageKHR
+ 		= (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
+ 	if (!dynamicEglDestroyImageKHR) {
+		LOGW("eglDestroyImageKHR not found!");
+	}
+
+	dynamicGlEGLImageTargetTexture2DOES
+		= (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
+ 	if (!dynamicGlEGLImageTargetTexture2DOES) {
+		LOGW("glEGLImageTargetTexture2DOES not found!");
+	}
+
+	dynamicGlEGLImageTargetRenderbufferStorageOES
+		= (PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC) eglGetProcAddress("glEGLImageTargetRenderbufferStorageOES");
+ 	if (!dynamicGlEGLImageTargetRenderbufferStorageOES) {
+		LOGW("glEGLImageTargetRenderbufferStorageOES not found!");
+	}
+
+	dynamicEglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC)
+		eglGetProcAddress("eglCreateSyncKHR");
+	if (!dynamicEglCreateSyncKHR) {
+		LOGW("eglCreateSyncKHR is not available!");
+	}
+
+	dynamicEglDestroySyncKHR
+		= (PFNEGLDESTROYSYNCKHRPROC) eglGetProcAddress("eglDestroySyncKHR");
+	if (!dynamicEglDestroySyncKHR) {
+		LOGW("eglDestroySyncKHR is not available!");
+	}
+
+	dynamicEglClientWaitSyncKHR
+		= (PFNEGLCLIENTWAITSYNCKHRPROC) eglGetProcAddress("eglClientWaitSyncKHR");
+	if (!dynamicEglClientWaitSyncKHR) {
+		LOGW("eglClientWaitSyncKHR is not available!");
+	}
+
+	dynamicEglSignalSyncKHR
+		= (PFNEGLSIGNALSYNCKHRPROC) eglGetProcAddress("eglSignalSyncKHR");
+	if (!dynamicEglSignalSyncKHR) {
+		LOGW("eglSignalSyncKHR is not available!");
+	}
+
+	dynamicEglWaitSyncKHR
+		= (PFNEGLWAITSYNCKHRPROC) eglGetProcAddress("eglWaitSyncKHR");
+	if (!dynamicEglWaitSyncKHR) {
+		LOGW("eglWaitSyncKHR is not available!");
+	} else {
+		LOGD("successfully could get eglWaitSyncKHR");
+	}
+
+	EXIT();
+}
+
+EGLStub::~EGLStub() {
+	ENTER();
+	EXIT();
+}
+
+EGLAPI EGLint EGLAPIENTRY EGLStub::eglGetError (void) {
+	EGLint result = egl_error;
+	if (result == EGL_SUCCESS) {
+		result = ::eglGetError();
+	}
+
+	return result;
+}
+
+EGLAPI EGLImageKHR EGLAPIENTRY EGLStub::eglCreateImageKHR (
+	EGLDisplay dpy, EGLContext ctx, EGLenum target,
+	EGLClientBuffer buffer, const EGLint *attrib_list) {
+
+	if (dynamicEglCreateImageKHR) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglCreateImageKHR(dpy, ctx, target, buffer, attrib_list);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return EGL_NO_IMAGE_KHR;
+	}
+}
+
+EGLAPI EGLBoolean EGLAPIENTRY EGLStub::eglDestroyImageKHR (EGLDisplay dpy, EGLImageKHR image) {
+	if (dynamicEglDestroyImageKHR) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglDestroyImageKHR(dpy, image);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return 0;
+	}
+}
+
+GL_APICALL void GL_APIENTRY EGLStub::glEGLImageTargetTexture2DOES (GLenum target, GLeglImageOES image) {
+	if (dynamicGlEGLImageTargetTexture2DOES) {
+		egl_error = EGL_SUCCESS;
+		dynamicGlEGLImageTargetTexture2DOES(target, image);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+	}
+}
+
+GL_APICALL void GL_APIENTRY EGLStub::glEGLImageTargetRenderbufferStorageOES (GLenum target, GLeglImageOES image) {
+	if (dynamicGlEGLImageTargetRenderbufferStorageOES) {
+		egl_error = EGL_SUCCESS;
+		dynamicGlEGLImageTargetRenderbufferStorageOES(target, image);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+	}
+}
+
+EGLAPI EGLSyncKHR EGLAPIENTRY EGLStub::eglCreateSyncKHR (EGLDisplay dpy, EGLenum type, const EGLint *attrib_list) {
+	if (dynamicEglCreateSyncKHR) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglCreateSyncKHR(dpy, type, attrib_list);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return EGL_NO_SYNC_KHR;
+	}
+}
+
+EGLAPI EGLBoolean EGLAPIENTRY EGLStub::eglDestroySyncKHR (EGLDisplay dpy, EGLSyncKHR sync) {
+	if (dynamicEglDestroySyncKHR) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglDestroySyncKHR(dpy, sync);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return 0;
+	}
+}
+
+EGLAPI EGLint EGLAPIENTRY EGLStub::eglClientWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags, EGLTimeKHR timeout) {
+	if (dynamicEglClientWaitSyncKHR) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglClientWaitSyncKHR(dpy, sync, flags, timeout);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return 0;
+	}
+}
+
+EGLAPI EGLint EGLAPIENTRY EGLStub::eglWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags) {
+	if (dynamicEglWaitSyncKHR) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglWaitSyncKHR(dpy, sync, flags);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return 0;
+	}
+}
+
+EGLAPI EGLBoolean EGLAPIENTRY EGLStub::eglSignalSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode) {
+	if (dynamicEglSignalSyncKHR) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglSignalSyncKHR(dpy, sync, mode);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return 0;
+	}
+}
+
+EGLAPI EGLBoolean EGLAPIENTRY EGLStub::eglPresentationTimeANDROID (EGLDisplay dpy, EGLSurface surface, EGLnsecsANDROID time) {
+	if (dynamicEglPresentationTimeANDROID) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglPresentationTimeANDROID(dpy, surface, time);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return 0;
+	}
+}
+
+EGLAPI EGLint EGLAPIENTRY EGLStub::eglDupNativeFenceFDANDROID (EGLDisplay dpy, EGLSyncKHR sync) {
+	if (dynamicEglDupNativeFenceFDANDROID) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglDupNativeFenceFDANDROID(dpy, sync);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return 0;
+	}
+}
+
+EGLAPI EGLClientBuffer EGLAPIENTRY EGLStub::eglGetNativeClientBufferANDROID (const struct AHardwareBuffer *buffer) {
+	if (dynamicEglGetNativeClientBufferANDROID) {
+		egl_error = EGL_SUCCESS;
+		return dynamicEglGetNativeClientBufferANDROID(buffer);
+	} else {
+		egl_error = EGL_BAD_ACCESS;
+		return EGL_CAST(EGLClientBuffer,0);
+	}
+}
+
+//--------------------------------------------------------------------------------
 /**
  * コンストラクタ
  * @param client_version 2: OpenGL|ES2, 3:OpenGLES|3
@@ -309,13 +544,7 @@ EGLBase::EGLBase(int & client_version,
 	client_version(0),
 	mWithDepthBuffer(with_depth_buffer),
 	mWithStencilBuffer(with_stencil_buffer),
-	mIsRecordable(isRecordable),
-	dynamicEglPresentationTimeANDROID(nullptr),
-	dynamicEglDupNativeFenceFDANDROID(nullptr),
-	dynamicEglCreateSyncKHR(nullptr),
-	dynamicEglDestroySyncKHR(nullptr),
-	dynamicEglSignalSyncKHR(nullptr),
-	dynamicEglWaitSyncKHR(nullptr) {
+	mIsRecordable(isRecordable) {
 
 	ENTER();
 
@@ -323,57 +552,6 @@ EGLBase::EGLBase(int & client_version,
 		shared_context ? shared_context : EGL_NO_CONTEXT,
 		with_depth_buffer, with_stencil_buffer, isRecordable);
 	client_version = this->client_version;
-
-#if __ANDROID__
-	LOGD("try to get eglPresentationTimeANDROID");
-	dynamicEglPresentationTimeANDROID
-    	= (PFNEGLPRESENTATIONTIMEANDROIDPROC) eglGetProcAddress("eglPresentationTimeANDROID");
-	if (!dynamicEglPresentationTimeANDROID) {
-		LOGW("eglPresentationTimeANDROID is not available!");
-	} else {
-		LOGD("successfully could get eglPresentationTimeANDROID");
-	}
-
-	dynamicEglDupNativeFenceFDANDROID = (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)
-		eglGetProcAddress("eglDupNativeFenceFDANDROID");
-	if (!dynamicEglDupNativeFenceFDANDROID) {
-		LOGW("eglDupNativeFenceFDANDROID is not available!");
-	} else {
-		LOGD("successfully could get eglDupNativeFenceFDANDROID");
-	}
-#endif
-
-	dynamicEglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC)
-		eglGetProcAddress("eglCreateSyncKHR");
-	if (!dynamicEglCreateSyncKHR) {
-		LOGW("eglCreateSyncKHR is not available!");
-	} else {
-		LOGD("successfully could get eglCreateSyncKHR");
-	}
-
-	dynamicEglDestroySyncKHR = (PFNEGLDESTROYSYNCKHRPROC)
-		eglGetProcAddress("eglDestroySyncKHR");
-	if (!dynamicEglDestroySyncKHR) {
-		LOGW("eglDestroySyncKHR is not available!");
-	} else {
-		LOGD("successfully could get eglDestroySyncKHR");
-	}
-
-	dynamicEglSignalSyncKHR = (PFNEGLSIGNALSYNCKHRPROC)
-		eglGetProcAddress("eglSignalSyncKHR");
-	if (!dynamicEglSignalSyncKHR) {
-		LOGW("eglSignalSyncKHR is not available!");
-	} else {
-		LOGD("successfully could get eglSignalSyncKHR");
-	}
-
-	dynamicEglWaitSyncKHR = (PFNEGLWAITSYNCKHRPROC)
-		eglGetProcAddress("eglWaitSyncKHR");
-	if (!dynamicEglWaitSyncKHR) {
-		LOGW("eglWaitSyncKHR is not available!");
-	} else {
-		LOGD("successfully could get eglWaitSyncKHR");
-	}
 
 	EXIT();
 }
@@ -757,10 +935,10 @@ int EGLBase::setPresentationTime(EGLSurface surface,
 //	ENTER();
 
 	EGLint err = 0;
-	if (pts_ns && dynamicEglPresentationTimeANDROID) {
-		EGLBoolean ret = dynamicEglPresentationTimeANDROID(mEglDisplay, surface, pts_ns);
+	if (pts_ns) {
+		EGLBoolean ret = EGL.eglPresentationTimeANDROID(mEglDisplay, surface, pts_ns);
 		if (UNLIKELY(!ret)) {
-      		err = -eglGetError();
+      		err = -EGL.eglGetError();
       		LOGW("dynamicEglPresentationTimeANDROID:err=%d", err);
 		}
 	}
@@ -997,19 +1175,19 @@ EglSync::EglSync(const EGLBase *egl, int fence_fd)
 {
 	ENTER();
 
-	if (egl && egl->dynamicEglCreateSyncKHR && egl->dynamicEglDestroySyncKHR) {
+	if (egl && EGL.dynamicEglCreateSyncKHR && EGL.dynamicEglDestroySyncKHR) {
 		if (fence_fd != -1) {
 			EGLint attribs[] = {
 				EGL_SYNC_NATIVE_FENCE_FD_ANDROID, fence_fd,
 				EGL_NONE
 			};
-			m_sync = egl->dynamicEglCreateSyncKHR(egl->display(),
+			m_sync = EGL.eglCreateSyncKHR(egl->display(),
 				EGL_SYNC_NATIVE_FENCE_ANDROID, attribs);
 			if (m_sync == EGL_NO_SYNC_KHR) {
 				close(fence_fd);
 			}
 		} else {
-			m_sync = egl->dynamicEglCreateSyncKHR(egl->display(), EGL_SYNC_FENCE_KHR, nullptr);	// XXX EGL_SYNC_TYPE_KHRだとだめみたい
+			m_sync = EGL.eglCreateSyncKHR(egl->display(), EGL_SYNC_FENCE_KHR, nullptr);	// XXX EGL_SYNC_TYPE_KHRだとだめみたい
 			if (m_sync == EGL_NO_SYNC_KHR) {
 				const auto err = eglGetError();
 				LOGW("Failed to eglCreateSyncKHR:err=0x%08x", err);
@@ -1029,8 +1207,8 @@ EglSync::EglSync(const EGLBase *egl, int fence_fd)
 EglSync::~EglSync() {
 	ENTER();
 
-	if (m_egl && m_sync && m_egl->dynamicEglDestroySyncKHR) {
-		m_egl->dynamicEglDestroySyncKHR(m_egl->display(), m_sync);
+	if (m_egl && m_sync && EGL.dynamicEglDestroySyncKHR) {
+		EGL.eglDestroySyncKHR(m_egl->display(), m_sync);
 		m_sync = EGL_NO_SYNC_KHR;
 	}
 	m_sync = EGL_NO_SYNC_KHR;
@@ -1049,8 +1227,8 @@ int EglSync::dup() {
 
 	int result = -1;
 
-	if (m_egl && m_sync && m_egl->dynamicEglDupNativeFenceFDANDROID) {
-		result = m_egl->dynamicEglDupNativeFenceFDANDROID(m_egl->display(), m_sync);
+	if (m_egl && m_sync && EGL.dynamicEglDupNativeFenceFDANDROID) {
+		result = EGL.eglDupNativeFenceFDANDROID(m_egl->display(), m_sync);
 	}
 
 	RETURN(result, int);
@@ -1064,8 +1242,8 @@ int EglSync::wait_sync() {
 	ENTER();
 
 	int result = -1;
-	if (m_egl && m_sync && m_egl->dynamicEglWaitSyncKHR) {
-		const auto r = m_egl->dynamicEglWaitSyncKHR(m_egl->display(), m_sync, 0);
+	if (m_egl && m_sync && EGL.dynamicEglWaitSyncKHR) {
+		const auto r = EGL.eglWaitSyncKHR(m_egl->display(), m_sync, 0);
 		result = (r == EGL_TRUE) ? 0 : r;
 	}
 	
@@ -1082,8 +1260,8 @@ int EglSync::signal(const bool &reset) {
 	ENTER();
 
 	int result = -1;
-	if (m_egl && m_sync && m_egl->dynamicEglSignalSyncKHR) {
-		const auto r = m_egl->dynamicEglSignalSyncKHR(m_egl->display(), m_sync, reset ? EGL_UNSIGNALED_KHR : EGL_SIGNALED_KHR);
+	if (m_egl && m_sync && EGL.dynamicEglSignalSyncKHR) {
+		const auto r = EGL.eglSignalSyncKHR(m_egl->display(), m_sync, reset ? EGL_UNSIGNALED_KHR : EGL_SIGNALED_KHR);
 		if (r == EGL_TRUE) {
 			// no error occurred
 			result = 0;

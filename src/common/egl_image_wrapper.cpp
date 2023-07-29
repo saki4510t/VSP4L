@@ -48,42 +48,12 @@ EglImageWrapper::EglImageWrapper(
 	m_egl_image(nullptr),
 #if __ANDROID__
     m_buffer(nullptr),  m_desc(),
-	dynamicEglGetNativeClientBufferANDROID(nullptr),
     m_supported(init_hardware_buffer())
 #else
     m_supported(true)
 #endif
 {
 	ENTER();
-
-#if __ANDROID__
-	dynamicEglGetNativeClientBufferANDROID
- 		= (PFNEGLGETNATIVECLIENTBUFFERANDROIDPROC)
- 			eglGetProcAddress("eglGetNativeClientBufferANDROID");
- 	if (!dynamicEglGetNativeClientBufferANDROID) {
- 		m_supported = false;
-		LOGW("eglGetNativeClientBufferANDROID not found!");
- 	}
-    m_supported &= (dynamicEglGetNativeClientBufferANDROID != nullptr);
-#endif
-	dynamicEglCreateImageKHR
- 		= (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
- 	if (!dynamicEglCreateImageKHR) {
-		LOGW("eglCreateImageKHR not found!");
- 	}
-	dynamicEglDestroyImageKHR
- 		= (PFNEGLDESTROYIMAGEKHRPROC) eglGetProcAddress("eglDestroyImageKHR");
- 	if (!dynamicEglDestroyImageKHR) {
-		LOGW("eglDestroyImageKHR not found!");
-	}
-	dynamicGlEGLImageTargetTexture2DOES
-		= (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) eglGetProcAddress("glEGLImageTargetTexture2DOES");
- 	if (!dynamicGlEGLImageTargetTexture2DOES) {
-		LOGW("glEGLImageTargetTexture2DOES not found!");
-	}
-    m_supported &= (dynamicEglCreateImageKHR != nullptr)
-        && (dynamicEglDestroyImageKHR != nullptr)
-        && (dynamicGlEGLImageTargetTexture2DOES != nullptr);
 
 	// テクスチャ変換行列を単位行列に初期化
 	gl::setIdentityMatrix(m_tex_matrix, 0);
@@ -149,7 +119,7 @@ int EglImageWrapper::wrap(AHardwareBuffer *buffer) {
 				EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
 				EGL_NONE
 			};
-			EGLClientBuffer clientBuf = dynamicEglGetNativeClientBufferANDROID(buffer);
+			EGLClientBuffer clientBuf = EGL.eglGetNativeClientBufferANDROID(buffer);
 			if (!clientBuf) {
 				LOGW("failed to get EGLClientBuffer");
 			}
@@ -158,7 +128,7 @@ int EglImageWrapper::wrap(AHardwareBuffer *buffer) {
 			if (m_egl_image) {
 				bind();
 				// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
-				dynamicGlEGLImageTargetTexture2DOES(m_tex_target, m_egl_image);
+				EGL.glEGLImageTargetTexture2DOES(m_tex_target, m_egl_image);
 				result = 0;
 			} else {
 				LOGW("eglCreateImageKHR failed");
@@ -201,7 +171,7 @@ int EglImageWrapper::wrap(AHardwareBuffer *buffer) {
 			m_tex_matrix[0] = (float)m_tex_width / (float)m_tex_stride;
 			bind();
 			// 同じテクスチャに対してEGL Imageをバインドする → テクスチャとEGLImageのメモリーが共有される
-			dynamicGlEGLImageTargetTexture2DOES(m_tex_target, m_egl_image);
+			EGL.glEGLImageTargetTexture2DOES(m_tex_target, m_egl_image);
 			result = 0;
 		} else {
 			m_tex_matrix[0] = 1.0f;
@@ -222,7 +192,7 @@ int EglImageWrapper::unwrap() {
 	if (m_egl_image) {
 		EGLDisplay display = eglGetCurrentDisplay();
 		EGLCHECK("eglGetCurrentDisplay");
-		dynamicEglDestroyImageKHR(display, m_egl_image);
+		EGL.eglDestroyImageKHR(display, m_egl_image);
 		EGLCHECK("eglDestroyImageKHR");
 		m_egl_image = nullptr;
 	}
