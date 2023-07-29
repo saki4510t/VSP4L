@@ -26,6 +26,8 @@
 #include <sstream>
 #include <iterator>	// istream_iterator
 
+#include <drm/drm_fourcc.h>
+
 #include "utilbase.h"
 // common
 #include "charutils.h"
@@ -352,15 +354,18 @@ void EyeApp::on_resume() {
 			if (!req_freeze) {
 				// フリーズ中でなければオフスクリーンテクスチャをカメラ映像で更新する
 				const auto try_egl_image = buf.fd != 0;
-				EGLImageKHR egl_iamge = EGL_NO_IMAGE_KHR;
+				EGLImageKHR egl_image = EGL_NO_IMAGE_KHR;
 				if (try_egl_image) {
 					// EGLImageKHRを使ったゼロコピーテクスチャでの描画を試みる場合
 					// FIXME 未実装 EGLIMageKHRを生成
+					auto display = eglGetCurrentDisplay();
+					egl_image = egl::createEGLImage(display, buf.fd, DRM_FORMAT_UYVY,
+						width, height, buf.offset, width);
 				}
-				if (egl_iamge) {
+				if (egl_image) {
 					// EGLImageKHRを生成できたとき
 					// FIXME 未実装 EGLIMageWrapperでラップ、image_rendererで描画する
-					image_wrapper->wrap(egl_iamge, width, height, width);
+					image_wrapper->wrap(egl_image, width, height, width);
 					{
 						offscreen->bind();
 						{
