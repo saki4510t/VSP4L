@@ -273,6 +273,7 @@ EGLImageKHR createEGLImage(
 	image = EGL.eglCreateImageKHR(display,
 		EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT,
 		(EGLClientBuffer)nullptr, attribute_list);
+	EGLCHECK("eglCreateImageKHR");
 
 	RET(image);
 }

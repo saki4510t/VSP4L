@@ -9,6 +9,7 @@
 	#undef LOG_NDEBUG
 	#undef NDEBUG
 	#define DEBUG_GL_CHECK			// GL関数のデバッグメッセージを表示する時
+	#define DEBUG_EGL_CHECK			// EGL関数のデバッグメッセージを表示するとき
 #endif
 
 #define LOG_TAG "EyeApp"
@@ -354,11 +355,11 @@ void EyeApp::on_resume() {
 			if (!req_freeze) {
 				// フリーズ中でなければオフスクリーンテクスチャをカメラ映像で更新する
 				const auto try_egl_image = buf.fd != 0;
+				auto display = eglGetCurrentDisplay();
 				EGLImageKHR egl_image = EGL_NO_IMAGE_KHR;
 				if (try_egl_image) {
 					// EGLImageKHRを使ったゼロコピーテクスチャでの描画を試みる場合
 					// FIXME 未実装 EGLIMageKHRを生成
-					auto display = eglGetCurrentDisplay();
 					egl_image = egl::createEGLImage(display, buf.fd, DRM_FORMAT_UYVY,
 						width, height, buf.offset, width);
 				}
@@ -374,6 +375,8 @@ void EyeApp::on_resume() {
 						offscreen->unbind();
 					}
 					image_wrapper->unwrap();
+					EGL.eglDestroyImageKHR(display, egl_image);
+					EGLCHECK("eglDestroyImageKHR");
 				} else {
 					// 4K2Kのディスプレーだとglfwのウインドウが画面全体へ広がらないのに
 					// ウインドウサイズとして画面全体を返すのでビューポートの設定がおかしくなって
