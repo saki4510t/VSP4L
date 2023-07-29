@@ -60,6 +60,8 @@ namespace serenegiant::app {
 #define PATH_SIZE (512)
 // ステータスの更新間隔(LED点滅の最小間隔), とりあえず1秒にしておく
 #define UPDATE_STATE_INTERVAL_MS (1000)
+// キーモードをリセットするまでの待機時間[ミリ秒]
+#define KEY_MODE_RESET_DELAY_MS (5000)
 
 #if MEAS_TIME
 #define MEAS_TIME_INIT static nsecs_t _meas_time_ = 0;\
@@ -710,7 +712,7 @@ void EyeApp::handle_draw_gui() {
  */
 void EyeApp::reset_mode_delayed() {
 	handler.remove(reset_mode_task);
-	handler.post_delayed(reset_mode_task, 5000);
+	handler.post_delayed(reset_mode_task, KEY_MODE_RESET_DELAY_MS);
 }
 
 /**
