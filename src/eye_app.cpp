@@ -40,8 +40,6 @@
 
 namespace serenegiant::app {
 
-// handle_drawの呼び出し回数をカウントするかどうか 0:カウントしない、1:カウントする
-#define COUNT_FRAMES (0)
 // 自前でV4l2Source::handle_frameを呼び出すかどうか
 // 0: v4l2sourceのワーカースレッドでhandle_frameを呼び出す, 1:自前でhandle_frameを呼び出す
 #define HANDLE_FRAME (0)
@@ -327,10 +325,6 @@ void EyeApp::on_resume() {
 #endif	// #if !HANDLE_FRAME
 
 		if (LIKELY(offscreen)) {
-#if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)
-			static int cnt = 0;
-			if (++cnt % 120 == 0) LOGD("cnt=%d", cnt);
-#endif
 			if (!req_freeze) {
 				// フリーズ中でなければオフスクリーンテクスチャをカメラ映像で更新する
 				const auto try_egl_image = buf.fd != 0;
@@ -582,12 +576,6 @@ void EyeApp::prepare_draw(gl::GLOffScreenUp &offscreen, gl::GLRendererUp &render
 void EyeApp::handle_draw(gl::GLOffScreenUp &off, gl::GLRendererUp &renderer) {
 	ENTER();
 
-#if COUNT_FRAMES && !defined(LOG_NDEBUG) && !defined(NDEBUG)
-    static int cnt = 0;
-    if ((++cnt % 100) == 0) {
-        MARK("cnt=%d", cnt);
-    }
-#endif
 	auto r = renderer.get();
 	auto o = off.get();
 	if (r && o) {
