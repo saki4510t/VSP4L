@@ -375,7 +375,7 @@ void EyeApp::on_resume() {
 						offscreen->unbind();
 					}
 					image_wrapper->unwrap();
-					EGL.eglDestroyImageKHR(display, egl_image);
+					egl::EGL.eglDestroyImageKHR(display, egl_image);
 					EGLCHECK("eglDestroyImageKHR");
 				} else {
 					// 4K2Kのディスプレーだとglfwのウインドウが画面全体へ広がらないのに

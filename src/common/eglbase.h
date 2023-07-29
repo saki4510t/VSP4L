@@ -24,7 +24,7 @@
 
 #undef EGLCHECK
 #ifdef DEBUG_EGL_CHECK
-	#define	EGLCHECK(OP) checkEglError(basename(__FILE__), __LINE__, __FUNCTION__, OP)
+	#define	EGLCHECK(OP) egl::checkEglError(basename(__FILE__), __LINE__, __FUNCTION__, OP)
 #else
 	#define	EGLCHECK(OP)
 #endif
