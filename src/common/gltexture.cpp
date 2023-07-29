@@ -308,19 +308,14 @@ GLTexture::GLTexture(
 GLTexture::~GLTexture() {
 	ENTER();
 
-#if __ANDROID__
 	if (eglImage) {
-		EGLDisplay display = eglGetCurrentDisplay();
-		eglDestroyImageKHR(display, eglImage);
+		auto display = eglGetCurrentDisplay();
+		egl::EGL.eglDestroyImageKHR(display, eglImage);
 	}
+#if __ANDROID__
 	if (graphicBuffer) {
 		AAHardwareBuffer_release(graphicBuffer);
 		graphicBuffer = nullptr;
-	}
-#else
-	if (eglImage) {
-		EGLDisplay display = eglGetCurrentDisplay();
-		egl::EGL.eglDestroyImageKHR(display, eglImage);
 	}
 #endif
 	eglImage = nullptr;
