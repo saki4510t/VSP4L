@@ -220,6 +220,17 @@ protected:
 	mutable Mutex v4l2_lock;
 
 	/**
+	 * 実行中かどうかをセット
+	 * @param is_running
+	 * @return
+	 */
+	inline bool set_running(const bool &is_running) {
+		const bool prev = m_running;
+		m_running  = is_running;
+		return (prev);
+	};
+
+	/**
 	 * @brief 映像取得開始時の処理, 純粋仮想関数
 	 * ワーカースレッド上で呼ばれる
 	 */
@@ -279,17 +290,6 @@ public:
 	 * @return
 	 */
 	inline const bool is_running() const { return m_running; };
-
-	/**
-	 * 実行中かどうかをセット
-	 * @param is_running
-	 * @return
-	 */
-	inline bool set_running(const bool &is_running) {
-		const bool prev = m_running;
-		m_running  = is_running;
-		return (prev);
-	};
 
 	/**
 	 * @brief ネゴシーエーションしたフレームタイプを取得する
