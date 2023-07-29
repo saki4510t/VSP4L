@@ -261,24 +261,18 @@ EGLImageKHR createEGLImage(
 	ENTER();
 
 	EGLImageKHR image = EGL_NO_IMAGE_KHR;
-	PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHRFunc
-		=  (PFNEGLCREATEIMAGEKHRPROC) eglGetProcAddress("eglCreateImageKHR");
-	if (eglCreateImageKHRFunc) {
-		const EGLint attribute_list[] = {
-			EGL_WIDTH, width,
-			EGL_HEIGHT, height,
-			EGL_LINUX_DRM_FOURCC_EXT, fourcc,
-			EGL_DMA_BUF_PLANE0_FD_EXT, udmabuf_fd,
-			EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
-			EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
-			EGL_NONE
-		};
-		image = eglCreateImageKHRFunc(display,
-			EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT,
-			(EGLClientBuffer)nullptr, attribute_list);
-	} else {
-		LOGW("eglCreateImageKHR is not available!");
-	}
+	const EGLint attribute_list[] = {
+		EGL_WIDTH, width,
+		EGL_HEIGHT, height,
+		EGL_LINUX_DRM_FOURCC_EXT, fourcc,
+		EGL_DMA_BUF_PLANE0_FD_EXT, udmabuf_fd,
+		EGL_DMA_BUF_PLANE0_OFFSET_EXT, offset,
+		EGL_DMA_BUF_PLANE0_PITCH_EXT, stride,
+		EGL_NONE
+	};
+	image = EGL.eglCreateImageKHR(display,
+		EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT,
+		(EGLClientBuffer)nullptr, attribute_list);
 
 	RET(image);
 }
