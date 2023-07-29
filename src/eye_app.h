@@ -76,6 +76,7 @@ private:
 	egl::EglImageWrapperUp image_wrapper;
 #if BUFFURING
 	core::BaseVideoFrame buffer;
+	mutable std::mutex image_lock;
 #endif
 	// オフスクリーンを画面表示用に描画するGLRenderer
 	gl::GLRendererUp screen_renderer;
@@ -83,7 +84,6 @@ private:
 	gl::GLOffScreenUp offscreen;
 	// 排他制御用
 	mutable std::mutex state_lock;
-	mutable std::mutex image_lock;
 	// キー操作用
 	KeyDispatcher key_dispatcher;
 	// 映像効果変更要求
