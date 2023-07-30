@@ -163,6 +163,9 @@ EyeApp::EyeApp(
 	// キーイベントハンドラを登録
 	window
 		.on_key_event([this](const ImGuiKey &key, const int &scancode, const key_action_t &action, const int &mods) {
+			if (key == ImGuiKey_Escape) {
+				window.terminate();
+			}
 			return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
 		})
 		.set_on_start([this]() { on_start(); })
