@@ -133,8 +133,13 @@ private:
 	 */
 	int handle_on_key_up(const KeyEvent &event);
 
-	int handle_on_tap(const KeyEvent &event, const nsecs_t &duration_ms);
 	//--------------------------------------------------------------------------------
+	/**
+	 * 最後にキーを押してから一定時間(MULTI_PRESS_MAX_INTERVALMS)経過してマルチタップが途切れたときの処理
+	 * @param event
+	 * @param duration_ms
+	*/
+	int handle_on_tap(const KeyEvent &event, const nsecs_t &duration_ms);
 	/**
 	 * @brief 長押し時間経過したときの処理
 	 *

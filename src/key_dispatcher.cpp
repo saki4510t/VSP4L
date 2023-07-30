@@ -122,6 +122,7 @@ KeyDispatcher::~KeyDispatcher() {
  * @brief キーモードをリセット(KEY_MODE_NORMALへ戻す)
  * 
  */
+/*public*/
 void KeyDispatcher::reset_key_mode() {
 	ENTER();
 
@@ -190,6 +191,7 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 }
 
 //--------------------------------------------------------------------------------
+/*private*/
 void KeyDispatcher::change_key_mode(const key_mode_t &mode, const bool &force_callback) {
 	ENTER();
 
@@ -212,6 +214,7 @@ void KeyDispatcher::change_key_mode(const key_mode_t &mode, const bool &force_ca
  * @param handled
  * @return KeyStateUp 更新前のキーステートのコピー
  */
+/*private*/
 KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 	ENTER();
 
@@ -262,6 +265,7 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 	RET(prev);
 }
 
+/*private*/
 void KeyDispatcher::clear_key_state(const ImGuiKey &key) {
 	ENTER();
 
@@ -299,6 +303,7 @@ void KeyDispatcher::confirm_key_task(const KeyEvent &event) {
  * 
  * @param key 
  */
+/*private*/
 void KeyDispatcher::cancel_key_task(const ImGuiKey &key) {
 	ENTER();
 
@@ -316,6 +321,7 @@ void KeyDispatcher::cancel_key_task(const ImGuiKey &key) {
  * 
  * @return int 
  */
+/*private*/
 int KeyDispatcher::num_pressed() {
 	return std::count_if(key_states.begin(), key_states.end(), [](const auto itr) {
 		const auto state = itr.second->state;
@@ -330,6 +336,7 @@ int KeyDispatcher::num_pressed() {
  * @return true
  * @return false
  */
+/*private*/
 bool KeyDispatcher::is_pressed(const ImGuiKey &key) {
 	return (key_states.find(key) != key_states.end())
 		&& ((key_states[key]->state == KEY_STATE_DOWN)
@@ -368,6 +375,7 @@ bool KeyDispatcher::is_long_pressed(const ImGuiKey &key) {
  * @param key 
  * @return int
  */
+/*private*/
 int KeyDispatcher::tap_counts(const ImGuiKey &key) {
 	return (key_states.find(key) != key_states.end())
 		? key_states[key]->tap_count : 0;
@@ -451,6 +459,12 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	RETURN(result, int);
 }
 
+/**
+ * 最後にキーを押してから一定時間(MULTI_PRESS_MAX_INTERVALMS)経過してマルチタップが途切れたときの処理
+ * @param event
+ * @param duration_ms
+*/
+/*private*/
 int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_ms) {
 	ENTER();
 
@@ -493,6 +507,7 @@ int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_
  * @param event
  * @return int
  */
+/*private*/
 int KeyDispatcher::handle_on_long_key_pressed(const KeyEvent &event) {
 	ENTER();
 
@@ -530,6 +545,7 @@ int KeyDispatcher::handle_on_long_key_pressed(const KeyEvent &event) {
  * @param event 
  * @return int 
  */
+/*private*/
 int KeyDispatcher::on_tap_short(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
 
@@ -561,6 +577,7 @@ int KeyDispatcher::on_tap_short(const key_mode_t &current_key_mode, const KeyEve
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_short_normal(const KeyEvent &event) {
 	ENTER();
 
@@ -576,6 +593,7 @@ int KeyDispatcher::on_tap_short_normal(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_short_brightness(const KeyEvent &event) {
 	ENTER();
 
@@ -606,6 +624,7 @@ int KeyDispatcher::on_tap_short_brightness(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_short_zoom(const KeyEvent &event) {
 	ENTER();
 
@@ -636,6 +655,7 @@ int KeyDispatcher::on_tap_short_zoom(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_short_osd(const KeyEvent &event) {
 	ENTER();
 
@@ -655,6 +675,7 @@ int KeyDispatcher::on_tap_short_osd(const KeyEvent &event) {
  * @param event 
  * @return int 
  */
+/*private*/
 int KeyDispatcher::on_tap_long(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
 
@@ -686,6 +707,7 @@ int KeyDispatcher::on_tap_long(const key_mode_t &current_key_mode, const KeyEven
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 	ENTER();
 
@@ -746,6 +768,7 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_long_brightness(const KeyEvent &event) {
 	ENTER();
 
@@ -780,6 +803,7 @@ int KeyDispatcher::on_tap_long_brightness(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_long_zoom(const KeyEvent &event) {
 	ENTER();
 
@@ -814,6 +838,7 @@ int KeyDispatcher::on_tap_long_zoom(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_long_osd(const KeyEvent &event) {
 	ENTER();
 
@@ -833,6 +858,7 @@ int KeyDispatcher::on_tap_long_osd(const KeyEvent &event) {
  * @param event 
  * @return int 
  */
+/*private*/
 int KeyDispatcher::on_tap_double(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
 
@@ -863,6 +889,7 @@ int KeyDispatcher::on_tap_double(const key_mode_t &current_key_mode, const KeyEv
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_double_normal(const KeyEvent &event) {
 	ENTER();
 
@@ -907,6 +934,7 @@ int KeyDispatcher::on_tap_double_normal(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_double_brightness(const KeyEvent &event) {
 	ENTER();
 
@@ -923,6 +951,7 @@ int KeyDispatcher::on_tap_double_brightness(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_double_zoom(const KeyEvent &event) {
 	ENTER();
 
@@ -939,6 +968,7 @@ int KeyDispatcher::on_tap_double_zoom(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_double_osd(const KeyEvent &event) {
 	ENTER();
 
@@ -957,6 +987,7 @@ int KeyDispatcher::on_tap_double_osd(const KeyEvent &event) {
  * @param event 
  * @return int 
  */
+/*private*/
 int KeyDispatcher::on_tap_triple(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
 
@@ -988,6 +1019,7 @@ int KeyDispatcher::on_tap_triple(const key_mode_t &current_key_mode, const KeyEv
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_triple_normal(const KeyEvent &event) {
 	ENTER();
 
@@ -1030,6 +1062,7 @@ int KeyDispatcher::on_tap_triple_normal(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_triple_brightness(const KeyEvent &event) {
 	ENTER();
 
@@ -1046,6 +1079,7 @@ int KeyDispatcher::on_tap_triple_brightness(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_triple_zoom(const KeyEvent &event) {
 	ENTER();
 
@@ -1062,6 +1096,7 @@ int KeyDispatcher::on_tap_triple_zoom(const KeyEvent &event) {
  * @param event
  * @return int 処理済みなら1、未処理なら0, エラーなら負
  */
+/*private*/
 int KeyDispatcher::on_tap_triple_osd(const KeyEvent &event) {
 	ENTER();
 
