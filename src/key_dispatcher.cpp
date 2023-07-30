@@ -1,4 +1,4 @@
-#if 0   // set 0 if you need debug log, otherwise set 1
+#if 1   // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
 	#endif
@@ -20,13 +20,13 @@ namespace serenegiant::app {
 // ショートタップと判定する最小押し下げ時間[ミリ秒]
 #define SHORT_PRESS_MIN_MS (20)
 // ショートタップと判定する最大押し下げ時間[ミリ秒]
-#define SHORT_PRESS_MAX_MS (250)
+#define SHORT_PRESS_MAX_MS (150)
 // ロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_PRESS_TIMEOUT_MS (1500)
 // ロングロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_LONG_PRESS_TIMEOUT_MS (6000)
 // ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
-#define MULTI_PRESS_MAX_INTERVALMS SHORT_PRESS_MAX_MS
+#define MULTI_PRESS_MAX_INTERVALMS (300)
 
 //--------------------------------------------------------------------------------
 class LongPressCheckTask : public thread::Runnable {
@@ -57,6 +57,34 @@ public:
 	}
 };
 
+class KeyDownTask : public thread::Runnable {
+private:
+	KeyDispatcher &dispatcher;	// こっちは参照を保持する
+	const KeyEvent event;		// こっちはコピーを保持する
+public:
+	KeyDownTask(
+		KeyDispatcher &dispatcher,
+		const KeyEvent &event)
+	:	dispatcher(dispatcher), event(event)
+	{
+		ENTER();
+		EXIT();
+	}
+
+	virtual ~KeyDownTask() {
+		ENTER();
+		EXIT();
+	}
+
+	void run() {
+		ENTER();
+
+		dispatcher.handle_on_key_down_confirmed(event);
+
+		EXIT();
+	}
+};
+
 class KeyUpTask : public thread::Runnable {
 private:
 	KeyDispatcher &dispatcher;	// こっちは参照を保持する
@@ -81,7 +109,7 @@ public:
 	void run() {
 		ENTER();
 
-		dispatcher.handle_on_tap(event, duration_ms);
+		dispatcher.handle_on_key_up_confirmed(event, duration_ms);
 
 		EXIT();
 	}
@@ -159,6 +187,17 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 	case ImGuiKey_DownArrow:
     case ImGuiKey_Enter:
     case ImGuiKey_Escape:
+	case ImGuiKey_Space:
+	case ImGuiKey_0:
+	case ImGuiKey_1:
+	case ImGuiKey_2:
+	case ImGuiKey_3:
+	case ImGuiKey_4:
+	case ImGuiKey_5:
+	case ImGuiKey_6:
+	case ImGuiKey_7:
+	case ImGuiKey_8:
+	case ImGuiKey_9:
 		switch (event.action) {
 		case KEY_ACTION_RELEASE:	// 0
 			result = handle_on_key_up(event);
@@ -175,11 +214,6 @@ KeyEvent KeyDispatcher::handle_on_key_event(const KeyEvent &event) {
 		LOGD("key=%d,scancode=%d,action=%d,mods=%d",
 			key, event.scancode, event.action, event.mods);
 		break;
-	}
-	if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
-		// OSDモードのときは未処理のすべてのキーイベントをOSDクラスへ送る
-		osd_key_event(event);
-		result = 1;
 	}
 	if (result/*handled*/) {
 		// 処理済みならkeyをImGuiKey_Noneに変更して返す
@@ -307,6 +341,11 @@ void KeyDispatcher::confirm_key_task(const KeyEvent &event) {
 void KeyDispatcher::cancel_key_task(const ImGuiKey &key) {
 	ENTER();
 
+	// キーダウンの遅延処理用Runnableがあれば削除する
+	auto key_down_task = key_down_tasks[key];
+	if (key_down_task) {
+		handler.remove(key_down_task);
+	}	
 	// キーアップの遅延処理用Runnableがあれば削除する
 	auto key_up_task = key_up_tasks[key];
 	if (key_up_task) {
@@ -382,6 +421,10 @@ int KeyDispatcher::tap_counts(const ImGuiKey &key) {
 }
 
 //--------------------------------------------------------------------------------
+static inline bool need_multi_tap(const key_mode_t &key_mode) {
+	return (key_mode == KEY_MODE_NORMAL) || (key_mode == KEY_MODE_OSD);
+}
+
 /**
  * @brief handle_on_key_eventの下請け、キーが押されたとき
  * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
@@ -393,6 +436,7 @@ int KeyDispatcher::tap_counts(const ImGuiKey &key) {
 int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 	ENTER();
 
+	int result = 0;
 	const auto key = event.key;
 	key_mode_t current_key_mode;
 	{
@@ -400,7 +444,7 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 		current_key_mode = key_mode;
 		update(event);
 	}
-	// キーアップの遅延処理用Runnableがあればキャンセルする
+	// キーダウン/キーアップの遅延処理用Runnableがあればキャンセルする
 	cancel_key_task(key);
 	if (current_key_mode != KEY_MODE_OSD) {
 		// 長押し確認用Runnableを遅延実行する
@@ -408,8 +452,18 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 		handler.remove(long_key_press_tasks[key]);
 		handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
 	}
+	if (need_multi_tap(current_key_mode)) {
+		// マルチタップの処理
+		auto key_down_task = std::make_shared<KeyDownTask>(*this, event);
+		key_down_tasks[key] = key_down_task;
+		handler.post_delayed(key_down_task, MULTI_PRESS_MAX_INTERVALMS);
+		result = 1;
+	} else {
+		// それ以外のキーモードは直接タップ処理をする
+		result = handle_on_key_down_confirmed(event);
+	}
 
-	RETURN(0, int);
+	RETURN(result, int);
 }
 
 /**
@@ -426,7 +480,7 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	int result = 0;
 	const auto key = event.key;
 
-	// キーアップの遅延処理用Runnableがあればキャンセルする
+	// キーダウン/キーアップの遅延処理用Runnableがあればキャンセルする
 	cancel_key_task(key);
 	// 長押し確認用Runnableをキャンセルする
 	confirm_key_task(event);
@@ -445,16 +499,42 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	if (!result && (state->state == KEY_STATE_DOWN)
 		&& (duration_ms >= SHORT_PRESS_MIN_MS) && (duration_ms < SHORT_PRESS_MAX_MS)) {
 		// ショートタップ時間内に収まっているときのみ処理する
-		if (current_key_mode == KEY_MODE_NORMAL) {
-			// 通常モードのみマルチタップの処理をする
+		if (need_multi_tap(current_key_mode)) {
+			// マルチタップの処理
 			auto key_up_task = std::make_shared<KeyUpTask>(*this, event, duration_ms);
 			key_up_tasks[key] = key_up_task;
 			handler.post_delayed(key_up_task, MULTI_PRESS_MAX_INTERVALMS);
 		} else {
 			// それ以外のキーモードは直接タップ処理をする
-			result = handle_on_tap(event, duration_ms);
+			result = handle_on_key_up_confirmed(event, duration_ms);
 		}
 	}
+
+	RETURN(result, int);
+}
+
+/**
+ * 最後にキーを押してから一定時間(MULTI_PRESS_MAX_INTERVALMS)経過してマルチタップが途切れたときの処理
+ * @param event
+*/
+/*private*/
+int KeyDispatcher::handle_on_key_down_confirmed(const KeyEvent &event) {
+	ENTER();
+
+	int result = 0;
+	const auto key = event.key;
+	KeyStateSp state;
+	key_mode_t current_key_mode;
+	int tap_counts;
+	{
+ 		std::lock_guard<std::mutex> lock(state_lock);
+		current_key_mode = key_mode;
+		tap_counts = this->tap_counts(key);
+		state = key_states[key];
+	}
+	// キーの押し下げ時間を計算
+	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
+	LOGD("key=%d,duration=%ld,tap_counts=%d", key, duration_ms, tap_counts);
 
 	RETURN(result, int);
 }
@@ -465,7 +545,7 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
  * @param duration_ms
 */
 /*private*/
-int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_ms) {
+int KeyDispatcher::handle_on_key_up_confirmed(const KeyEvent &event, const nsecs_t &duration_ms) {
 	ENTER();
 
 	int result = 0;
@@ -478,7 +558,7 @@ int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_
 		tap_counts = this->tap_counts(key);
 	}
 
-	LOGD("handle_on_tap,key=%d,duration_ms=%ld,tap_counts=%d", key, duration_ms, tap_counts);
+	LOGD("key=%d,duration_ms=%ld,tap_counts=%d", key, duration_ms, tap_counts);
 	if (!result && (tap_counts == 3)) {
 		// トリプルタップ
 		result = on_tap_triple(current_key_mode, event);
@@ -491,6 +571,14 @@ int KeyDispatcher::handle_on_tap(const KeyEvent &event, const nsecs_t &duration_
 		// ショートタップ, 押し下げ時間的にはロングタップ等も含むが
 		// その場合はstateがKEY_STATE_DOWN_LONGなのでここには来ない
 		result = on_tap_short(current_key_mode, event);
+	}
+	if (!result && (current_key_mode == KEY_MODE_OSD) && osd_key_event) {
+		// OSDモードのときは未処理のすべてのキーイベントをOSDクラスへ送る
+		osd_key_event(KeyEvent(key, event.scancode, KEY_ACTION_PRESSED, event.mods));
+		handler.post_delayed([this, event] {
+			osd_key_event(event);
+		}, 10);
+		result = 1;
 	}
 	if (result == 1/*handled*/) {
 		std::lock_guard<std::mutex> lock(state_lock);
@@ -975,6 +1063,14 @@ int KeyDispatcher::on_tap_double_osd(const KeyEvent &event) {
 	int result = 0;
 	const auto key = event.key;
 	// FIXME 未実装
+	if ((key == ImGuiKey_DownArrow) && osd_key_event) {
+		// osd_key_event(event);
+		osd_key_event(KeyEvent(ImGuiKey_Space, 57, KEY_ACTION_PRESSED, 0));
+		handler.post_delayed([this] {
+			osd_key_event(KeyEvent(ImGuiKey_Space, 57, KEY_ACTION_RELEASE, 0));
+		}, 10);
+		result = 1;
+	}
 
 	RETURN(result, int);
 }

@@ -20,17 +20,15 @@ typedef std::function<void(const bool &/*onoff*/)> OnFreezeChangedFunc;
 typedef std::function<void(const exp_mode_t &/*exp_mode*/)> OnExposureModeChangedFunc;
 typedef std::function<void(const KeyEvent &event)> OSDKeyEventFunc;
 
-// privateクラスの前方参照宣言
-class LongPressCheckTask;
-class KeyUpTask;
-
 /**
  * @brief キー入力を処理するためのヘルパークラス
  *
  */
 class KeyDispatcher {
-friend LongPressCheckTask;
-friend KeyUpTask;
+friend class LongPressCheckTask;
+friend class KeyDownTask;
+friend class KeyUpTask;
+
 private:
 	// 非同期実行用Handler
 	thread::Handler &handler;
@@ -43,6 +41,7 @@ private:
 	// キーの長押し確認用Runnableを保持するハッシュマップ
 	std::unordered_map<ImGuiKey, std::shared_ptr<thread::Runnable>> long_key_press_tasks;
 	// マルチタップ確認用Runnableを保持するハッシュマップ
+	std::unordered_map<ImGuiKey, std::shared_ptr<thread::Runnable>> key_down_tasks;
 	std::unordered_map<ImGuiKey, std::shared_ptr<thread::Runnable>> key_up_tasks;
 	OnKeyModeChangedFunc on_key_mode_changed;
 	OnBrightnessChangedFunc on_brightness_changed;
@@ -137,9 +136,14 @@ private:
 	/**
 	 * 最後にキーを押してから一定時間(MULTI_PRESS_MAX_INTERVALMS)経過してマルチタップが途切れたときの処理
 	 * @param event
+	*/
+	int handle_on_key_down_confirmed(const KeyEvent &event);
+	/**
+	 * 最後にキーを押してから一定時間(MULTI_PRESS_MAX_INTERVALMS)経過してマルチタップが途切れたときの処理
+	 * @param event
 	 * @param duration_ms
 	*/
-	int handle_on_tap(const KeyEvent &event, const nsecs_t &duration_ms);
+	int handle_on_key_up_confirmed(const KeyEvent &event, const nsecs_t &duration_ms);
 	/**
 	 * @brief 長押し時間経過したときの処理
 	 *
