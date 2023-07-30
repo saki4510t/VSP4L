@@ -532,9 +532,12 @@ int KeyDispatcher::handle_on_key_down_confirmed(const KeyEvent &event) {
 		tap_counts = this->tap_counts(key);
 		state = key_states[key];
 	}
-	// キーの押し下げ時間を計算
-	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
-	LOGD("key=%d,duration=%ld,tap_counts=%d", key, duration_ms, tap_counts);
+	if (state) {
+		// handle_on_key_downを通った後なのでstateはnullではないはずだけど念の為に塗るチェックしておく
+		// キーの押し下げ時間を計算
+		const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
+		LOGD("key=%d,duration=%ld,tap_counts=%d", key, duration_ms, tap_counts);
+	}
 
 	RETURN(result, int);
 }
