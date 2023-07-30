@@ -20,13 +20,13 @@ namespace serenegiant::app {
 // ショートタップと判定する最小押し下げ時間[ミリ秒]
 #define SHORT_PRESS_MIN_MS (20)
 // ショートタップと判定する最大押し下げ時間[ミリ秒]
-#define SHORT_PRESS_MAX_MS (300)
+#define SHORT_PRESS_MAX_MS (250)
 // ロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_PRESS_TIMEOUT_MS (1500)
 // ロングロングタップと判定する押し下げ時間[ミリ秒]
 #define LONG_LONG_PRESS_TIMEOUT_MS (6000)
 // ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
-#define MULTI_PRESS_MAX_INTERVALMS (300)
+#define MULTI_PRESS_MAX_INTERVALMS SHORT_PRESS_MAX_MS
 
 //--------------------------------------------------------------------------------
 class LongPressCheckTask : public thread::Runnable {
