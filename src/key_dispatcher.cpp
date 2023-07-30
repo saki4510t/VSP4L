@@ -1,4 +1,4 @@
-#if 1   // set 0 if you need debug log, otherwise set 1
+#if 0   // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
 	#endif
@@ -431,8 +431,12 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 		current_key_mode = key_mode;
 		state = update(event);
 	}
+
+	// キーの押し下げ時間を計算
 	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
-	if (!result && (state->state == KEY_STATE_DOWN) && (duration_ms >= SHORT_PRESS_MIN_MS)) {
+	if (!result && (state->state == KEY_STATE_DOWN)
+		&& (duration_ms >= SHORT_PRESS_MIN_MS) && (duration_ms < SHORT_PRESS_MAX_MS)) {
+		// ショートタップ時間内に収まっているときのみ処理する
 		if (current_key_mode == KEY_MODE_NORMAL) {
 			// 通常モードのみマルチタップの処理をする
 			auto key_up_task = std::make_shared<KeyUpTask>(*this, event, duration_ms);
