@@ -531,13 +531,21 @@ void OSD::draw_buttons_default() {
 	}
 
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 2 + padding);
-	if (ImGui::Button("PREV", size)) {
-		prev();
+	if (page > 0) {
+		if (ImGui::Button("PREV", size)) {
+			prev();
+		}
+	} else {
+		ImGui::Spacing();
 	}
 
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 3 + padding);
-	if (ImGui::Button("NEXT", size)) {
-		next();
+	if (page < PAGE_NUM - 1) {
+		if (ImGui::Button("NEXT", size)) {
+			next();
+		}
+	} else {
+		ImGui::Spacing();
 	}
 
 	EXIT();
