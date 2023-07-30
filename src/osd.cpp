@@ -27,19 +27,20 @@ namespace serenegiant::app {
 // デフォルトの表示ページ
 #define DEFAULE_PAGE (PAGE_SETTINGS_1)
 
+// 調整1のラベル文字列
 static const char *V4L2_LABEL_BRIGHTNESS = "BRIGHTNESS";
 static const char *V4L2_LABEL_HUE = "HUE";
 static const char *V4L2_LABEL_SATURATION = "SATURATION";
 static const char *V4L2_LABEL_CONTRAST = "CONTRAST";
 static const char *V4L2_LABEL_SHARPNESS = "SHARPNESS";
 static const char *V4L2_LABEL_GAMMA = "GAMMA";
-// 調整2
+// 調整2のラベル文字列
 static const char *V4L2_LABEL_DENOISE = "DENOISE";
 static const char *V4L2_LABEL_GAIN = "GAIN";
 static const char *V4L2_LABEL_AUTOGAIN = "AUTOGAIN";
 static const char *V4L2_LABEL_EXPOSURE = "EXPOSURE";
 static const char *V4L2_LABEL_EXPOSURE_AUTO = "AE";
-// 調整3
+// 調整3のラベル文字列
 static const char *V4L2_LABEL_AUTO_WHITE_BALANCE = "AWB";
 static const char *V4L2_LABEL_POWER_LINE_FREQUENCY = "PLF";
 
@@ -70,6 +71,7 @@ static const uint32_t SUPPORTED_CTRLS[] {
 	0,
 };
 
+//--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
  *
@@ -80,9 +82,6 @@ OSD::OSD()
 	app_settings(), camera_settings()
 {
 	ENTER();
-
-	// FIXME 未実装
-
 	EXIT();
 }
 
@@ -93,16 +92,15 @@ OSD::OSD()
 /*public*/
 OSD::~OSD() {
 	ENTER();
-
-	// FIXME 未実装
-
 	EXIT();
 }
 
 /**
  * @brief OSD表示の準備
+ * @param source
  * 
  */
+/*public*/
 void OSD::prepare(v4l2::V4l2SourceUp &source) {
 	ENTER();
 
@@ -139,6 +137,7 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
  *
  * @param event
  */
+/*public*/
 void OSD::on_key(const KeyEvent &event) {
 	ENTER();
 
@@ -502,6 +501,7 @@ void OSD::draw_adjust_3() {
  * 
  * @return float 
  */
+/*private*/
 float OSD::get_button_width() {
     const auto style = ImGui::GetStyle();
 	const auto padding = style.WindowPadding.x;
@@ -512,6 +512,7 @@ float OSD::get_button_width() {
  * @brief デフォルトのボタンを描画する
  * 
  */
+/*private*/
 void OSD::draw_buttons_default() {
 	ENTER();
 
@@ -549,6 +550,7 @@ void OSD::draw_buttons_default() {
  * @param id
  * @param label
 */
+/*private*/
 void OSD::show_label(const uint32_t &id, const char *label) {
 	ENTER();
 
@@ -569,6 +571,7 @@ void OSD::show_label(const uint32_t &id, const char *label) {
  * @param id
  * @param label
 */
+/*private*/
 void OSD::show_slider(const uint32_t &id, const char *label) {
 
 	ENTER();
@@ -598,6 +601,7 @@ void OSD::show_slider(const uint32_t &id, const char *label) {
 /**
  * 設定値が変更されたときの処理
 */
+/*private*/
 void OSD::value_changed(const osd_value_t &value) {
 	ENTER();
 

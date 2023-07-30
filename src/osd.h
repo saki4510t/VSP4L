@@ -120,6 +120,7 @@ private:
 	void show_slider(const uint32_t &id, const char *label);
 	/**
 	 * 設定値が変更されたときの処理
+	 * @param value
 	*/
 	void value_changed(const osd_value_t &value);
 protected:
@@ -137,6 +138,7 @@ public:
 
 	/**
 	 * @brief OSD表示の準備
+	 * @param source
 	 * 
 	 */
 	void prepare(v4l2::V4l2SourceUp &source);
