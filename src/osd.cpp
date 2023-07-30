@@ -142,8 +142,14 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
 void OSD::on_key(const KeyEvent &event) {
 	ENTER();
 
-    auto io = ImGui::GetIO();
-    io.AddKeyEvent(event.key, (event.action == KEY_ACTION_PRESSED));
+	if (event.key == ImGuiKey_Escape) {
+		if ((event.action == KEY_ACTION_RELEASE)) {
+			cancel();
+		}
+	} else {
+		auto io = ImGui::GetIO();
+		io.AddKeyEvent(event.key, (event.action == KEY_ACTION_PRESSED));
+	}
 
 	EXIT();
 }

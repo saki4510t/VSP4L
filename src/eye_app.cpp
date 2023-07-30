@@ -163,7 +163,8 @@ EyeApp::EyeApp(
 	// キーイベントハンドラを登録
 	window
 		.on_key_event([this](const ImGuiKey &key, const int &scancode, const key_action_t &action, const int &mods) {
-			if (key == ImGuiKey_Escape) {
+			if ((key == ImGuiKey_Escape) && (key_dispatcher.get_key_mode() != KEY_MODE_OSD)) {
+				// OSDモード以外でESCキーを押したときはアプリを終了させる
 				window.terminate();
 			}
 			return key_dispatcher.handle_on_key_event(KeyEvent(key, scancode, action, mods));
