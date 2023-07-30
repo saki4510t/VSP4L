@@ -2,6 +2,7 @@
 #define OSD_H_
 
 #include <functional>
+#include <unordered_map>
 
 #include "v4l2/v4l2_source.h"
 
@@ -20,6 +21,16 @@ enum {
 	PAGE_NUM,
 } osd_page_t;
 
+typedef struct _osd_value {
+	uint32_t id;
+	bool supported;
+	bool enabled;
+	bool modified;
+	int32_t prev;
+	uvc::control_value32_t value;
+} osd_value_t;
+
+typedef std::unique_ptr<osd_value_t> OSDValueUp;
 typedef std::function<void(const bool &/*changed*/)> OnOSDCloseFunc;
 typedef std::function<void(const CameraSettings &/*settings*/)> OnCameraSettingsChanged;
 
@@ -31,6 +42,8 @@ private:
 
 	OnOSDCloseFunc on_osd_close;
 	OnCameraSettingsChanged on_camera_settings_changed;
+
+	std::unordered_map<uint32_t, OSDValueUp> values;
 
 	/**
 	 * @brief 保存して閉じる
@@ -89,6 +102,26 @@ private:
 	 * 
 	 */
 	void draw_buttons_default();
+	/**
+	 * 指定したidのカメラコントロールに対応している場合に指定したラベルを
+	 * ImGui::LabelTextとして表示する。
+	 * 対応していない場合は空のImGui::LabelTextを表示する。
+	 * @param id
+	 * @param label
+	*/
+	void show_label(const uint32_t &id, const char *label);
+	/**
+	 * 指定したidのカメラコントロールに対応している場合に指定したラベルを持つ
+	 * ImGui::SliderIntを表示する。
+	 * 対応していない場合は空のImGui::LabelTextを表示する。
+	 * @param id
+	 * @param label
+	*/
+	void show_slider(const uint32_t &id, const char *label);
+	/**
+	 * 設定値が変更されたときの処理
+	*/
+	void value_changed(const osd_value_t &value);
 protected:
 public:
 	/**

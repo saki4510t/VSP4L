@@ -1,4 +1,4 @@
-#if 1    // set 0 if you need debug log, otherwise set 1
+#if 0    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
 	#endif
@@ -27,10 +27,26 @@ namespace serenegiant::app {
 // デフォルトの表示ページ
 #define DEFAULE_PAGE (PAGE_SETTINGS_1)
 
+static const char *V4L2_LABEL_BRIGHTNESS = "BRIGHTNESS";
+static const char *V4L2_LABEL_HUE = "HUE";
+static const char *V4L2_LABEL_SATURATION = "SATURATION";
+static const char *V4L2_LABEL_CONTRAST = "CONTRAST";
+static const char *V4L2_LABEL_SHARPNESS = "SHARPNESS";
+static const char *V4L2_LABEL_GAMMA = "GAMMA";
+// 調整2
+static const char *V4L2_LABEL_DENOISE = "DENOISE";
+static const char *V4L2_LABEL_GAIN = "GAIN";
+static const char *V4L2_LABEL_AUTOGAIN = "AUTOGAIN";
+static const char *V4L2_LABEL_EXPOSURE = "EXPOSURE";
+static const char *V4L2_LABEL_EXPOSURE_AUTO = "AE";
+// 調整3
+static const char *V4L2_LABEL_AUTO_WHITE_BALANCE = "AWB";
+static const char *V4L2_LABEL_POWER_LINE_FREQUENCY = "PLF";
+
 /**
  * OSD画面で対応可能なカメラコントロール
 */
-const static uint32_t SUPPORTED_CTRLS[] {
+static const uint32_t SUPPORTED_CTRLS[] {
 	// 調整１
 	V4L2_CID_BRIGHTNESS,
 	V4L2_CID_HUE,
@@ -90,12 +106,30 @@ OSD::~OSD() {
 void OSD::prepare(v4l2::V4l2SourceUp &source) {
 	ENTER();
 
-	// とりあえずデフォルトの表示ページに変更するだけ
+	// 表示ページをデフォルトページへ
 	page = DEFAULE_PAGE;
-
-	// FIXME 未実装 設定値を読み込む等
+	// 設定値を読み込む等
 	load(app_settings);
 	load(camera_settings);
+	// カメラ設定を読み込む
+	values.clear();
+	for (auto id: SUPPORTED_CTRLS) {
+		if (id) {
+			const auto supported = source->is_ctrl_supported(id);
+			osd_value_t val = {
+				.id = id,
+				.supported = supported,
+				.enabled = supported,
+				.modified = false
+			};
+			if (supported) {
+				source->get_ctrl(id, val.value);
+				val.prev = val.value.current;
+			}
+			values[id] = std::make_unique<osd_value_t>(val);
+		}
+	}
+	// FIXME 未実装 自動露出中は変更できない項目があるので一時的にenabledを落とすなどの処理
 
 	EXIT();
 }
@@ -340,32 +374,26 @@ void OSD::draw_adjust_1() {
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
 	{
-		ImGui::LabelText("", "BRIGHTNESS");
-		ImGui::LabelText("", "HUE");
-		ImGui::LabelText("", "SATURATION");
-		ImGui::LabelText("", "CONTRAST");
-		ImGui::LabelText("", "SHARPNESS");
-		ImGui::LabelText("", "GAMMA");
+		show_label(V4L2_CID_BRIGHTNESS, V4L2_LABEL_BRIGHTNESS);
+		show_label(V4L2_CID_HUE, V4L2_LABEL_HUE);
+		show_label(V4L2_CID_SATURATION, V4L2_LABEL_SATURATION);
+		show_label(V4L2_CID_CONTRAST, V4L2_LABEL_CONTRAST);
+		show_label(V4L2_CID_SHARPNESS, V4L2_LABEL_SHARPNESS);
+		show_label(V4L2_CID_GAMMA, V4L2_LABEL_GAMMA);
 		ImGui::Spacing();
 	}
 	ImGui::EndGroup(); ImGui::SameLine();
 	// 値を描画(右半分)
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
 	ImGui::BeginGroup();
-	{	// FIXME 未実装
-		static float brightness = 10;
-		static float hue = 20;
-		static float saturation = 30;
-		static float contrast = 40;
-		static float sharpness = 50;
-		static float gamma = 60;
+	{
 		ImGui::PushItemWidth(button_width * 2);
-		ImGui::SliderFloat("BRIGHTNESS", &brightness, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("HUE", &hue, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("SATURATION", &saturation, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("CONTRAST", &contrast, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("SHARPNESS", &sharpness, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("GAMMA", &gamma, 0.0f, 100.0f, "%.0f");
+		show_slider(V4L2_CID_BRIGHTNESS, V4L2_LABEL_BRIGHTNESS);
+		show_slider(V4L2_CID_HUE, V4L2_LABEL_HUE);
+		show_slider(V4L2_CID_SATURATION, V4L2_LABEL_SATURATION);
+		show_slider(V4L2_CID_CONTRAST, V4L2_LABEL_CONTRAST);
+		show_slider(V4L2_CID_SHARPNESS, V4L2_LABEL_SHARPNESS);
+		show_slider(V4L2_CID_GAMMA, V4L2_LABEL_GAMMA);
 		ImGui::Spacing();
 		ImGui::PopItemWidth();
 	}
@@ -389,11 +417,11 @@ void OSD::draw_adjust_2() {
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
 	{
-		ImGui::LabelText("", "DENOISE");
-		ImGui::LabelText("", "GAIN");
-		ImGui::LabelText("", "AUTOGAIN");
-		ImGui::LabelText("", "EXPOSUER");
-		ImGui::LabelText("", "EXPOSURE_AUTO");
+		show_label(V4L2_CID_DENOISE, V4L2_LABEL_DENOISE);
+		show_label(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
+		show_label(V4L2_CID_AUTOGAIN, V4L2_LABEL_AUTOGAIN);
+		show_label(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
+		show_label(V4L2_CID_EXPOSURE_AUTO, V4L2_LABEL_EXPOSURE_AUTO);
 		ImGui::LabelText("", "");
 		ImGui::Spacing();
 	}
@@ -401,19 +429,13 @@ void OSD::draw_adjust_2() {
 	// 値を描画(右半分)
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
 	ImGui::BeginGroup();
-	{	// FIXME 未実装
-		static float brightness = 10;
-		static float hue = 20;
-		static float saturation = 30;
-		static float contrast = 40;
-		static float sharpness = 50;
-		static float gamma = 60;
+	{
 		ImGui::PushItemWidth(button_width * 2);
-		ImGui::SliderFloat("DENOISE", &brightness, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("GAIN", &hue, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("AUTOGAIN", &saturation, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("EXPOSUER", &contrast, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("EXPOSURE_AUTO", &sharpness, 0.0f, 100.0f, "%.0f");
+		show_slider(V4L2_CID_DENOISE, V4L2_LABEL_DENOISE);
+		show_slider(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
+		show_slider(V4L2_CID_AUTOGAIN, V4L2_LABEL_AUTOGAIN);
+		show_slider(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
+		show_slider(V4L2_CID_EXPOSURE_AUTO, V4L2_LABEL_EXPOSURE_AUTO);
 		ImGui::LabelText("", "");
 		ImGui::Spacing();
 		ImGui::PopItemWidth();
@@ -438,8 +460,8 @@ void OSD::draw_adjust_3() {
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
 	{
-		ImGui::LabelText("", "AWB");
-		ImGui::LabelText("", "PLF");
+		show_label(V4L2_CID_AUTO_WHITE_BALANCE, V4L2_LABEL_AUTO_WHITE_BALANCE);
+		show_label(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
@@ -451,11 +473,9 @@ void OSD::draw_adjust_3() {
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
 	ImGui::BeginGroup();
 	{	// FIXME 未実装
-		static float brightness = 10;
-		static float hue = 20;
 		ImGui::PushItemWidth(button_width * 2);
-		ImGui::SliderFloat("AWB", &brightness, 0.0f, 100.0f, "%.0f");
-		ImGui::SliderFloat("PLF", &hue, 0.0f, 100.0f, "%.0f");
+		show_slider(V4L2_CID_AUTO_WHITE_BALANCE, V4L2_LABEL_AUTO_WHITE_BALANCE);
+		show_slider(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
@@ -511,6 +531,76 @@ void OSD::draw_buttons_default() {
 	ImGui::SameLine(); ImGui::SetCursorPosX(button_width * 3 + padding);
 	if (ImGui::Button("NEXT", size)) {
 		next();
+	}
+
+	EXIT();
+}
+
+/**
+ * 指定したidのカメラコントロールに対応している場合に指定したラベルを
+ * ImGui::LabelTextとして表示する。
+ * 対応していない場合は空のImGui::LabelTextを表示する。
+ * @param id
+ * @param label
+*/
+void OSD::show_label(const uint32_t &id, const char *label) {
+	ENTER();
+
+	const auto &val = values[id];
+	if (val && val->supported) {
+		ImGui::LabelText("", "%s", label);
+	} else {
+		ImGui::LabelText("", "");
+	}
+
+	EXIT();
+}
+
+/**
+ * 指定したidのカメラコントロールに対応している場合に指定したラベルを持つ
+ * ImGui::SliderIntを表示する。
+ * 対応していない場合は空のImGui::LabelTextを表示する。
+ * @param id
+ * @param label
+*/
+void OSD::show_slider(const uint32_t &id, const char *label) {
+
+	ENTER();
+
+	auto &val = values[id];
+	if (val && val->supported) {
+		if (val->enabled) {
+			auto &v = val->value;
+			if (ImGui::SliderInt(label, &v.current, v.min, v.max)) {
+				if (v.current != val->prev) {
+					// LOGD("on_changed:id=0x%08x,v=%d, prev=%d", id, v.current, val->prev);
+					val->prev = v.current;
+					val->modified = true;
+					value_changed(*(val.get()));
+				}
+			}
+		} else {
+			ImGui::LabelText("", "%s", label);
+		}
+	} else {
+		ImGui::LabelText("", "");
+	}
+
+	EXIT();
+}
+
+/**
+ * 設定値が変更されたときの処理
+*/
+void OSD::value_changed(const osd_value_t &value) {
+	ENTER();
+
+	LOGD("id=0x%08x,v=%d", value.id, value.value.current);
+
+	// FIXME 未実装 camera_settingsを更新
+
+	if (on_camera_settings_changed) {
+		on_camera_settings_changed(camera_settings);
 	}
 
 	EXIT();
