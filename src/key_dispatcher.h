@@ -303,6 +303,8 @@ public:
 	 */
 	~KeyDispatcher();
 
+	inline key_mode_t get_key_mode() const { return key_mode; };
+
 	/**
 	 * @brief キーモードをリセット(KEY_MODE_NORMALへ戻す)
 	 * 
