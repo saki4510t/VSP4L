@@ -299,7 +299,7 @@ void KeyDispatcher::confirm_key_task(const KeyEvent &event) {
  * 
  * @param key 
  */
-void KeyDispatcher::cancel_key_up_task(const ImGuiKey &key) {
+void KeyDispatcher::cancel_key_task(const ImGuiKey &key) {
 	ENTER();
 
 	// キーアップの遅延処理用Runnableがあれば削除する
@@ -393,7 +393,7 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 		update(event);
 	}
 	// キーアップの遅延処理用Runnableがあればキャンセルする
-	cancel_key_up_task(key);
+	cancel_key_task(key);
 	if (current_key_mode != KEY_MODE_OSD) {
 		// 長押し確認用Runnableを遅延実行する
 		confirm_key_task(event);
@@ -419,7 +419,7 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	const auto key = event.key;
 
 	// キーアップの遅延処理用Runnableがあればキャンセルする
-	cancel_key_up_task(key);
+	cancel_key_task(key);
 	// 長押し確認用Runnableをキャンセルする
 	confirm_key_task(event);
 	handler.remove(long_key_press_tasks[key]);

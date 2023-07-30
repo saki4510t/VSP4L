@@ -74,11 +74,11 @@ private:
 	 */
 	void confirm_key_task(const KeyEvent &event);
 	/**
-	 * @brief キーアップの遅延処理用タスクがあればキャンセルする
+	 * @brief キーアップ/キーダウンの遅延処理用タスクがあればキャンセルする
 	 * 
 	 * @param key 
 	 */
-	void cancel_key_up_task(const ImGuiKey &key);
+	void cancel_key_task(const ImGuiKey &key);
 	/**
 	 * @brief 押されているキーの個数を取得, 排他制御してないので上位でロックすること
 	 * 
