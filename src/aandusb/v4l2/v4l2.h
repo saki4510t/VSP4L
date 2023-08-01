@@ -118,8 +118,9 @@ void dump_ctrl(int fd, const struct v4l2_queryctrl &query);
  * 対応するコントロール機能一覧をマップに登録する
  * @param fd
  * @param supported
+ * @param dump 見つかったコントロール機能をログへ出力するかどうか, デフォルト=false(ログへ出力しない)
  */
-void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &supported);
+void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &supported,  const bool &dump = false);
 
 /**
  * jsonへフレームレート設定を出力するためのヘルパー関数

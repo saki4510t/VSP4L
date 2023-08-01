@@ -241,14 +241,14 @@ const char *ctrl_type_string(const uint32_t &type) {
  * @param query
  */
 void list_menu_ctrl(int fd, const struct v4l2_queryctrl &query) {
-	MARK("  menu items:");
+	LOGI("  menu items:");
 	for (uint32_t i = query.minimum; i <= query.maximum; i++) {
 		struct v4l2_querymenu menu {
 			.id = query.id,
 			.index = i,
 		};
 		if (ioctl(fd, VIDIOC_QUERYMENU, &menu) == 0) {
-			MARK("    %s", menu.name);
+			LOGI("    %s", menu.name);
 		} else {
 			break;
 		}
@@ -260,13 +260,13 @@ void list_menu_ctrl(int fd, const struct v4l2_queryctrl &query) {
  * @param query
  */
 void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
-	MARK("supported:%s(0x%08x)", query.name, query.id);
+	LOGI("supported:%s(0x%08x)", query.name, query.id);
 	if (query.type == V4L2_CTRL_TYPE_MENU) {
 		list_menu_ctrl(fd, query);
 	} else {
-		MARK("  type=0x%04x/%s",
+		LOGI("  type=0x%04x/%s",
 			query.type, ctrl_type_string(query.type));
-		MARK("  min=%d,max=%d,step=%d,default=%d,flags=0x%08x",
+		LOGI("  min=%d,max=%d,step=%d,default=%d,flags=0x%08x",
 			query.minimum, query.maximum,
 			query.step, query.default_value, query.flags);
 	}
@@ -276,8 +276,9 @@ void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
  * 対応するコントロール機能一覧をマップに登録する
  * @param fd
  * @param supported
+ * @param dump 見つかったコントロール機能をログへ出力するかどうか, デフォルト=false(ログへ出力しない)
  */
-void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &supported) {
+void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &supported, const bool &dump) {
 	ENTER();
 
 	supported.clear();
@@ -289,9 +290,9 @@ void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &s
 		int r = xioctl(fd, VIDIOC_QUERYCTRL, &query);
 		if ((r != -1) && !(query.flags & V4L2_CTRL_FLAG_DISABLED)) {
 			supported[i] = std::make_shared<struct v4l2_queryctrl>(query);
-#ifndef LOG_NDEBUG
-			dump_ctrl(fd, query);
-#endif
+			if (dump) {
+				dump_ctrl(fd, query);
+			}
 		}
 	}
 	// v4l2標準のカメラコントロール一覧
@@ -302,9 +303,9 @@ void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &s
 		int r = xioctl(fd, VIDIOC_QUERYCTRL, &query);
 		if ((r != -1) && !(query.flags & V4L2_CTRL_FLAG_DISABLED)) {
 			supported[i] = std::make_shared<struct v4l2_queryctrl>(query);
-#ifndef LOG_NDEBUG
-			dump_ctrl(fd, query);
-#endif
+			if (dump) {
+				dump_ctrl(fd, query);
+			}
 		}
 	}
 	// ドライバー固有コントロール一覧
@@ -316,9 +317,9 @@ void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &s
 		if (r == 0) {
 			if (!(query.flags & V4L2_CTRL_FLAG_DISABLED)) {
 				supported[i] = std::make_shared<struct v4l2_queryctrl>(query);
-#ifndef LOG_NDEBUG
+			if (dump) {
 				dump_ctrl(fd, query);
-#endif
+			}
 			}
 		} else {
 			break;
