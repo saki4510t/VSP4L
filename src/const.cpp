@@ -10,7 +10,7 @@ const char *MODEL = "BOV01";
  * @brief バージョン文字列
  * 
  */
-const char *VERSION = "v0.0.0";
+const char *VERSION = "v1.0.0";
 
 /**
  * @brief レンズ補正係数
