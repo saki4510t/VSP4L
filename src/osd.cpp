@@ -413,12 +413,12 @@ void OSD::draw_adjust_1() {
 	ImGui::BeginGroup();
 	{
 		ImGui::PushItemWidth(button_width * 2);
-		show_slider(V4L2_CID_BRIGHTNESS, V4L2_LABEL_BRIGHTNESS);
-		show_slider(V4L2_CID_HUE, V4L2_LABEL_HUE);
-		show_slider(V4L2_CID_SATURATION, V4L2_LABEL_SATURATION);
-		show_slider(V4L2_CID_CONTRAST, V4L2_LABEL_CONTRAST);
-		show_slider(V4L2_CID_SHARPNESS, V4L2_LABEL_SHARPNESS);
-		show_slider(V4L2_CID_GAMMA, V4L2_LABEL_GAMMA);
+		show_value(V4L2_CID_BRIGHTNESS, V4L2_LABEL_BRIGHTNESS);
+		show_value(V4L2_CID_HUE, V4L2_LABEL_HUE);
+		show_value(V4L2_CID_SATURATION, V4L2_LABEL_SATURATION);
+		show_value(V4L2_CID_CONTRAST, V4L2_LABEL_CONTRAST);
+		show_value(V4L2_CID_SHARPNESS, V4L2_LABEL_SHARPNESS);
+		show_value(V4L2_CID_GAMMA, V4L2_LABEL_GAMMA);
 		ImGui::Spacing();
 		ImGui::PopItemWidth();
 	}
@@ -456,12 +456,12 @@ void OSD::draw_adjust_2() {
 	ImGui::BeginGroup();
 	{
 		ImGui::PushItemWidth(button_width * 2);
-		show_slider(V4L2_CID_DENOISE, V4L2_LABEL_DENOISE);
-		show_slider(V4L2_CID_AUTOGAIN, V4L2_LABEL_AUTOGAIN);
-		show_slider(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
-		show_slider(V4L2_CID_EXPOSURE_AUTO, V4L2_LABEL_EXPOSURE_AUTO);
-		show_slider(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
-		show_slider(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE, V4L2_LABEL_AUTO_N_PRESET_WHITE_BLANCE);
+		show_value(V4L2_CID_DENOISE, V4L2_LABEL_DENOISE);
+		show_value(V4L2_CID_AUTOGAIN, V4L2_LABEL_AUTOGAIN);
+		show_value(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
+		show_value(V4L2_CID_EXPOSURE_AUTO, V4L2_LABEL_EXPOSURE_AUTO);
+		show_value(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
+		show_value(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE, V4L2_LABEL_AUTO_N_PRESET_WHITE_BLANCE);
 		ImGui::Spacing();
 		ImGui::PopItemWidth();
 	}
@@ -499,9 +499,9 @@ void OSD::draw_adjust_3() {
 	ImGui::BeginGroup();
 	{
 		ImGui::PushItemWidth(button_width * 2);
-		show_slider(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
-		show_slider(V4L2_CID_ROTATE, V4L2_LABEL_ROTATE);
-		show_slider(V4L2_CID_ZOOM_ABSOLUTE, V4L2_LABEL_ZOOM_ABSOLUTE);
+		show_value(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
+		show_value(V4L2_CID_ROTATE, V4L2_LABEL_ROTATE);
+		show_value(V4L2_CID_ZOOM_ABSOLUTE, V4L2_LABEL_ZOOM_ABSOLUTE);
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
@@ -600,7 +600,7 @@ void OSD::show_label(const uint32_t &id, const char *label) {
  * @param label
 */
 /*private*/
-void OSD::show_slider(const uint32_t &id, const char *label) {
+void OSD::show_value(const uint32_t &id, const char *label) {
 
 	ENTER();
 

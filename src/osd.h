@@ -116,7 +116,7 @@ private:
 	 * @param id
 	 * @param label
 	*/
-	void show_slider(const uint32_t &id, const char *label);
+	void show_value(const uint32_t &id, const char *label);
 	/**
 	 * 設定値が変更されたときの処理
 	 * @param value
