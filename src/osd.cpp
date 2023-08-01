@@ -12,6 +12,8 @@
 
 #include "utilbase.h"
 
+// common
+#include "charutils.h"
 // aandusb/v4l2
 #include "v4l2/v4l2.h"
 // app
@@ -625,7 +627,12 @@ void OSD::show_slider(const uint32_t &id, const char *label) {
 				}
 			}
 		} else {
-			ImGui::LabelText("", "%s", label);
+			const std::string str = format("%d", val->value.current);
+			const auto button_width = get_button_width();
+			const auto center_x = ImGui::GetWindowSize().x * 0.5f;
+			const auto text_width = ImGui::CalcTextSize(str.c_str()).x;
+			ImGui::SetCursorPosX(center_x + button_width - text_width * 0.5f);
+			ImGui::Text("%s", str.c_str());
 		}
 	} else {
 		ImGui::LabelText("", "");
