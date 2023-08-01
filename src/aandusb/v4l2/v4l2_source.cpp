@@ -7,7 +7,10 @@
 
 #define LOG_TAG "V4l2Source"
 
-#define MEAS_TIME (0)				// 1フレーム当たりの描画時間を測定する時1
+// 1フレーム当たりの描画時間を測定する時1
+#define MEAS_TIME (0)
+// 対応するコントロール機能をログへ出力するかどうか, 0: 出力しない, 1: 出力する
+#define DUMP_SUPPRTED_CTRLS (0)
 
 #if 1	// デバッグ情報を出さない時は1
 	#ifndef LOG_NDEBUG
@@ -144,7 +147,7 @@ int V4l2SourceBase::open() {
 				result = core::USB_SUCCESS;
 				m_fd = fd;
 				m_state = STATE_OPEN;
-				update_ctrl_all_locked(fd, supported);
+				update_ctrl_all_locked(fd, supported, DUMP_SUPPRTED_CTRLS);
 			} else {
 				// ::openの返り値が負(-1)の時はオープンできていない
 				result = -errno;
