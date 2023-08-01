@@ -36,13 +36,15 @@ static const char *V4L2_LABEL_SHARPNESS = "SHARPNESS";
 static const char *V4L2_LABEL_GAMMA = "GAMMA";
 // 調整2のラベル文字列
 static const char *V4L2_LABEL_DENOISE = "DENOISE";
+static const char *V4L2_LABEL_AUTOGAIN = "AGC";
 static const char *V4L2_LABEL_GAIN = "GAIN";
-static const char *V4L2_LABEL_AUTOGAIN = "AUTOGAIN";
-static const char *V4L2_LABEL_EXPOSURE = "EXPOSURE";
 static const char *V4L2_LABEL_EXPOSURE_AUTO = "AE";
+static const char *V4L2_LABEL_EXPOSURE = "EXPOSURE";
+static const char *V4L2_LABEL_AUTO_N_PRESET_WHITE_BLANCE = "AWB";
 // 調整3のラベル文字列
-static const char *V4L2_LABEL_AUTO_WHITE_BALANCE = "AWB";
 static const char *V4L2_LABEL_POWER_LINE_FREQUENCY = "PLF";
+static const char *V4L2_LABEL_ROTATE = "ROTATE";
+static const char *V4L2_LABEL_ZOOM_ABSOLUTE = "ZOOM";
 
 /**
  * OSD画面で対応可能なカメラコントロール
@@ -57,18 +59,22 @@ static const uint32_t SUPPORTED_CTRLS[] {
 	V4L2_CID_GAMMA,
 	// 調整2
 	V4L2_CID_DENOISE,
-	V4L2_CID_GAIN,
 	V4L2_CID_AUTOGAIN,
-	V4L2_CID_EXPOSURE,
+	V4L2_CID_GAIN,
 	V4L2_CID_EXPOSURE_AUTO,
-	0,
+	V4L2_CID_EXPOSURE_ABSOLUTE,
+	V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
 	// 調整3
-	V4L2_CID_AUTO_WHITE_BALANCE,
 	V4L2_CID_POWER_LINE_FREQUENCY,
+	V4L2_CID_ROTATE,
+	V4L2_CID_ZOOM_ABSOLUTE,
 	0,
 	0,
 	0,
-	0,
+
+//	V4L2_CID_BG_COLOR,	// V4L2_CID_BG_COLORのIDで返ってくるけどこれはフレームレート(V4L2_CID_FRAMERATE)
+//	V4L2_CID_MIN_BUFFER_FOR_CAPTURE
+//	Skipping Frames Enable/Disable(0x009819e0)
 };
 
 /**
@@ -435,11 +441,11 @@ void OSD::draw_adjust_2() {
 	ImGui::BeginGroup();
 	{
 		show_label(V4L2_CID_DENOISE, V4L2_LABEL_DENOISE);
-		show_label(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
 		show_label(V4L2_CID_AUTOGAIN, V4L2_LABEL_AUTOGAIN);
-		show_label(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
+		show_label(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
 		show_label(V4L2_CID_EXPOSURE_AUTO, V4L2_LABEL_EXPOSURE_AUTO);
-		ImGui::LabelText("", "");
+		show_label(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
+		show_label(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE, V4L2_LABEL_AUTO_N_PRESET_WHITE_BLANCE);
 		ImGui::Spacing();
 	}
 	ImGui::EndGroup(); ImGui::SameLine();
@@ -449,11 +455,11 @@ void OSD::draw_adjust_2() {
 	{
 		ImGui::PushItemWidth(button_width * 2);
 		show_slider(V4L2_CID_DENOISE, V4L2_LABEL_DENOISE);
-		show_slider(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
 		show_slider(V4L2_CID_AUTOGAIN, V4L2_LABEL_AUTOGAIN);
-		show_slider(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
+		show_slider(V4L2_CID_GAIN, V4L2_LABEL_GAIN);
 		show_slider(V4L2_CID_EXPOSURE_AUTO, V4L2_LABEL_EXPOSURE_AUTO);
-		ImGui::LabelText("", "");
+		show_slider(V4L2_CID_EXPOSURE, V4L2_LABEL_EXPOSURE);
+		show_slider(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE, V4L2_LABEL_AUTO_N_PRESET_WHITE_BLANCE);
 		ImGui::Spacing();
 		ImGui::PopItemWidth();
 	}
@@ -477,9 +483,9 @@ void OSD::draw_adjust_3() {
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
 	{
-		show_label(V4L2_CID_AUTO_WHITE_BALANCE, V4L2_LABEL_AUTO_WHITE_BALANCE);
 		show_label(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
-		ImGui::LabelText("", "");
+		show_label(V4L2_CID_ROTATE, V4L2_LABEL_ROTATE);
+		show_label(V4L2_CID_ZOOM_ABSOLUTE, V4L2_LABEL_ZOOM_ABSOLUTE);
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
@@ -489,11 +495,11 @@ void OSD::draw_adjust_3() {
 	// 値を描画(右半分)
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0f);
 	ImGui::BeginGroup();
-	{	// FIXME 未実装
+	{
 		ImGui::PushItemWidth(button_width * 2);
-		show_slider(V4L2_CID_AUTO_WHITE_BALANCE, V4L2_LABEL_AUTO_WHITE_BALANCE);
 		show_slider(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
-		ImGui::LabelText("", "");
+		show_slider(V4L2_CID_ROTATE, V4L2_LABEL_ROTATE);
+		show_slider(V4L2_CID_ZOOM_ABSOLUTE, V4L2_LABEL_ZOOM_ABSOLUTE);
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
