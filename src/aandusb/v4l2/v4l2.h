@@ -99,17 +99,21 @@ uint32_t raw_frame_to_V4L2_PIX_FMT(const core::raw_frame_t &frame_type);
  */
 int xioctl(int fd, int request, void *arg);
 
+/**
+ * コントロール機能の種類を文字列に変換
+*/
 const char *ctrl_type_string(const uint32_t &type);
 
 /**
  * コントロール機能がメニュータイプの場合の設定項目値をログ出力する
- * @param fd
+ * @param fd V4L2機器のファイルディスクリプタ
  * @param query
  */
 void list_menu_ctrl(int fd, const struct v4l2_queryctrl &query);
 
 /**
  * v4l2_queryctrlをログへ出力
+ * @param fd V4L2機器のファイルディスクリプタ
  * @param query
  */
 void dump_ctrl(int fd, const struct v4l2_queryctrl &query);

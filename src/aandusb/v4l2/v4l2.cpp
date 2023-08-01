@@ -237,7 +237,7 @@ const char *ctrl_type_string(const uint32_t &type) {
 
 /**
  * コントロール機能がメニュータイプの場合の設定項目値をログ出力する
- * @param fd
+ * @param fd V4L2機器のファイルディスクリプタ
  * @param query
  */
 void list_menu_ctrl(int fd, const struct v4l2_queryctrl &query) {
@@ -257,6 +257,7 @@ void list_menu_ctrl(int fd, const struct v4l2_queryctrl &query) {
 
 /**
  * v4l2_queryctrlをログへ出力
+ * @param fd V4L2機器のファイルディスクリプタ
  * @param query
  */
 void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
@@ -274,7 +275,7 @@ void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
 
 /**
  * 対応するコントロール機能一覧をマップに登録する
- * @param fd
+ * @param fd V4L2機器のファイルディスクリプタ
  * @param supported
  * @param dump 見つかったコントロール機能をログへ出力するかどうか, デフォルト=false(ログへ出力しない)
  */
