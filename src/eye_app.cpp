@@ -177,16 +177,22 @@ EyeApp::EyeApp(
 	osd.set_on_osd_close([this](const bool &changed) {
 		LOGD("on_osd_close, changed=%d", changed);
 		if (changed) {
-			// FIXME 未実装 設定を再ロードして適用する
+			// FIXME カメラから設定を読むこんで保存する
 		} else {
 			// 一時的に変更されたかもしれないので元の設定に戻す
 			apply_settings(camera_settings);
 		}
 		key_dispatcher.reset_key_mode();
 	})
-	.set_on_camera_settings_changed([this](const CameraSettings &settings) {
+	.set_on_camera_settings_changed([this](const uvc::control_value32_t &value) {
 		// 一時的に設定を適用する
-		apply_settings(settings);
+		LOGD("id=0x%08x,v=%d", value.id, value.current);
+		if (source) {
+			const auto r = source->set_ctrl(value);
+			if (UNLIKELY(r)) {
+				LOGW("failed to apply id=0x%08x,value=%d", value.id, value.current);
+			}
+		}
 	});
 	// 遅延実行タスクの準備, 一定時間後にキーモードをリセットする
 	reset_mode_task = [this]() {

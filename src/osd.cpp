@@ -79,7 +79,7 @@ static const uint32_t SUPPORTED_CTRLS[] {
 /*public*/
 OSD::OSD()
 :	page(DEFAULE_PAGE),
-	app_settings(), camera_settings()
+	app_settings()
 {
 	ENTER();
 	EXIT();
@@ -108,7 +108,6 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
 	page = DEFAULE_PAGE;
 	// 設定値を読み込む等
 	load(app_settings);
-	load(camera_settings);
 	// カメラ設定を読み込む
 	values.clear();
 	for (auto id: SUPPORTED_CTRLS) {
@@ -223,11 +222,10 @@ void OSD::draw(ImFont *large_font) {
 void OSD::save() {
 	ENTER();
 
-	const auto changed = app_settings.is_modified() || camera_settings.is_modified();
+	const auto changed = app_settings.is_modified();
 	// FIXME 変更されているかどうか
 	// FIXME 未実装 保存処理
 	serenegiant::app::save(app_settings);
-	serenegiant::app::save(camera_settings);
 
 	if (on_osd_close) {
 		on_osd_close(changed);
@@ -616,10 +614,8 @@ void OSD::value_changed(const osd_value_t &value) {
 
 	LOGD("id=0x%08x,v=%d", value.id, value.value.current);
 
-	// FIXME 未実装 camera_settingsを更新
-
 	if (on_camera_settings_changed) {
-		on_camera_settings_changed(camera_settings);
+		on_camera_settings_changed(value.value);
 	}
 
 	EXIT();

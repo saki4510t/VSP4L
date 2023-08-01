@@ -32,13 +32,12 @@ typedef struct _osd_value {
 
 typedef std::unique_ptr<osd_value_t> OSDValueUp;
 typedef std::function<void(const bool &/*changed*/)> OnOSDCloseFunc;
-typedef std::function<void(const CameraSettings &/*settings*/)> OnCameraSettingsChanged;
+typedef std::function<void(const uvc::control_value32_t &/*value*/)> OnCameraSettingsChanged;
 
 class OSD {
 private:
 	int page;
 	AppSettings app_settings;
-	CameraSettings camera_settings;
 
 	OnOSDCloseFunc on_osd_close;
 	OnCameraSettingsChanged on_camera_settings_changed;
