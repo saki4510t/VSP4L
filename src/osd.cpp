@@ -590,7 +590,7 @@ void OSD::show_slider(const uint32_t &id, const char *label) {
 			auto &v = val->value;
 			// FIXME stepを考慮してない
 			if (ImGui::SliderInt(label, &v.current, v.min, v.max)) {
-				if ((v.current != val->prev) && (v.current >= v.min) && (v.current >= v.max)) {
+				if ((v.current != val->prev) && (v.current >= v.min) && (v.current <= v.max)) {
 					// LOGD("on_changed:id=0x%08x,v=%d, prev=%d", id, v.current, val->prev);
 					val->prev = v.current;
 					val->modified = true;
