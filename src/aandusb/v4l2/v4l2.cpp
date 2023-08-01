@@ -434,9 +434,11 @@ void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
 void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &supported, const bool &dump) {
 	ENTER();
 
+	#define V4L2_CID_END (V4L2_CID_IMAGE_PROC_CLASS_BASE + 0x100)
+
 	supported.clear();
 	// v4l2標準コントロール一覧
-	for (uint32_t i = V4L2_CID_BASE; i <  V4L2_CID_LASTP1; i++) {
+	for (uint32_t i = V4L2_CID_BASE; i <  V4L2_CID_END; i++) {
 		struct v4l2_queryctrl query {
 			.id = i,
 		};
