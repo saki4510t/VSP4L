@@ -71,6 +71,17 @@ static const uint32_t SUPPORTED_CTRLS[] {
 	0,
 };
 
+/**
+ * 自動調整の設定をするカメラコントロール
+*/
+static const uint32_t AUTO_CTRLS[] {
+	V4L2_CID_AUTOBRIGHTNESS,
+	V4L2_CID_HUE_AUTO,
+	V4L2_CID_AUTOGAIN,
+	V4L2_CID_EXPOSURE_AUTO,
+	V4L2_CID_AUTO_WHITE_BALANCE,
+};
+
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ
@@ -110,7 +121,7 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
 	load(app_settings);
 	// カメラ設定を読み込む
 	values.clear();
-	for (auto id: SUPPORTED_CTRLS) {
+	for (const auto id: SUPPORTED_CTRLS) {
 		if (id) {
 			const auto supported = source->is_ctrl_supported(id);
 			osd_value_t val = {
@@ -126,7 +137,10 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
 			values[id] = std::make_unique<osd_value_t>(val);
 		}
 	}
-	// FIXME 未実装 自動露出中は変更できない項目があるので一時的にenabledを落とすなどの処理
+	// 自動露出中などで変更できない項目があるので一時的にenabledを落とす処理
+	for (const auto id: AUTO_CTRLS) {
+		update_constraints(id);
+	}
 
 	EXIT();
 }
@@ -582,19 +596,22 @@ void OSD::show_slider(const uint32_t &id, const char *label) {
 
 	ENTER();
 
-	auto &val = values[id];
-	if (val && val->supported) {
+	auto &_val = values[id];
+	if (_val && _val->supported) {
+		auto val = _val.get();
 		if (val->enabled) {
 			auto &v = val->value;
 			// FIXME stepを考慮してない
 			if (ImGui::SliderInt(label, &v.current, v.min, v.max)) {
 				if ((v.current != val->prev) && (v.current >= v.min) && (v.current <= v.max)) {
 					// LOGD("on_changed:id=0x%08x,v=%d, prev=%d", id, v.current, val->prev);
-					const auto r = value_changed(*(val.get()));
+					const auto r = value_changed(*val);
 					if (LIKELY(!r)) {
 						// 変更を正常に適用できたとき
 						val->prev = v.current;
 						val->modified = true;
+						// 自動露出と露出やゲインなどのように相互依存する場合の制約を更新
+						update_constraints(id);
 					} else {
 						// 適用できなかったときは前の値に戻す
 						v.current = val->prev;
@@ -626,6 +643,57 @@ int OSD::value_changed(const osd_value_t &value) {
 	}
 
 	RETURN(result, int);
+}
+
+/**
+ * 自動露出とゲインや露出などのように相互依存する制約を更新する
+ * @param value
+*/
+void OSD::update_constraints(const uint32_t &id) {
+	ENTER();
+
+	auto &val = values[id];
+	if (val && val->supported) {
+		// FIXME 未実装 ここの制約が正しいかどうか動作未確認
+		switch (id) {
+		case V4L2_CID_AUTOBRIGHTNESS:
+			set_enabled(V4L2_CID_BRIGHTNESS, !val->value.current);
+			break;
+		case V4L2_CID_HUE_AUTO:
+			set_enabled(V4L2_CID_HUE, !val->value.current);
+			break;
+		case V4L2_CID_AUTOGAIN:
+			set_enabled(V4L2_CID_GAIN, !val->value.current);
+			break;
+		case V4L2_CID_EXPOSURE_AUTO:
+			set_enabled(V4L2_CID_GAIN, val->value.current == V4L2_EXPOSURE_MANUAL);
+			set_enabled(V4L2_CID_EXPOSURE, val->value.current == V4L2_EXPOSURE_MANUAL);
+			break;
+		case V4L2_CID_AUTO_WHITE_BALANCE:
+			set_enabled(V4L2_CID_DO_WHITE_BALANCE, !val->value.current);
+			set_enabled(V4L2_CID_WHITE_BALANCE_TEMPERATURE, !val->value.current);
+			break;
+		}
+	}
+
+	EXIT();
+}
+
+/**
+ * 指定したidのカメラコントロールに対応している場合に有効無効をセットする。
+ * 対応していなければ何もしない
+ * @param id
+ * @param enabled
+*/
+void OSD::set_enabled(const uint32_t &id, const bool &enabled) {
+	ENTER();
+
+	auto &val = values[id];
+	if (val && val->supported) {
+		val->enabled = enabled;
+	}
+
+	EXIT();
 }
 
 }   // namespace serenegiant::app

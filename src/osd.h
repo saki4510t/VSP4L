@@ -123,6 +123,18 @@ private:
 	 * @return 0: 正常に変更できた
 	*/
 	int value_changed(const osd_value_t &value);
+	/**
+	 * 自動露出とゲインや露出などのように相互依存する制約を更新する
+	 * @param id
+	*/
+	void update_constraints(const uint32_t &id);
+	/**
+	 * 指定したidのカメラコントロールに対応している場合に有効無効をセットする。
+	 * 対応していなければ何もしない
+	 * @param id
+	 * @param enabled
+	*/
+	void set_enabled(const uint32_t &id, const bool &enabled);
 protected:
 public:
 	/**
