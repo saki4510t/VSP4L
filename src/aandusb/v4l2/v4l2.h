@@ -100,7 +100,15 @@ uint32_t raw_frame_to_V4L2_PIX_FMT(const core::raw_frame_t &frame_type);
 int xioctl(int fd, int request, void *arg);
 
 /**
+ * コントロール機能をIDを文字列に変換
+ * @param id
+ * @param const char *
+*/
+const char *ctrl_id_string(const uint32_t &id);
+/**
  * コントロール機能の種類を文字列に変換
+ * @param type
+ * @param const char *
 */
 const char *ctrl_type_string(const uint32_t &type);
 
