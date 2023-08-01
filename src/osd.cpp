@@ -590,9 +590,15 @@ void OSD::show_slider(const uint32_t &id, const char *label) {
 			if (ImGui::SliderInt(label, &v.current, v.min, v.max)) {
 				if ((v.current != val->prev) && (v.current >= v.min) && (v.current <= v.max)) {
 					// LOGD("on_changed:id=0x%08x,v=%d, prev=%d", id, v.current, val->prev);
-					val->prev = v.current;
-					val->modified = true;
-					value_changed(*(val.get()));
+					const auto r = value_changed(*(val.get()));
+					if (LIKELY(!r)) {
+						// 変更を正常に適用できたとき
+						val->prev = v.current;
+						val->modified = true;
+					} else {
+						// 適用できなかったときは前の値に戻す
+						v.current = val->prev;
+					}
 				}
 			}
 		} else {
@@ -609,16 +615,17 @@ void OSD::show_slider(const uint32_t &id, const char *label) {
  * 設定値が変更されたときの処理
 */
 /*private*/
-void OSD::value_changed(const osd_value_t &value) {
+int OSD::value_changed(const osd_value_t &value) {
 	ENTER();
 
+	int result = -1;
 	LOGD("id=0x%08x,v=%d", value.id, value.value.current);
 
 	if (on_camera_settings_changed) {
-		on_camera_settings_changed(value.value);
+		result = on_camera_settings_changed(value.value);
 	}
 
-	EXIT();
+	RETURN(result, int);
 }
 
 }   // namespace serenegiant::app

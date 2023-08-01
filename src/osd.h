@@ -32,7 +32,7 @@ typedef struct _osd_value {
 
 typedef std::unique_ptr<osd_value_t> OSDValueUp;
 typedef std::function<void(const bool &/*changed*/)> OnOSDCloseFunc;
-typedef std::function<void(const uvc::control_value32_t &/*value*/)> OnCameraSettingsChanged;
+typedef std::function<int(const uvc::control_value32_t &/*value*/)> OnCameraSettingsChanged;
 
 class OSD {
 private:
@@ -120,8 +120,9 @@ private:
 	/**
 	 * 設定値が変更されたときの処理
 	 * @param value
+	 * @return 0: 正常に変更できた
 	*/
-	void value_changed(const osd_value_t &value);
+	int value_changed(const osd_value_t &value);
 protected:
 public:
 	/**

@@ -185,14 +185,17 @@ EyeApp::EyeApp(
 		key_dispatcher.reset_key_mode();
 	})
 	.set_on_camera_settings_changed([this](const uvc::control_value32_t &value) {
+		ENTER();
 		// 一時的に設定を適用する
+		int r = -1;
 		LOGD("id=0x%08x,v=%d", value.id, value.current);
 		if (source) {
-			const auto r = source->set_ctrl(value);
+			r = source->set_ctrl(value);
 			if (UNLIKELY(r)) {
 				LOGW("failed to apply id=0x%08x,value=%d", value.id, value.current);
 			}
 		}
+		RETURN(r, int);
 	});
 	// 遅延実行タスクの準備, 一定時間後にキーモードをリセットする
 	reset_mode_task = [this]() {
