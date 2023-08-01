@@ -421,8 +421,16 @@ int KeyDispatcher::tap_counts(const ImGuiKey &key) {
 }
 
 //--------------------------------------------------------------------------------
-static inline bool need_multi_tap(const key_mode_t &key_mode) {
-	return (key_mode == KEY_MODE_NORMAL) || (key_mode == KEY_MODE_OSD);
+/**
+ * マルチタップの処理が必要かどうかを取得する
+ * 通常モード、OSDモードで下矢印のときにマルチタップを有効にする
+ * @param event
+ * @param key_mode
+ * @return false: マルチタップの処理は不要, true: マルチタップの処理が必要
+*/
+static inline bool need_multi_tap(const KeyEvent &event, const key_mode_t &key_mode) {
+	return (key_mode == KEY_MODE_NORMAL)
+		|| ((key_mode == KEY_MODE_OSD) && (event.key == ImGuiKey_DownArrow));
 }
 
 /**
@@ -452,7 +460,7 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 		handler.remove(long_key_press_tasks[key]);
 		handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
 	}
-	if (need_multi_tap(current_key_mode)) {
+	if (need_multi_tap(event, current_key_mode)) {
 		// マルチタップの処理
 		auto key_down_task = std::make_shared<KeyDownTask>(*this, event);
 		key_down_tasks[key] = key_down_task;
@@ -499,7 +507,7 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	if (!result && (state->state == KEY_STATE_DOWN)
 		&& (duration_ms >= SHORT_PRESS_MIN_MS) && (duration_ms < SHORT_PRESS_MAX_MS)) {
 		// ショートタップ時間内に収まっているときのみ処理する
-		if (need_multi_tap(current_key_mode)) {
+		if (need_multi_tap(event, current_key_mode)) {
 			// マルチタップの処理
 			auto key_up_task = std::make_shared<KeyUpTask>(*this, event, duration_ms);
 			key_up_tasks[key] = key_up_task;
