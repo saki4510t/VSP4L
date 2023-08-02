@@ -179,6 +179,7 @@ public:
  */
 class Handler {
 private:
+    const bool own_looper;
     std::unique_ptr<Looper> my_looper;
     /**
      * @brief ワーカースレッド

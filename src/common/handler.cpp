@@ -37,7 +37,7 @@ static int erase_if(
 	std::multimap<nsecs_t, std::shared_ptr<Runnable>> &q,
 	std::function<bool(std::pair<nsecs_t, std::shared_ptr<Runnable>>)> compare) {
 
-	auto original_size = q.size();
+	const auto original_size = q.size();
 	for (auto itr = q.begin(), last = q.end(); itr != last; ) {
 		if (compare(*itr)) {
 			LOGD("erase");
@@ -46,6 +46,7 @@ static int erase_if(
 			++itr;
 		}
 	}
+
 	return original_size - q.size();
 }
 
@@ -216,10 +217,10 @@ void Looper::loop() {
 	running = true;
 	for ( ; running ; ) {
 		std::shared_ptr<Runnable> task = nullptr;
-		nsecs_t next = 0;
 		{
 			android::Mutex::Autolock lock(queue_lock);
-			auto current = systemTime();
+			nsecs_t next = 0;
+			const auto current = systemTime();
 			if (!queue.empty()) {
 				// 実行待ちが存在するとき
 				auto begin = queue.begin();
@@ -246,7 +247,7 @@ void Looper::loop() {
 			// タスクを実行
 			task->run();
 		}
-	}
+	}	// for ( ; running ; )
 
 	MARK("finished");
 
@@ -261,7 +262,8 @@ void Looper::loop() {
  * @param looper
  */
 Handler::Handler(std::unique_ptr<Looper> looper)
-:   my_looper(std::move(looper)),
+:   own_looper(!looper),
+	my_looper(std::move(looper)),
 	worker_thread()
 {
 	ENTER();
@@ -296,7 +298,10 @@ Handler::~Handler() {
 void Handler::terminate() {
 	ENTER();
 
-	my_looper->quit();
+	if (own_looper) {
+		// 自分で生成したLooperのときのみ終了させる
+		my_looper->quit();
+	}
 	if (worker_thread.joinable()) {
 		worker_thread.join();
 	}
