@@ -41,6 +41,7 @@ class OSD {
 private:
 	int page;
 	AppSettings app_settings;
+	bool camera_modified;
 
 	OnOSDCloseFunc on_osd_close;
 	OnCameraSettingsChanged on_camera_settings_changed;

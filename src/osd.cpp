@@ -57,7 +57,8 @@ static const char *V4L2_LABEL_ZOOM_ABSOLUTE = "ZOOM";
 /*public*/
 OSD::OSD()
 :	page(DEFAULE_PAGE),
-	app_settings()
+	app_settings(),
+	camera_modified(false)
 {
 	ENTER();
 	EXIT();
@@ -84,6 +85,7 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
 
 	// 表示ページをデフォルトページへ
 	page = DEFAULE_PAGE;
+	camera_modified = false;
 	// 設定値を読み込む等
 	load(app_settings);
 	// カメラ設定を読み込む
@@ -210,7 +212,7 @@ void OSD::draw(ImFont *large_font) {
 void OSD::save() {
 	ENTER();
 
-	const auto changed = app_settings.is_modified();
+	const auto changed = camera_modified || app_settings.is_modified();
 	// FIXME 変更されているかどうか
 	// FIXME 未実装 保存処理
 	serenegiant::app::save(app_settings);
@@ -231,6 +233,7 @@ void OSD::save() {
 void OSD::cancel() {
 	ENTER();
 
+	camera_modified = false;
 	if (on_osd_close) {
 		on_osd_close(false);
 	}
@@ -669,6 +672,9 @@ int OSD::value_changed(const osd_value_t &value) {
 
 	if (on_camera_settings_changed) {
 		result = on_camera_settings_changed(value.value);
+		if (!result) {
+			camera_modified = true;
+		}
 	}
 
 	RETURN(result, int);
