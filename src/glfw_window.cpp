@@ -246,6 +246,7 @@ GlfwWindow::GlfwWindow(const int width, const int height, const char *title)
         // マウスカーソルが表示されないように設定
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        glfwShowWindow(window);
 	}
 
 	EXIT();
@@ -262,6 +263,18 @@ GlfwWindow::~GlfwWindow() {
 	}
 
 	EXIT();
+}
+
+int GlfwWindow::resume() {
+    ENTER();
+    auto result = Window::resume();
+
+    if (LIKELY(window)) {
+        // このウインドウにフォーカスを与える
+        glfwFocusWindow(window);
+    }
+
+    RETURN(result, int);
 }
 
 bool GlfwWindow::is_valid() const {

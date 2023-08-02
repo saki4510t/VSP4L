@@ -51,6 +51,8 @@ public:
 	GlfwWindow(const int width = 640, const int height = 480, const char *title = "aAndUsb");
 	virtual ~GlfwWindow();
 
+	int resume() override;
+
 	bool is_valid() const override;
 
 	inline GLFWwindow *get_window() { return window; };
