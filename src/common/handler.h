@@ -119,27 +119,31 @@ protected:
      *        すでに実行中または実行済の場合は何もしない
      *
      * @param task
+     * @return int 削除されたタスクの数
      */
-    void remove(std::unique_ptr<Runnable> task);
+    int remove(std::unique_ptr<Runnable> task);
     /**
      * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
      *        すでに実行中または実行済の場合は何もしない
      *
      * @param task
+     * @return int 削除されたタスクの数
      */
-    void remove(std::shared_ptr<Runnable> task);
+    int remove(std::shared_ptr<Runnable> task);
     /**
      * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
      *        すでに実行中または実行済の場合は何もしない
      *
      * @param task
+     * @return int 削除されたタスクの数
      */
-    void remove(RunnableLambdaType task);
+    int remove(RunnableLambdaType task);
     /**
      * @brief すべての未実行タスクをキューから取り除く
      *
+     * @return int 削除されたタスクの数
      */
-    void remove_all();
+    int remove_all();
 public:
     /**
      * @brief コンストラクタ
@@ -249,27 +253,31 @@ public:
      *        すでに実行中または実行済の場合は何もしない
      *
      * @param task
+     * @return int 削除されたタスクの数
      */
-    void remove(std::unique_ptr<Runnable> task);
+    int remove(std::unique_ptr<Runnable> task);
     /**
      * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
      *        すでに実行中または実行済の場合は何もしない
      *
      * @param task
+     * @return int 削除されたタスクの数
      */
-    void remove(std::shared_ptr<Runnable> task);
+    int remove(std::shared_ptr<Runnable> task);
     /**
      * @brief 指定したタスクが未実行でキューに存在する場合に取り除く
      *        すでに実行中または実行済の場合は何もしない
      *
      * @param task
+     * @return int 削除されたタスクの数
      */
-    void remove(RunnableLambdaType task);
+    int remove(RunnableLambdaType task);
     /**
      * @brief すべての未実行タスクをキューから取り除く
      *
+     * @return int 削除されたタスクの数
      */
-    void remove_all();
+    int remove_all();
 };
 
 }   // namespace serenegiant::thread

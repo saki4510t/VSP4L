@@ -134,22 +134,24 @@ void Looper::insert(std::shared_ptr<Runnable> task, const nsecs_t &run_at_ns) {
  *        すでに実行中または実行済の場合は何もしない
  *
  * @param task
+ * @return int 削除されたタスクの数
  */
-void Looper::remove(std::unique_ptr<Runnable> task) {
+int Looper::remove(std::unique_ptr<Runnable> task) {
 	ENTER();
 
+	int result = 0;
 	if (task) {
 		android::Mutex::Autolock lock(queue_lock);
 		// 実行待ちキュー内に同じRunnableが存在すれば削除する
 		const auto value = task.get();
-		erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+		result = erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
 			const auto v = it.second.get();
 			return v == value;
 		});
 		queue_sync.signal();
 	}
 
-	EXIT();
+	RETURN(result, int);
 }
 
 /**
@@ -157,22 +159,24 @@ void Looper::remove(std::unique_ptr<Runnable> task) {
  *        すでに実行中または実行済の場合は何もしない
  *
  * @param task
+ * @return int 削除されたタスクの数
  */
-void Looper::remove(std::shared_ptr<Runnable> task) {
+int Looper::remove(std::shared_ptr<Runnable> task) {
 	ENTER();
 
+	int result = 0;
 	if (task) {
 		android::Mutex::Autolock lock(queue_lock);
 		// 実行待ちキュー内に同じRunnableが存在すれば削除する
 		const auto value = task.get();
-		erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+		result = erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
 			const auto v = it.second.get();
 			return v == value;
 		});
 		queue_sync.signal();
 	}
 
-	EXIT();
+	RETURN(result, int);
 }
 
 /**
@@ -180,35 +184,39 @@ void Looper::remove(std::shared_ptr<Runnable> task) {
  *        すでに実行中または実行済の場合は何もしない
  *
  * @param task
+ * @return int 削除されたタスクの数
  */
-void Looper::remove(RunnableLambdaType task) {
+int Looper::remove(RunnableLambdaType task) {
 	ENTER();
 
+	int result = 0;
 	if (task) {
 		android::Mutex::Autolock lock(queue_lock);
 		// 実行待ちキュー内に同じRunnableLambdaTypeが存在すれば削除する
-		erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
+		result = erase_if(queue, [&](std::pair<nsecs_t, std::shared_ptr<Runnable>> it) {
 			const auto v = dynamic_cast<RunnableLambda *>(it.second.get());
 			return v && v->equals(task);
 		});
 		queue_sync.signal();
 	}
 
-	EXIT();
+	RETURN(result, int);
 }
 
 /**
  * @brief すべての未実行タスクをキューから取り除く
  *
+ * @return int 削除されたタスクの数
  */
-void Looper::remove_all() {
+int Looper::remove_all() {
 	ENTER();
 
 	android::Mutex::Autolock lock(queue_lock);
+	int result = queue.size();
 	queue.clear();
 	queue_sync.signal();
 
-	EXIT();
+	RETURN(result, int);
 }
 
 void Looper::loop() {
@@ -333,13 +341,12 @@ void Handler::post_delayed(std::shared_ptr<Runnable> task, const nsecs_t &delay_
  *        すでに実行中または実行済の場合は何もしない
  *
  * @param task
+ * @return int 削除されたタスクの数
  */
-void Handler::remove(std::unique_ptr<Runnable> task) {
+int Handler::remove(std::unique_ptr<Runnable> task) {
 	ENTER();
 
-	my_looper->remove(std::move(task));
-
-	EXIT();
+	RETURN(my_looper->remove(std::move(task)), int);
 }
 
 /**
@@ -347,13 +354,12 @@ void Handler::remove(std::unique_ptr<Runnable> task) {
  *        すでに実行中または実行済の場合は何もしない
  *
  * @param task
+ * @return int 削除されたタスクの数
  */
-void Handler::remove(std::shared_ptr<Runnable> task) {
+int Handler::remove(std::shared_ptr<Runnable> task) {
 	ENTER();
 
-	my_looper->remove(task);
-
-	EXIT();
+	RETURN(my_looper->remove(task), int);
 }
 
 /**
@@ -361,25 +367,23 @@ void Handler::remove(std::shared_ptr<Runnable> task) {
  *        すでに実行中または実行済の場合は何もしない
  *
  * @param task
+ * @return int 削除されたタスクの数
  */
-void Handler::remove(RunnableLambdaType task) {
+int Handler::remove(RunnableLambdaType task) {
 	ENTER();
 
-	my_looper->remove(task);
-
-	EXIT();
+	RETURN(my_looper->remove(task), int);
 }
 
 /**
  * @brief すべての未実行タスクをキューから取り除く
  *
+ * @return int 削除されたタスクの数
  */
-void Handler::remove_all() {
+int Handler::remove_all() {
 	ENTER();
 
-	my_looper->remove_all();
-
-	EXIT();
+	RETURN(my_looper->remove_all(), int);
 }
 
 /**
