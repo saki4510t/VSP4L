@@ -756,7 +756,13 @@ void EyeApp::update_state() {
 void EyeApp::restore_settings() {
 	ENTER();
 
-	// FIXME 未実装
+	if (LIKELY(source)) {
+		for (const auto id: SUPPORTED_CTRLS) {
+			if (source->is_ctrl_supported(id)) {
+				// FIXME 未実装
+			}
+		}
+	}
 
 	EXIT();
 }
@@ -767,7 +773,13 @@ void EyeApp::restore_settings() {
 void EyeApp::save_settings() {
 	ENTER();
 
-	// FIXME 未実装
+	if (LIKELY(source)) {
+		for (const auto id: SUPPORTED_CTRLS) {
+			if (source->is_ctrl_supported(id)) {
+				// FIXME 未実装
+			}
+		}
+	}
 
 	EXIT();
 }
@@ -781,7 +793,11 @@ void EyeApp::apply_settings(const CameraSettings &settings) {
 	ENTER();
 
 	if (LIKELY(source)) {
-		// FIXME 未実装
+		for (const auto id: SUPPORTED_CTRLS) {
+			if (source->is_ctrl_supported(id)) {
+				// FIXME 未実装
+			}
+		}
 	}
 
 	EXIT();

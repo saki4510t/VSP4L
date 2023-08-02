@@ -1188,6 +1188,7 @@ int V4l2SourceBase::get_ctrl(
 		values.max = query->maximum;
 		values.step = query->step;
 		values.def = query->default_value;
+		// 現在の設定値を取得
 		struct v4l2_control ctrl {
 			.id = ctrl_id,
 		};
@@ -1216,6 +1217,7 @@ int V4l2SourceBase::get_ctrl_value(const uint32_t &ctrl_id, int32_t &value) {
 
 	value = 0;
 	if (supported.find(ctrl_id) != supported.end()) {
+		// 現在の設定値を取得
 		struct v4l2_control ctrl {
 			.id = ctrl_id,
 		};
@@ -1243,6 +1245,7 @@ int V4l2SourceBase::set_ctrl_value(const uint32_t &ctrl_id, const int32_t &value
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 
 	if (supported.find(ctrl_id) != supported.end()) {
+		// 指定した値を適用
 		struct v4l2_control ctrl {
 			.id = ctrl_id,
 			.value = value,

@@ -33,6 +33,7 @@ namespace serenegiant::v4l2::pipeline {
 
 /**
  * v4l2からの映像をソースとして使うためのパイプライン(始点)
+ * FIXME V4l2SourceBaseを使うように変更する
  */
 class V4L2SourcePipeline : virtual public sere_pipeline::IPipeline {
 private:

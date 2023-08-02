@@ -675,6 +675,7 @@ int OSD::value_changed(const osd_value_t &value) {
  * 自動露出とゲインや露出などのように相互依存する制約を更新する
  * @param value
 */
+/*private*/
 void OSD::update_constraints(const uint32_t &id) {
 	ENTER();
 
@@ -711,6 +712,7 @@ void OSD::update_constraints(const uint32_t &id) {
  * @param id
  * @param enabled
 */
+/*private*/
 void OSD::set_enabled(const uint32_t &id, const bool &enabled) {
 	ENTER();
 
