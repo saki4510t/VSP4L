@@ -752,16 +752,27 @@ void EyeApp::update_state() {
 //--------------------------------------------------------------------------------
 /**
  * 設定を復元させる
+ * SUPPORTED_CTRLSに含まれるV4L2コントロールidのうち機器側で対応しているものについて
+ * デフォルト値へ戻す
 */
 void EyeApp::restore_settings() {
 	ENTER();
 
 	if (LIKELY(source)) {
+		// camera_settingsで保持している値をデフォルト値に変更する
+		camera_settings.clear();
 		for (const auto id: SUPPORTED_CTRLS) {
 			if (source->is_ctrl_supported(id)) {
-				// FIXME 未実装
+				uvc::control_value32_t val;
+				auto r = source->get_ctrl(id, val);
+				if (LIKELY(!r)) {
+					LOGD("set id=0x%08x,def=%d", id, val.def);
+					camera_settings.set_value(id, val.def);
+				}
 			}
 		}
+		// カメラ設定を適用
+		apply_settings(camera_settings);
 	}
 
 	EXIT();
@@ -774,11 +785,20 @@ void EyeApp::save_settings() {
 	ENTER();
 
 	if (LIKELY(source)) {
+		// camera_settingsをカメラの現在設定値に変更する
+		camera_settings.clear();
 		for (const auto id: SUPPORTED_CTRLS) {
 			if (source->is_ctrl_supported(id)) {
-				// FIXME 未実装
+				uvc::control_value32_t val;
+				auto r = source->get_ctrl(id, val);
+				if (LIKELY(!r)) {
+					LOGD("set id=0x%08x,cur=%d", id, val.current);
+					camera_settings.set_value(id, val.current);
+				}
 			}
 		}
+		// カメラ設定を保存
+		app::save(camera_settings);
 	}
 
 	EXIT();
@@ -789,14 +809,56 @@ void EyeApp::save_settings() {
  * 
  * @param settings 
  */
-void EyeApp::apply_settings(const CameraSettings &settings) {
+void EyeApp::apply_settings(CameraSettings &settings) {
 	ENTER();
 
 	if (LIKELY(source)) {
 		for (const auto id: SUPPORTED_CTRLS) {
-			if (source->is_ctrl_supported(id)) {
-				// FIXME 未実装
+			int32_t val;
+			auto r = settings.get_value(id, val);
+			if (!r) {
+				r = !source->is_ctrl_supported(id);
+				if (!r) {
+					bool apply = true;
+					switch (id) {
+					case V4L2_CID_AUTOBRIGHTNESS:
+						apply = !settings.is_auto_brightness();
+						break;
+					case V4L2_CID_HUE_AUTO:
+						apply = !settings.is_auto_hue();
+						break;
+					case V4L2_CID_AUTOGAIN:
+						apply = !settings.is_auto_gain();
+						break;
+					case V4L2_CID_EXPOSURE_AUTO:
+						apply = !settings.is_auto_exposure();
+						break;
+					case V4L2_CID_AUTO_WHITE_BALANCE:
+						apply = !settings.is_auto_white_blance();
+						break;
+					default:
+						break;
+					}
+					if (apply) {
+						LOGD("try set value,id=0x%08x,val=%d", id, val);
+						r = source->set_ctrl_value(id, val);
+						if (r) {
+							// 自動露出設定のときに露出設定を適用するときなどは失敗する
+							LOGD("set_ctrl_value failed,id=0x%08x", id);
+						}
+						r = source->get_ctrl_value(id, val);
+						if (!r) {
+							settings.set_value(id, val);
+						}
+					}
+				} else {
+					settings.remove(id);
+				}
 			}
+		}
+		if (settings.is_modified()) {
+			// 変更されていれば保存する
+			app:save(settings);
 		}
 	}
 

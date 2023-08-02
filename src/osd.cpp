@@ -335,7 +335,10 @@ void OSD::draw_settings_1() {
 				},
 			};
 			value_changed(val);
-			cancel();
+			if (on_osd_close) {
+				on_osd_close(true);
+			}
+			values.clear();
 		}
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");

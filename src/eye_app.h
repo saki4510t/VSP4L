@@ -143,7 +143,7 @@ private:
 	 * 
 	 * @param settings 
 	 */
-	void apply_settings(const CameraSettings &settings);
+	void apply_settings(CameraSettings &settings);
 
 	/**
 	 * @brief キーモード変更時の処理
