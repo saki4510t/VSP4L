@@ -321,6 +321,11 @@ public:
 	void reset_key_mode();
 
 	/**
+	 * すべてのキーの状態をクリアしてキーモードをリセットする(KEY_MODE_NORMALへ戻す)
+	*/
+	void clear();
+
+	/**
 	 * @brief キーモードが変更されるときのコールバックをセット
 	 *
 	 * @param callback

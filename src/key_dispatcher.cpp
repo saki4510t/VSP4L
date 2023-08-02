@@ -161,6 +161,35 @@ void KeyDispatcher::reset_key_mode() {
 }
 
 /**
+ * すべてのキーの状態をクリアしてキーモードをリセットする(KEY_MODE_NORMALへ戻す)
+*/
+void KeyDispatcher::clear() {
+	ENTER();
+
+	{
+ 		std::lock_guard<std::mutex> lock(state_lock);
+		for (auto itr: long_key_press_tasks) {
+			handler.remove(itr.second);
+		}
+		long_key_press_tasks.clear();
+		for (auto itr: key_down_tasks) {
+			handler.remove(itr.second);
+		}
+		key_down_tasks.clear();
+		for (auto itr: key_up_tasks) {
+			handler.remove(itr.second);
+		}
+		key_up_tasks.clear();
+		key_states.clear();
+	}
+
+	LOGD("reset key mode %d->%d", key_mode, KEY_MODE_NORMAL);
+	change_key_mode(KEY_MODE_NORMAL, true);
+
+	EXIT();
+}
+
+/**
  * @brief キー入力イベントの処理
  * とりあえずは、KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UPの4種類だけキー処理を行う
  *

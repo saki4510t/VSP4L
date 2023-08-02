@@ -193,6 +193,7 @@ EyeApp::EyeApp(
 		if (value.id == V4L2_CID_RESTORE_SETTINGS) {
 			LOGD("restore settings");
 			restore_settings();
+			key_dispatcher.clear();
 			r = 0;
 		} else {
 			// 一時的に設定を適用する
