@@ -3,6 +3,8 @@
 
 #include <functional>
 #include <unordered_map>
+#include <string>
+#include <vector>
 
 #include "v4l2/v4l2_source.h"
 
@@ -28,6 +30,7 @@ typedef struct _osd_value {
 	bool modified;
 	int32_t prev;
 	uvc::control_value32_t value;
+	std::vector<std::string> items;
 } osd_value_t;
 
 typedef std::unique_ptr<osd_value_t> OSDValueUp;

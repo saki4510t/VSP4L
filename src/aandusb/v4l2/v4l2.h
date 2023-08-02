@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <linux/videodev2.h>
 #include <linux/v4l2-controls.h>
@@ -125,6 +126,14 @@ void list_menu_ctrl(int fd, const struct v4l2_queryctrl &query);
  * @param query
  */
 void dump_ctrl(int fd, const struct v4l2_queryctrl &query);
+
+/**
+ * コントロール機能がメニュータイプの場合の設定項目値を取得する
+ * @param fd V4L2機器のファイルディスクリプタ
+ * @param query
+ * @param 設定項目値をセットするstd::vector<std::string>
+ */
+int get_menu_items(int fd, const struct v4l2_queryctrl &query, std::vector<std::string> &items);
 
 /**
  * 対応するコントロール機能一覧をマップに登録する

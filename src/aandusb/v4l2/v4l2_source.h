@@ -396,6 +396,12 @@ public:
 	 * @return
 	 */
 	int get_ctrl(const uint32_t &ctrl_id, uvc::control_value32_t &values) override;
+	/**
+	 * コントロール機能がメニュータイプの場合の設定項目値を取得する
+	 * @param ctrl_id
+	 * @param items 設定項目値をセットするstd::vector<std::string>
+	 */
+	int get_menu_items(const uint32_t &ctrl_id, std::vector<std::string> &items) override;
 };
 
 //--------------------------------------------------------------------------------

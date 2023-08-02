@@ -1257,6 +1257,27 @@ int V4l2SourceBase::set_ctrl_value(const uint32_t &ctrl_id, const int32_t &value
 	RETURN(result, int);
 }
 
+/**
+ * コントロール機能がメニュータイプの場合の設定項目値を取得する
+ * @param id
+ * @param items 設定項目値をセットするstd::vector<std::string>
+ */
+int V4l2SourceBase::get_menu_items(const uint32_t &ctrl_id, std::vector<std::string> &items) {
+	ENTER();
+
+	AutoMutex lock(v4l2_lock);
+	int result = core::USB_ERROR_NOT_SUPPORTED;
+
+	if (supported.find(ctrl_id) != supported.end()) {
+		const auto query = supported[ctrl_id].get();
+		if (query) {
+			result = v4l2::get_menu_items(m_fd, *query, items);
+		}
+	}
+
+	RETURN(result, int);
+}
+
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ

@@ -394,10 +394,11 @@ const char *ctrl_type_string(const uint32_t &type) {
  */
 void list_menu_ctrl(int fd, const struct v4l2_queryctrl &query) {
 	LOGI("  type=V4L2_CTRL_TYPE_MENU(0x0003):");
-	for (uint32_t i = query.minimum; i <= query.maximum; i++) {
+	// FIXME ここってstepを気にしないとだめなんかな？
+	for (int32_t i = query.minimum; i <= query.maximum; i++) {
 		struct v4l2_querymenu menu {
 			.id = query.id,
-			.index = i,
+			.index = (uint32_t)(i - query.minimum),
 		};
 		if (ioctl(fd, VIDIOC_QUERYMENU, &menu) == 0) {
 			LOGI("    %s", menu.name);
@@ -423,6 +424,40 @@ void dump_ctrl(int fd, const struct v4l2_queryctrl &query) {
 			query.minimum, query.maximum,
 			query.step, query.default_value, query.flags);
 	}
+}
+
+/**
+ * コントロール機能がメニュータイプの場合の設定項目値を取得する
+ * @param fd V4L2機器のファイルディスクリプタ
+ * @param query
+ * @param 設定項目値をセットするstd::vector<std::string>
+ */
+int get_menu_items(int fd, const struct v4l2_queryctrl &query, std::vector<std::string> &items) {
+	ENTER();
+
+	int result = core::USB_ERROR_NOT_SUPPORTED;
+
+	dump_ctrl(fd, query);
+	if ((query.minimum < query.maximum)
+		&& ((query.type == V4L2_CTRL_TYPE_MENU)
+			|| (query.type == V4L2_CTRL_TYPE_INTEGER_MENU))) {
+
+		// FIXME ここってstepを気にしないとだめなんかな？
+		for (int32_t i = query.minimum; i <= query.maximum; i++) {
+			struct v4l2_querymenu menu {
+				.id = query.id,
+				.index = (uint32_t)(i - query.minimum),
+			};
+			if (ioctl(fd, VIDIOC_QUERYMENU, &menu) == 0) {
+				items.push_back(format("%s", menu.name));
+			} else {
+				break;
+			}
+		}
+		result = core::USB_SUCCESS;
+	}
+
+	RETURN(result, int);
 }
 
 /**

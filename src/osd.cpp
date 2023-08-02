@@ -141,6 +141,13 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
 			if (supported) {
 				source->get_ctrl(id, val.value);
 				val.prev = val.value.current;
+				const auto type = val.value.type;
+				if ((type == V4L2_CTRL_TYPE_MENU) || (type == V4L2_CTRL_TYPE_INTEGER_MENU)) {
+					const auto r = source->get_menu_items(id, val.items);
+					if (UNLIKELY(r)) {
+						LOGW("get_menu_items failed,%d", r);
+					}
+				}
 			}
 			values[id] = std::make_unique<osd_value_t>(val);
 		}
@@ -609,10 +616,26 @@ void OSD::show_value(const uint32_t &id, const char *label) {
 		auto val = _val.get();
 		if (val->enabled) {
 			auto &v = val->value;
-			// FIXME stepを考慮してない
-			if (ImGui::SliderInt(label, &v.current, v.min, v.max)) {
-				if ((v.current != val->prev) && (v.current >= v.min) && (v.current <= v.max)) {
-					// LOGD("on_changed:id=0x%08x,v=%d, prev=%d", id, v.current, val->prev);
+			const std::vector<std::string> &items = val->items;
+			if ((v.type == V4L2_CTRL_TYPE_MENU) && !items.empty()) {
+				std::string selected = items[v.current - v.min];
+				bool changed = false;
+				if (ImGui::BeginCombo(label, selected.c_str())) {
+					for (int i = v.min; i <= v.max; i++) {
+						const auto ix = i - v.min;
+						const bool is_selected = (selected == items[ix]);
+						if (ImGui::Selectable(items[ix].c_str(), is_selected)) {
+							selected = items[ix];
+							v.current = i;
+							changed = true;
+						}
+						if (is_selected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+					ImGui::EndCombo();
+				}
+				if (changed) {
 					const auto r = value_changed(*val);
 					if (LIKELY(!r)) {
 						// 変更を正常に適用できたとき
@@ -623,6 +646,25 @@ void OSD::show_value(const uint32_t &id, const char *label) {
 					} else {
 						// 適用できなかったときは前の値に戻す
 						v.current = val->prev;
+					}
+				}
+			} else {
+				// V4L2_CTRL_TYPE_INTEGERまたはV4L2_CTRL_TYPE_BOOLEANのはず
+				// FIXME stepを考慮してない
+				if (ImGui::SliderInt(label, &v.current, v.min, v.max)) {
+					if ((v.current != val->prev) && (v.current >= v.min) && (v.current <= v.max)) {
+						// LOGD("on_changed:id=0x%08x,v=%d, prev=%d", id, v.current, val->prev);
+						const auto r = value_changed(*val);
+						if (LIKELY(!r)) {
+							// 変更を正常に適用できたとき
+							val->prev = v.current;
+							val->modified = true;
+							// 自動露出と露出やゲインなどのように相互依存する場合の制約を更新
+							update_constraints(id);
+						} else {
+							// 適用できなかったときは前の値に戻す
+							v.current = val->prev;
+						}
 					}
 				}
 			}

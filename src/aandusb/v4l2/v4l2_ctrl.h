@@ -50,13 +50,20 @@ public:
      * @return 0: 正常終了
 	 */
 	virtual int get_ctrl(const uint32_t &ctrl_id, uvc::control_value32_t &value) = 0;
+	/**
+	 * コントロール機能がメニュータイプの場合の設定項目値を取得する
+	 * @param ctrl_id
+	 * @param items 設定項目値をセットするstd::vector<std::string>
+	 */
+	virtual int get_menu_items(const uint32_t &ctrl_id, std::vector<std::string> &items) = 0;
+
     /**
      * 設定値を適用する
      * @param value
      * @return 0: 正常終了
     */
-    int set_ctrl(const uvc::control_value32_t &value);
-    //--------------------------------------------------------------------------------
+    int set_ctrl(const uvc::control_value32_t &value);  
+	//--------------------------------------------------------------------------------
 	/**
 	 * V4L2_CID_BRIGHTNESS (V4L2_CID_BASE + 0)
 	 * @param values
