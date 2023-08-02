@@ -131,6 +131,8 @@ std::string get_serial();
 
 /**
  * OSD画面で対応可能なカメラコントロール
+ * XXX apply_settingsで前から順にカメラ側へ適用するので
+ *     自動設定(自動露出等)のidは対応する手動設定よりも前に置くこと
 */
 const uint32_t SUPPORTED_CTRLS[] {
 	// 調整１
