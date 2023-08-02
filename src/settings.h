@@ -45,6 +45,14 @@ public:
 	};
 
 	/**
+	 * 指定したidに対応する設定が含まれているかどうかを取得
+	 * @param id
+	*/
+	inline bool contains(const uint32_t &id) const {
+		return values.find(id) != values.end();
+	}
+
+	/**
 	 * 自動露出モードかどうか
 	*/
 	bool is_auto_exposure() const;

@@ -134,8 +134,7 @@ void CameraSettings::clear() {
 void CameraSettings::set_value(const uint32_t &id, const int32_t &val) {
 	ENTER();
 
-	const auto itr = values.find(id);
-	modified |= (itr == values.end()) || (val != values[id]);
+	modified |= !contains(id) || (val != values[id]);
 
 	values[id] = val;
 
@@ -151,9 +150,10 @@ void CameraSettings::set_value(const uint32_t &id, const int32_t &val) {
 int CameraSettings::get_value(const uint32_t &id, int32_t &val) {
 	ENTER();
 
-	int result = values.find(id) == values.end();
-	if (!result) {
+	int result = -1;
+	if (contains(id)) {
 		val = values[id];
+		result = 0;
 	}
 
 	RETURN(result, int);
@@ -238,6 +238,7 @@ int load(CameraSettings &settings) {
 	settings.clear();
 	// FIXME 未実装
 	settings.set_modified(false);
+	
 
 	RETURN(0, int);
 }
