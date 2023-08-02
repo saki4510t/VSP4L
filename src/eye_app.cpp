@@ -177,7 +177,8 @@ EyeApp::EyeApp(
 	osd.set_on_osd_close([this](const bool &changed) {
 		LOGD("on_osd_close, changed=%d", changed);
 		if (changed) {
-			// FIXME カメラから設定を読むこんで保存する
+			// カメラから設定を読みこんで保存する
+			save_settings();
 		} else {
 			// 一時的に変更されたかもしれないので元の設定に戻す
 			apply_settings(camera_settings);
@@ -186,15 +187,23 @@ EyeApp::EyeApp(
 	})
 	.set_on_camera_settings_changed([this](const uvc::control_value32_t &value) {
 		ENTER();
-		// 一時的に設定を適用する
+
 		int r = -1;
 		LOGD("id=0x%08x,v=%d", value.id, value.current);
-		if (source) {
-			r = source->set_ctrl(value);
-			if (UNLIKELY(r)) {
-				LOGW("failed to apply id=0x%08x,value=%d", value.id, value.current);
+		if (value.id == V4L2_CID_RESTORE_SETTINGS) {
+			LOGD("restore settings");
+			restore_settings();
+			r = 0;
+		} else {
+			// 一時的に設定を適用する
+			if (source) {
+				r = source->set_ctrl(value);
+				if (UNLIKELY(r)) {
+					LOGW("failed to apply id=0x%08x,value=%d", value.id, value.current);
+				}
 			}
 		}
+
 		RETURN(r, int);
 	});
 	// 遅延実行タスクの準備, 一定時間後にキーモードをリセットする
@@ -735,6 +744,29 @@ void EyeApp::update_state() {
 	ENTER();
 
 	LOGV("%ld", systemTime());
+	// FIXME 未実装
+
+	EXIT();
+}
+
+//--------------------------------------------------------------------------------
+/**
+ * 設定を復元させる
+*/
+void EyeApp::restore_settings() {
+	ENTER();
+
+	// FIXME 未実装
+
+	EXIT();
+}
+
+/**
+ * カメラから設定を読み込んで保存する
+*/
+void EyeApp::save_settings() {
+	ENTER();
+
 	// FIXME 未実装
 
 	EXIT();

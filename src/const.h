@@ -18,6 +18,8 @@
 #define V4L2_CID_DENOISE	(0x00980922)
 // フレームレートコントロール(カーネルドライバー側で決まっている値)
 #define V4L2_CID_FRAMERATE	(0x00980923)
+// 設定を初期値に戻す
+#define V4L2_CID_RESTORE_SETTINGS (0x00980924)
 
 // コマンドラインオプション
 #define OPT_DEBUG "debug"

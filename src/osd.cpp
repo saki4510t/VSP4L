@@ -29,6 +29,7 @@ namespace serenegiant::app {
 // デフォルトの表示ページ
 #define DEFAULE_PAGE (PAGE_SETTINGS_1)
 
+static const char *APP_LABEL_RESTORE_SETTINGS = "RESTORE_SETTINGS";
 // 調整1のラベル文字列
 static const char *V4L2_LABEL_BRIGHTNESS = "BRIGHTNESS";
 static const char *V4L2_LABEL_HUE = "HUE";
@@ -361,11 +362,21 @@ void OSD::draw_settings_1() {
 	ENTER();
 
 	const auto button_width = get_button_width();
+	const auto size = ImVec2(button_width * 2, 0);
 
 	// ラベルを描画(左半分)
 	ImGui::BeginGroup();
 	{
-		ImGui::LabelText("", "RESTORE_SETTINGS");
+		if (ImGui::Button(APP_LABEL_RESTORE_SETTINGS, size)) {
+			const osd_value_t val = {
+				.id = V4L2_CID_RESTORE_SETTINGS,
+				.value {
+					.id = V4L2_CID_RESTORE_SETTINGS,
+				},
+			};
+			value_changed(val);
+			cancel();
+		}
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");

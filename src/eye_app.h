@@ -131,6 +131,14 @@ private:
 	 */
 	void update_state();
 	/**
+	 * 設定を復元させる
+	*/
+	void restore_settings();
+	/**
+	 * カメラから設定を読み込んで保存する
+	*/
+	void save_settings();
+	/**
 	 * @brief カメラ設定を適用する
 	 * 
 	 * @param settings 
