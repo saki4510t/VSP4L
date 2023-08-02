@@ -49,48 +49,6 @@ static const char *V4L2_LABEL_POWER_LINE_FREQUENCY = "PLF";
 static const char *V4L2_LABEL_ROTATE = "ROTATE";
 static const char *V4L2_LABEL_ZOOM_ABSOLUTE = "ZOOM";
 
-/**
- * OSD画面で対応可能なカメラコントロール
-*/
-static const uint32_t SUPPORTED_CTRLS[] {
-	// 調整１
-	V4L2_CID_BRIGHTNESS,
-	V4L2_CID_HUE,
-	V4L2_CID_SATURATION,
-	V4L2_CID_CONTRAST,
-	V4L2_CID_SHARPNESS,
-	V4L2_CID_GAMMA,
-	// 調整2
-	V4L2_CID_DENOISE,
-	V4L2_CID_AUTOGAIN,
-	V4L2_CID_GAIN,
-	V4L2_CID_EXPOSURE_AUTO,
-	V4L2_CID_EXPOSURE_ABSOLUTE,
-	V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
-	// 調整3
-	V4L2_CID_POWER_LINE_FREQUENCY,
-	V4L2_CID_ROTATE,
-	V4L2_CID_ZOOM_ABSOLUTE,
-	0,
-	0,
-	0,
-
-//	V4L2_CID_BG_COLOR,	// V4L2_CID_BG_COLORのIDで返ってくるけどこれはフレームレート(V4L2_CID_FRAMERATE)
-//	V4L2_CID_MIN_BUFFER_FOR_CAPTURE
-//	Skipping Frames Enable/Disable(0x009819e0)
-};
-
-/**
- * 自動調整の設定をするカメラコントロール
-*/
-static const uint32_t AUTO_CTRLS[] {
-	V4L2_CID_AUTOBRIGHTNESS,
-	V4L2_CID_HUE_AUTO,
-	V4L2_CID_AUTOGAIN,
-	V4L2_CID_EXPOSURE_AUTO,
-	V4L2_CID_AUTO_WHITE_BALANCE,
-};
-
 //--------------------------------------------------------------------------------
 /**
  * @brief コンストラクタ

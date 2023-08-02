@@ -10,6 +10,9 @@
 #include <unordered_map>
 
 #include <getopt.h>
+#include <linux/v4l2-controls.h>
+
+namespace serenegiant::app {
 
 // Open GL3を使うかどうか, 1: GL3を使う, 0: 使わない(GL2を使う)
 #define USE_GL3 (0)
@@ -126,4 +129,48 @@ extern const int DEFAULT_ZOOM_IX;
  */
 std::string get_serial();
 
-#endif
+/**
+ * OSD画面で対応可能なカメラコントロール
+*/
+const uint32_t SUPPORTED_CTRLS[] {
+	// 調整１
+	V4L2_CID_BRIGHTNESS,
+	V4L2_CID_HUE,
+	V4L2_CID_SATURATION,
+	V4L2_CID_CONTRAST,
+	V4L2_CID_SHARPNESS,
+	V4L2_CID_GAMMA,
+	// 調整2
+	V4L2_CID_DENOISE,
+	V4L2_CID_AUTOGAIN,
+	V4L2_CID_GAIN,
+	V4L2_CID_EXPOSURE_AUTO,
+	V4L2_CID_EXPOSURE_ABSOLUTE,
+	V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE,
+	// 調整3
+	V4L2_CID_POWER_LINE_FREQUENCY,
+	V4L2_CID_ROTATE,
+	V4L2_CID_ZOOM_ABSOLUTE,
+	0,
+	0,
+	0,
+
+//	V4L2_CID_BG_COLOR,	// V4L2_CID_BG_COLORのIDで返ってくるけどこれはフレームレート(V4L2_CID_FRAMERATE)
+//	V4L2_CID_MIN_BUFFER_FOR_CAPTURE
+//	Skipping Frames Enable/Disable(0x009819e0)
+};
+
+/**
+ * 自動調整の設定をするカメラコントロール
+*/
+const uint32_t AUTO_CTRLS[] {
+	V4L2_CID_AUTOBRIGHTNESS,
+	V4L2_CID_HUE_AUTO,
+	V4L2_CID_AUTOGAIN,
+	V4L2_CID_EXPOSURE_AUTO,
+	V4L2_CID_AUTO_WHITE_BALANCE,
+};
+
+}	// namespace serenegiant::app
+
+#endif	// #ifndef CONST_H_

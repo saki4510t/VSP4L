@@ -1,6 +1,8 @@
 #include "utilbase.h"
 #include "const.h"
 
+namespace serenegiant::app {
+
 /**
  * @brief モデル文字列
  * 
@@ -81,3 +83,5 @@ std::unordered_map<std::string, std::string> init_options() {
 
 	return options;
 }
+
+}	// namespace serenegiant::app
