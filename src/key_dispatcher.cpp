@@ -523,17 +523,17 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	confirm_key_task(event);
 	handler.remove(long_key_press_tasks[key]);
 
-	KeyStateUp state;
+	KeyStateUp prev;
 	key_mode_t current_key_mode;
 	{
  		std::lock_guard<std::mutex> lock(state_lock);
 		current_key_mode = key_mode;
-		state = update(event);
+		prev = update(event);
 	}
 
 	// キーの押し下げ時間を計算
-	const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
-	if (!result && (state->state == KEY_STATE_DOWN)
+	const auto duration_ms = (event.event_time_ns - prev->press_time_ns) / 1000000L;
+	if (!result && (prev->state == KEY_STATE_DOWN)
 		&& (duration_ms >= SHORT_PRESS_MIN_MS) && (duration_ms < SHORT_PRESS_MAX_MS)) {
 		// ショートタップ時間内に収まっているときのみ処理する
 		if (need_multi_tap(event, current_key_mode)) {
