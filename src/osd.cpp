@@ -218,6 +218,7 @@ void OSD::save() {
 	if (on_osd_close) {
 		on_osd_close(changed);
 	}
+	values.clear();
 
 	EXIT();
 }
@@ -233,6 +234,7 @@ void OSD::cancel() {
 	if (on_osd_close) {
 		on_osd_close(false);
 	}
+	values.clear();
 
 	EXIT();
 }
