@@ -437,7 +437,7 @@ int get_menu_items(int fd, const struct v4l2_queryctrl &query, std::vector<std::
 
 	int result = core::USB_ERROR_NOT_SUPPORTED;
 
-	dump_ctrl(fd, query);
+//	dump_ctrl(fd, query);
 	if ((query.minimum < query.maximum)
 		&& ((query.type == V4L2_CTRL_TYPE_MENU)
 			|| (query.type == V4L2_CTRL_TYPE_INTEGER_MENU))) {
