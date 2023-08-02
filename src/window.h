@@ -77,25 +77,25 @@ public:
 	 *
 	 * @return int
 	 */
-	int start(OnRenderFunc render_func);
+	virtual int start(OnRenderFunc render_func);
 	/**
 	 * @brief 描画開始(startを呼んだときは自動的に呼ばれる)
 	 * 
 	 * @return int 
 	 */
-	int resume();
+	virtual int resume();
 	/**
 	 * @brief 描画待機(stopを呼んだときは自動的に呼ばれる)
 	 * 
 	 * @return int 
 	 */
-	int pause();
+	virtual int pause();
 	/**
 	 * @brief 描画スレッドを終了する
 	 *
 	 * @return int
 	 */
-	int stop();
+	virtual int stop();
 
 	/**
 	 * アプリの終了要求をする
