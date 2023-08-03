@@ -87,7 +87,7 @@ void OSD::prepare(v4l2::V4l2SourceUp &source) {
 	page = DEFAULE_PAGE;
 	camera_modified = false;
 	// 設定値を読み込む等
-	load(app_settings);
+	app_settings.load();
 	// カメラ設定を読み込む
 	values.clear();
 	for (const auto id: SUPPORTED_CTRLS) {
@@ -215,7 +215,7 @@ void OSD::save() {
 	const auto changed = camera_modified || app_settings.is_modified();
 	// FIXME 変更されているかどうか
 	// FIXME 未実装 保存処理
-	serenegiant::app::save(app_settings);
+	app_settings.save();
 
 	if (on_osd_close) {
 		on_osd_close(changed);

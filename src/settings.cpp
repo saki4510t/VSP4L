@@ -1,4 +1,4 @@
-#if 1    // set 0 if you need debug log, otherwise set 1
+#if 0    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
 	#endif
@@ -10,15 +10,27 @@
 	#undef NDEBUG
 #endif
 
+#include <algorithm>
+#include <cstring>
+#include <fstream>
+#include <filesystem>
+#include <iterator>
+#include <iostream>
 #include <stdio.h>
 #include <string>
-#include <cstring>
 
 #include "utilbase.h"
-
+// common
+#include "charutils.h"
+// app
 #include "settings.h"
 
 namespace serenegiant::app {
+
+#define APP_SETTINGS_FILE "app.ini"
+#define CAMERA_SETTINGS_FILE "camera.ini"
+
+namespace fs = std::filesystem;
 
 AppSettings::AppSettings()
 :	modified(false)
@@ -30,6 +42,60 @@ AppSettings::AppSettings()
 AppSettings::~AppSettings() {
 	ENTER();
 	EXIT();
+}
+
+/**
+ * @brief アプリ設定を保存
+ *
+ * @param path
+ * @return int
+ */
+int AppSettings::save(const std::string &path) {
+	ENTER();
+
+	const std::string _path = !path.empty() ? path : APP_SETTINGS_FILE;
+	std::ofstream out(_path.c_str());
+	{
+		// FIXME 未実装
+	}	
+	out.close();
+
+	set_modified(false);
+
+	RETURN(0, int);
+}
+
+/**
+ * @brief アプリ設定を読み込み
+ *
+ * @param path
+ * @return int
+ */
+int AppSettings::load(const std::string &path) {
+	ENTER();
+
+	const std::string _path = !path.empty() ? path : APP_SETTINGS_FILE;
+	clear();
+	if (fs::exists(fs::status(_path.c_str()))) {
+		std::ifstream in(_path.c_str());
+		{
+			std::istream_iterator<std::string> it(in);
+			std::istream_iterator<std::string> last;
+			std::for_each(it, last, [this](std::string v) {
+				const auto div = v.find("=");
+				if (div != std::string::npos) {
+					const auto key_str = v.substr(0, div);
+					const auto val_str = v.substr(div + 1, v.size());
+					// FIXME 未実装
+					LOGD("kye=%s,val=%s", key_str.c_str(), val_str.c_str());
+				}
+			});
+		}
+		in.close();
+	}
+	set_modified(false);
+
+	RETURN(0, int);
 }
 
 void AppSettings::clear() {
@@ -51,6 +117,67 @@ CameraSettings::CameraSettings()
 CameraSettings::~CameraSettings() {
 	ENTER();
 	EXIT();
+}
+
+/**
+ * @brief カメラ設定を保存
+ *
+ * @param path
+ * @return int
+ */
+int CameraSettings::save(const std::string &path) {
+	ENTER();
+
+	const std::string _path = !path.empty() ? path : CAMERA_SETTINGS_FILE;
+	std::ofstream out(_path.c_str());
+	{
+		for (auto itr: values) {
+			out << format("0x%08x=%d", itr.first, itr.second) << std::endl;
+		}
+	}
+	out.close();
+
+	set_modified(false);
+
+	RETURN(0, int);
+}
+
+/**
+ * @brief カメラ設定を読み込み
+ *
+ * @param path
+ * @return int
+ */
+int CameraSettings::load(const std::string &path) {
+	ENTER();
+
+	const std::string _path = !path.empty() ? path : CAMERA_SETTINGS_FILE;
+	clear();
+	if (fs::exists(fs::status(_path.c_str()))) {
+		std::ifstream in(_path.c_str());
+		{
+			std::istream_iterator<std::string> it(in);
+			std::istream_iterator<std::string> last;
+			std::for_each(it, last, [this](std::string v) {
+				const auto div = v.find("=");
+				if (div != std::string::npos) {
+					const auto id_str = v.substr(0, div);
+					const auto val_str = v.substr(div + 1, v.size());
+					try {
+						const auto id = (uint32_t)(std::stol(id_str, nullptr, 0) & 0xffffff);
+						const auto val = std::stoi(val_str);
+						set_value(id, val);
+					} catch (...) {
+						LOGD("Failed to convert,%s", v.c_str());
+					}
+				}
+			});
+		}
+		in.close();
+	}
+	set_modified(false);
+
+	RETURN(0, int);
 }
 
 /**
@@ -177,70 +304,6 @@ void CameraSettings::remove(const uint32_t &id) {
 	}
 
 	EXIT();
-}
-
-//--------------------------------------------------------------------------------
-/**
- * @brief アプリ設定を保存
- *
- * @param settings
- * @return int
- */
-int save(AppSettings &settings) {
-	ENTER();
-
-	// FIXME 未実装
-	settings.set_modified(false);
-
-	RETURN(0, int);
-}
-
-/**
- * @brief アプリ設定を読み込み
- *
- * @param settings
- * @return int
- */
-int load(AppSettings &settings) {
-	ENTER();
-
-	settings.clear();
-	// FIXME 未実装
-	settings.set_modified(false);
-
-	RETURN(0, int);
-}
-
-/**
- * @brief カメラ設定を保存
- *
- * @param settings
- * @return int
- */
-int save(CameraSettings &settings) {
-	ENTER();
-
-	// FIXME 未実装
-	settings.set_modified(false);
-
-	RETURN(0, int);
-}
-
-/**
- * @brief カメラ設定を読み込み
- *
- * @param settings
- * @return int
- */
-int load(CameraSettings &settings) {
-	ENTER();
-
-	settings.clear();
-	// FIXME 未実装
-	settings.set_modified(false);
-	
-
-	RETURN(0, int);
 }
 
 }   // namespace serenegiant::app

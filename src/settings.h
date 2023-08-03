@@ -1,6 +1,7 @@
 #ifndef SETTINGS_H_
 #define SETTINGS_H_
 
+#include <string>
 #include <unordered_map>
 
 #include "const.h"
@@ -18,6 +19,21 @@ protected:
 public:
 	AppSettings();
 	~AppSettings();
+
+	/**
+	 * @brief アプリ設定を保存
+	 *
+	 * @param path
+	 * @return int
+	 */
+	int save(const std::string &path = "");
+	/**
+	 * @brief アプリ設定を読み込み
+	 *
+	 * @param path
+	 * @return int
+	 */
+	int load(const std::string &path = "");
 
 	inline bool is_modified() const { return modified; };
 	inline void set_modified(const bool &m) {
@@ -38,6 +54,21 @@ protected:
 public:
 	CameraSettings();
 	~CameraSettings();
+
+	/**
+	 * @brief カメラ設定を保存
+	 *
+	 * @param path
+	 * @return int
+	 */
+	int save(const std::string &path = "");
+	/**
+	 * @brief カメラ設定を読み込み
+	 *
+	 * @param path
+	 * @return int
+	 */
+	int load(const std::string &path = "");
 
 	inline bool is_modified() const { return modified; };
 	inline void set_modified(const bool &m) {
@@ -97,37 +128,6 @@ public:
 	*/
 	void remove(const uint32_t &id);
 };
-
-//--------------------------------------------------------------------------------
-/**
- * @brief アプリ設定を保存
- *
- * @param settings
- * @return int
- */
-int save(AppSettings &settings);
-/**
- * @brief アプリ設定を読み込み
- *
- * @param settings
- * @return int
- */
-int load(AppSettings &settings);
-
-/**
- * @brief カメラ設定を保存
- *
- * @param settings
- * @return int
- */
-int save(CameraSettings &settings);
-/**
- * @brief カメラ設定を読み込み
- *
- * @param settings
- * @return int
- */
-int load(CameraSettings &settings);
 
 }   // namespace serenegiant::app
 

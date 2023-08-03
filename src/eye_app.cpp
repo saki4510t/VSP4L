@@ -129,7 +129,7 @@ EyeApp::EyeApp(
     getcwd(current_path, PATH_SIZE);
 	resources = format("%s/resources", current_path);
 
-	load(app_settings);
+	app_settings.load();
 	mvp_matrix.scale(ZOOM_FACTORS[zoom_ix]);
 	key_dispatcher
 		.set_on_key_mode_changed([this](const key_mode_t &key_mode) {
@@ -201,6 +201,11 @@ EyeApp::EyeApp(
 				r = source->set_ctrl(value);
 				if (UNLIKELY(r)) {
 					LOGW("failed to apply id=0x%08x,value=%d", value.id, value.current);
+				}
+				int32_t val;
+				r = source->get_ctrl_value(value.id, val);
+				if (!r) {
+					LOGD("current=%d", val);
 				}
 			}
 		}
@@ -295,7 +300,7 @@ void EyeApp::on_resume() {
 	ENTER();
 
 	// カメラ設定を読み込む
-	load(camera_settings);
+	camera_settings.load();
 
 	frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
     source = std::make_unique<v4l2::V4l2Source>(options[OPT_DEVICE].c_str(), !HANDLE_FRAME, options[OPT_UDMABUF].c_str());
@@ -417,6 +422,12 @@ void EyeApp::on_resume() {
 		source.reset();
 		window.stop();
 		EXIT();
+	}
+
+	// 電源周波数設定(フリッカー抑制設定)に対応していてカメラ設定に値がなければ3:AUTOを試みる
+	if (!camera_settings.contains(V4L2_CID_POWER_LINE_FREQUENCY)
+		&& source->is_ctrl_supported(V4L2_CID_POWER_LINE_FREQUENCY)) {
+		camera_settings.set_value(V4L2_CID_POWER_LINE_FREQUENCY, 3);
 	}
 
 	// カメラ設定を適用
@@ -799,7 +810,7 @@ void EyeApp::save_settings() {
 			}
 		}
 		// カメラ設定を保存
-		app::save(camera_settings);
+		camera_settings.save();
 	}
 
 	EXIT();
@@ -849,6 +860,7 @@ void EyeApp::apply_settings(CameraSettings &settings) {
 						}
 						r = source->get_ctrl_value(id, val);
 						if (!r) {
+							LOGD("current=%d", val);
 							settings.set_value(id, val);
 						}
 					}
@@ -859,7 +871,7 @@ void EyeApp::apply_settings(CameraSettings &settings) {
 		}
 		if (settings.is_modified()) {
 			// 変更されていれば保存する
-			app:save(settings);
+			settings.save();
 		}
 	}
 
