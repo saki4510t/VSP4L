@@ -833,19 +833,19 @@ void EyeApp::apply_settings(CameraSettings &settings) {
 				if (!r) {
 					bool apply = true;
 					switch (id) {
-					case V4L2_CID_AUTOBRIGHTNESS:
+					case V4L2_CID_BRIGHTNESS:
 						apply = !settings.is_auto_brightness();
 						break;
-					case V4L2_CID_HUE_AUTO:
+					case V4L2_CID_HUE:
 						apply = !settings.is_auto_hue();
 						break;
-					case V4L2_CID_AUTOGAIN:
+					case V4L2_CID_GAIN:
 						apply = !settings.is_auto_gain();
 						break;
-					case V4L2_CID_EXPOSURE_AUTO:
+					case V4L2_CID_EXPOSURE_ABSOLUTE:
 						apply = !settings.is_auto_exposure();
 						break;
-					case V4L2_CID_AUTO_WHITE_BALANCE:
+					case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
 						apply = !settings.is_auto_white_blance();
 						break;
 					default:
