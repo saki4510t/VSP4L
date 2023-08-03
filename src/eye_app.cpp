@@ -197,17 +197,8 @@ EyeApp::EyeApp(
 			r = 0;
 		} else {
 			// 一時的に設定を適用する
-			if (source) {
-				r = source->set_ctrl(value);
-				if (UNLIKELY(r)) {
-					LOGW("failed to apply id=0x%08x,value=%d", value.id, value.current);
-				}
-				int32_t val;
-				r = source->get_ctrl_value(value.id, val);
-				if (!r) {
-					LOGD("current=%d", val);
-				}
-			}
+			int32_t val = value.current;
+			r = set_ctrl_value(value.id, val);
 		}
 
 		RETURN(r, int);
@@ -298,9 +289,6 @@ void EyeApp::on_start() {
 /*private,@WorkerThread*/
 void EyeApp::on_resume() {
 	ENTER();
-
-	// カメラ設定を読み込む
-	camera_settings.load();
 
 	frame_wrapper = std::make_unique<core::WrappedVideoFrame>(nullptr, 0);
     source = std::make_unique<v4l2::V4l2Source>(options[OPT_DEVICE].c_str(), !HANDLE_FRAME, options[OPT_UDMABUF].c_str());
@@ -424,12 +412,24 @@ void EyeApp::on_resume() {
 		EXIT();
 	}
 
+	// カメラ設定を読み込む
+	camera_settings.load();
+	const bool empty = camera_settings.empty();
 	// 電源周波数設定(フリッカー抑制設定)に対応していてカメラ設定に値がなければ3:AUTOを試みる
 	if (!camera_settings.contains(V4L2_CID_POWER_LINE_FREQUENCY)
 		&& source->is_ctrl_supported(V4L2_CID_POWER_LINE_FREQUENCY)) {
-		camera_settings.set_value(V4L2_CID_POWER_LINE_FREQUENCY, 3);
+		int32_t val = 3;
+		if (!set_ctrl_value(V4L2_CID_POWER_LINE_FREQUENCY, val)) {
+			camera_settings.set_value(V4L2_CID_POWER_LINE_FREQUENCY, val);
+			camera_settings.save();
+		}
 	}
 
+	if (UNLIKELY(empty)) {
+		// カメラ設定が保存されていないとき=初回起動時
+		// カメラから設定を読みこんで保存する
+		save_settings();
+	}
 	// カメラ設定を適用
 	apply_settings(camera_settings);
 
@@ -853,12 +853,7 @@ void EyeApp::apply_settings(CameraSettings &settings) {
 					}
 					if (apply) {
 						LOGD("try set value,id=0x%08x,val=%d", id, val);
-						r = source->set_ctrl_value(id, val);
-						if (r) {
-							// 自動露出設定のときに露出設定を適用するときなどは失敗する
-							LOGD("set_ctrl_value failed,id=0x%08x", id);
-						}
-						r = source->get_ctrl_value(id, val);
+						r = set_ctrl_value(id, val);
 						if (!r) {
 							LOGD("current=%d", val);
 							settings.set_value(id, val);
@@ -876,6 +871,29 @@ void EyeApp::apply_settings(CameraSettings &settings) {
 	}
 
 	EXIT();
+}
+
+/**
+ * 設定をカメラへ適用する
+ * 正常に適用できた場合はvalに実際に設定された値が入って返る
+ * @param id
+ * @param val
+ * @return int 0: 適用できた
+*/
+int EyeApp::set_ctrl_value(const uint32_t &id, int32_t &val) {
+	ENTER();
+
+	int result = -1;
+	if (source) {
+		result = source->set_ctrl_value(id, val);
+		if (!result) {
+			result = source->get_ctrl_value(id, val);
+		} else {
+			LOGW("failed to apply id=0x%08x,value=%d", id, val);
+		}
+	}
+
+	RETURN(result, int);
 }
 
 //--------------------------------------------------------------------------------

@@ -144,6 +144,14 @@ private:
 	 * @param settings 
 	 */
 	void apply_settings(CameraSettings &settings);
+	/**
+	 * 設定をカメラへ適用する
+	 * 正常に適用できた場合はvalに実際に設定された値が入って返る
+	 * @param id
+	 * @param val
+	 * @return int 0: 適用できた
+	*/
+	int set_ctrl_value(const uint32_t &id, int32_t &val);
 
 	/**
 	 * @brief キーモード変更時の処理
