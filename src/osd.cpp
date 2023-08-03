@@ -46,7 +46,6 @@ static const char *V4L2_LABEL_EXPOSURE = "EXPOSURE";
 static const char *V4L2_LABEL_AUTO_N_PRESET_WHITE_BLANCE = "AWB";
 // 調整3のラベル文字列
 static const char *V4L2_LABEL_POWER_LINE_FREQUENCY = "PLF";
-static const char *V4L2_LABEL_ROTATE = "ROTATE";
 static const char *V4L2_LABEL_ZOOM_ABSOLUTE = "ZOOM";
 
 //--------------------------------------------------------------------------------
@@ -470,8 +469,8 @@ void OSD::draw_adjust_3() {
 	ImGui::BeginGroup();
 	{
 		show_label(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
-		show_label(V4L2_CID_ROTATE, V4L2_LABEL_ROTATE);
 		show_label(V4L2_CID_ZOOM_ABSOLUTE, V4L2_LABEL_ZOOM_ABSOLUTE);
+		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
@@ -484,8 +483,8 @@ void OSD::draw_adjust_3() {
 	{
 		ImGui::PushItemWidth(button_width * 2);
 		show_value(V4L2_CID_POWER_LINE_FREQUENCY, V4L2_LABEL_POWER_LINE_FREQUENCY);
-		show_value(V4L2_CID_ROTATE, V4L2_LABEL_ROTATE);
 		show_value(V4L2_CID_ZOOM_ABSOLUTE, V4L2_LABEL_ZOOM_ABSOLUTE);
+		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
 		ImGui::LabelText("", "");
