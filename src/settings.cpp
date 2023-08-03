@@ -189,7 +189,7 @@ bool CameraSettings::is_auto_exposure() const {
 	static const uint32_t id = V4L2_CID_EXPOSURE_AUTO;
 	const auto itr = values.find(id);
 
-	RETURN((itr != values.end()) && ((*itr).second == 0), bool);
+	RETURN((itr != values.end()) && ((*itr).second != 1), bool);
 }
 
 /**
