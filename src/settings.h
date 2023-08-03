@@ -39,6 +39,13 @@ public:
 	inline void set_modified(const bool &m) {
 		modified = m;
 	};
+
+	/**
+	 * 設定が含まれないかどうかを取得
+	 * @return true: 設定が含まれない、false: 設定が含まれている
+	*/
+	inline bool empty() const { return true; };
+
 	void clear();
 };
 
@@ -74,6 +81,12 @@ public:
 	inline void set_modified(const bool &m) {
 		modified = m;
 	};
+
+	/**
+	 * 設定が含まれないかどうかを取得
+	 * @return true: 設定が含まれない、false: 設定が含まれている
+	*/
+	inline bool empty() const { return values.empty(); };
 
 	/**
 	 * 指定したidに対応する設定が含まれているかどうかを取得
