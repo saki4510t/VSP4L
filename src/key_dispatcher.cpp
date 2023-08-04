@@ -148,6 +148,7 @@ public:
 KeyDispatcher::KeyDispatcher(thread::Handler &handler)
 :   handler(handler),
 	key_mode(KEY_MODE_NORMAL),
+	last_down_key(ImGuiKey_None), last_down_time_ns(0),
 	effect(EFFECT_NON), freeze(false),
 	on_key_mode_changed(nullptr),
 	on_brightness_changed(nullptr),
@@ -364,6 +365,9 @@ void KeyDispatcher::clear_key_state(const ImGuiKey &key) {
 		if (state) {
 			state->state = KEY_STATE_HANDLED;
 			state->tap_count = 0;
+			// 念の為にキータスクをキャンセルする
+			cancel_multi_tap(key);
+			cancel_long_tap(key);
 		}
 	}
 
@@ -371,41 +375,61 @@ void KeyDispatcher::clear_key_state(const ImGuiKey &key) {
 }
 
 /**
- * @brief キーの長押し・マルチタップ確認用Runnableが生成されていることを確認、未生成なら新たに生成する
- *
- * @param event
- */
-/*private*/
-void KeyDispatcher::confirm_key_task(const KeyEvent &event) {
+ * @brief マルチタップ確認用タスクがあればキャンセルする
+*/
+void KeyDispatcher::cancel_multi_tap(const ImGuiKey &key) {
 	ENTER();
 
-	const auto key = event.key;
-	if (long_key_press_tasks.find(key) == long_key_press_tasks.end()) {
-		long_key_press_tasks[key] = std::make_shared<LongPressCheckTask>(*this, event);
+	LOGD("key=%d/%s", key, get_key_name(key));
+	// キーダウンの遅延処理用Runnableがあれば削除する
+	auto itr = key_down_tasks.find(key);
+	if (itr != key_down_tasks.end()) {
+		handler.remove(itr->second);
+		key_down_tasks.erase(itr);
+	}
+
+	// キーアップの遅延処理用Runnableがあれば削除する
+	itr = key_up_tasks.find(key);
+	if (itr != key_up_tasks.end()) {
+		handler.remove(itr->second);
+		key_up_tasks.erase(itr);
 	}
 
 	EXIT();
 }
 
 /**
- * @brief キーアップの遅延処理用タスクがあればキャンセルする
+ * @brief 長押し確認を開始する
  * 
- * @param key 
- */
-/*private*/
-void KeyDispatcher::cancel_key_task(const ImGuiKey &key) {
+ * @param event
+*/
+void KeyDispatcher::start_long_tap(const KeyEvent &event) {
 	ENTER();
 
-	// キーダウンの遅延処理用Runnableがあれば削除する
-	auto key_down_task = key_down_tasks[key];
-	if (key_down_task) {
-		handler.remove(key_down_task);
-	}	
-	// キーアップの遅延処理用Runnableがあれば削除する
-	auto key_up_task = key_up_tasks[key];
-	if (key_up_task) {
-		handler.remove(key_up_task);
-	}	
+	const auto key = event.key;
+
+	LOGD("key=%d/%s", key, get_key_name(key));
+	cancel_long_tap(key);
+	if (long_key_press_tasks.find(key) == long_key_press_tasks.end()) {
+		long_key_press_tasks[key] = std::make_shared<LongPressCheckTask>(*this, event);
+	}
+	handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
+
+	EXIT();
+}
+
+/**
+ * @brief 長押し確認用タスクがあればキャンセルする
+*/
+void KeyDispatcher::cancel_long_tap(const ImGuiKey &key) {
+	ENTER();
+
+	LOGD("key=%d/%s", key, get_key_name(key));
+	auto itr = long_key_press_tasks.find(key);
+	if (itr != long_key_press_tasks.end()) {
+		handler.remove(itr->second);
+		long_key_press_tasks.erase(itr);
+	}
 
 	EXIT();
 }
@@ -510,15 +534,22 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 		current_key_mode = key_mode;
 		update(event);
 	}
-	// キーダウン/キーアップの遅延処理用Runnableがあればキャンセルする
-	cancel_key_task(key);
+
+	// 連続して違うキーが押されたときはマルチタップの処理をキャンセルする
+	const auto disable_multi_tap = (last_down_key != key)
+		&& (event.event_time_ns - last_down_time_ns < MULTI_PRESS_MAX_INTERVALMS);
+	if (disable_multi_tap) {
+		cancel_multi_tap(last_down_key);
+	}
+	last_down_key = key;
+	last_down_time_ns = event.event_time_ns;
+	// マルチタップ確認用Runnableがあればキャンセルする
+	cancel_multi_tap(key);
 	if (current_key_mode != KEY_MODE_OSD) {
 		// 長押し確認用Runnableを遅延実行する
-		confirm_key_task(event);
-		handler.remove(long_key_press_tasks[key]);
-		handler.post_delayed(long_key_press_tasks[key], LONG_PRESS_TIMEOUT_MS);
+		start_long_tap(event);
 	}
-	if (need_multi_tap(event, current_key_mode)) {
+	if (!disable_multi_tap && need_multi_tap(event, current_key_mode)) {
 		// マルチタップの処理
 		LOGD("key=%d/%s,post key_down_task", key, get_key_name(key));
 		auto key_down_task = std::make_shared<KeyDownTask>(*this, event);
@@ -547,11 +578,11 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 	int result = 0;
 	const auto key = event.key;
 
-	// キーダウン/キーアップの遅延処理用Runnableがあればキャンセルする
-	cancel_key_task(key);
+	LOGD("key=%d/%s", key, get_key_name(key));
+	// マルチタップ確認用Runnableをキャンセルする
+	cancel_multi_tap(key);
 	// 長押し確認用Runnableをキャンセルする
-	confirm_key_task(event);
-	handler.remove(long_key_press_tasks[key]);
+	cancel_long_tap(key);
 
 	KeyStateUp prev;
 	key_mode_t current_key_mode;
@@ -824,7 +855,6 @@ int KeyDispatcher::on_tap_short_osd(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
 
 	RETURN(result, int);
 }
@@ -1009,7 +1039,6 @@ int KeyDispatcher::on_tap_long_osd(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
 
 	RETURN(result, int);
 }
@@ -1107,7 +1136,6 @@ int KeyDispatcher::on_tap_double_brightness(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
 
 	RETURN(result, int);
 }
@@ -1124,7 +1152,6 @@ int KeyDispatcher::on_tap_double_zoom(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
 
 	RETURN(result, int);
 }
@@ -1141,9 +1168,8 @@ int KeyDispatcher::on_tap_double_osd(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
+	// OSD画面で下矢印のダブルタップをスペースキーに置き換える
 	if ((key == ImGuiKey_DownArrow) && osd_key_event) {
-		// osd_key_event(event);
 		osd_key_event(KeyEvent(ImGuiKey_Space, 57, KEY_ACTION_PRESSED, 0));
 		handler.post_delayed([this] {
 			osd_key_event(KeyEvent(ImGuiKey_Space, 57, KEY_ACTION_RELEASE, 0));
@@ -1245,7 +1271,6 @@ int KeyDispatcher::on_tap_triple_brightness(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
 
 	RETURN(result, int);
 }
@@ -1262,7 +1287,6 @@ int KeyDispatcher::on_tap_triple_zoom(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
 
 	RETURN(result, int);
 }
@@ -1279,7 +1303,6 @@ int KeyDispatcher::on_tap_triple_osd(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
-	// FIXME 未実装
 
 	RETURN(result, int);
 }

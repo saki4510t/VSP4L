@@ -34,6 +34,8 @@ private:
 	thread::Handler &handler;
 	mutable std::mutex state_lock;
 	key_mode_t key_mode;
+	ImGuiKey last_down_key;
+	nsecs_t last_down_time_ns;
 	int effect;
 	bool freeze;
 	// キーの押し下げ状態を保持するハッシュマップ
@@ -67,17 +69,23 @@ private:
 	 */
 	void clear_key_state(const ImGuiKey &key);
 	/**
-	 * @brief キーの長押し・マルチタップ確認用Runnableが生成されていることを確認、未生成なら新たに生成する
-	 *
-	 * @param event
-	 */
-	void confirm_key_task(const KeyEvent &event);
-	/**
-	 * @brief キーアップ/キーダウンの遅延処理用タスクがあればキャンセルする
+	 * @brief マルチタップ確認用タスクがあればキャンセルする
 	 * 
 	 * @param key 
-	 */
-	void cancel_key_task(const ImGuiKey &key);
+	*/
+	void cancel_multi_tap(const ImGuiKey &key);
+	/**
+	 * @brief 長押し確認を開始する
+	 * 
+	 * @param event
+	*/
+	void start_long_tap(const KeyEvent &event);
+	/**
+	 * @brief 長押し確認用タスクがあればキャンセルする
+	 * 
+	 * @param key 
+	*/
+	void cancel_long_tap(const ImGuiKey &key);
 	/**
 	 * @brief 押されているキーの個数を取得, 排他制御してないので上位でロックすること
 	 * 
