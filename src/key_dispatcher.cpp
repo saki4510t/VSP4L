@@ -28,6 +28,30 @@ namespace serenegiant::app {
 // ダブルタップ・トリプルタップと判定するタップ間隔[ミリ秒]
 #define MULTI_PRESS_MAX_INTERVALMS (300)
 
+static const char *get_key_name(const ImGuiKey &key) {
+	switch (key) {
+	case ImGuiKey_LeftArrow:	return "LEFT";
+	case ImGuiKey_RightArrow:	return "RIGHT";
+	case ImGuiKey_UpArrow:		return "UP";
+	case ImGuiKey_DownArrow:	return "DOWN";
+    case ImGuiKey_Enter:		return "ENTER";
+    case ImGuiKey_Escape:		return "ESC";
+	case ImGuiKey_Space:		return "SPC";
+	case ImGuiKey_0:			return "0";
+	case ImGuiKey_1:			return "1";
+	case ImGuiKey_2:			return "2";
+	case ImGuiKey_3:			return "3";
+	case ImGuiKey_4:			return "4";
+	case ImGuiKey_5:			return "5";
+	case ImGuiKey_6:			return "6";
+	case ImGuiKey_7:			return "7";
+	case ImGuiKey_8:			return "8";
+	case ImGuiKey_9:			return "9";
+	default:
+		return "OTHER";
+	}
+}
+
 //--------------------------------------------------------------------------------
 class LongPressCheckTask : public thread::Runnable {
 private:
@@ -285,7 +309,7 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 	const auto key = event.key;
 	if (UNLIKELY(key_states.find(key) == key_states.end())) {
 		// KeyStateがセットされていないとき(初めて押されたとき)は新規追加
-		LOGD("create KeyState,key=%d", key);
+		LOGD("create KeyState,key=%d/%s", key, get_key_name(key));
 		key_states[key] = std::make_shared<KeyState>(key);
 	}
 
@@ -306,14 +330,15 @@ KeyStateUp KeyDispatcher::update(const KeyEvent &event, const bool &handled) {
 				// マルチタップ
 				state->tap_count = state->tap_count + 1;
 			} else {
-				LOGD("clear tap_count 1");
+				LOGD("key=%d/%s,clear tap_count 1", key, get_key_name(key));
 				state->tap_count = 1;
 			}
 		} else {
-			LOGD("clear tap_count 0");
+			LOGD("key=%d/%s,clear tap_count 0", key, get_key_name(key));
 			state->tap_count = 0;
 		}
-		LOGD("sts=%d,interval=%ld,tap_count=%d", sts, tap_interval_ms, state->tap_count);
+		LOGD("key=%d/%s,sts=%d,interval=%ld,tap_count=%d",
+			key, get_key_name(key), sts, tap_interval_ms, state->tap_count);
 		break;
 	}
 	case KEY_ACTION_PRESSED:	// 1
@@ -476,6 +501,9 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 
 	int result = 0;
 	const auto key = event.key;
+
+	LOGD("key=%d/%s", key, get_key_name(key));
+
 	key_mode_t current_key_mode;
 	{
  		std::lock_guard<std::mutex> lock(state_lock);
@@ -492,6 +520,7 @@ int KeyDispatcher::handle_on_key_down(const KeyEvent &event) {
 	}
 	if (need_multi_tap(event, current_key_mode)) {
 		// マルチタップの処理
+		LOGD("key=%d/%s,post key_down_task", key, get_key_name(key));
 		auto key_down_task = std::make_shared<KeyDownTask>(*this, event);
 		key_down_tasks[key] = key_down_task;
 		handler.post_delayed(key_down_task, MULTI_PRESS_MAX_INTERVALMS);
@@ -539,6 +568,7 @@ int KeyDispatcher::handle_on_key_up(const KeyEvent &event) {
 		// ショートタップ時間内に収まっているときのみ処理する
 		if (need_multi_tap(event, current_key_mode)) {
 			// マルチタップの処理
+			LOGD("key=%d/%s,post key_up_task", key, get_key_name(key));
 			auto key_up_task = std::make_shared<KeyUpTask>(*this, event, duration_ms);
 			key_up_tasks[key] = key_up_task;
 			handler.post_delayed(key_up_task, MULTI_PRESS_MAX_INTERVALMS);
@@ -574,7 +604,8 @@ int KeyDispatcher::handle_on_key_down_confirmed(const KeyEvent &event) {
 		// handle_on_key_downを通った後なのでstateはnullではないはずだけど念の為に塗るチェックしておく
 		// キーの押し下げ時間を計算
 		const auto duration_ms = (event.event_time_ns - state->press_time_ns) / 1000000L;
-		LOGD("key=%d,duration=%ld,tap_counts=%d", key, duration_ms, tap_counts);
+		LOGD("key=%d/%s,duration=%ld,tap_counts=%d",
+			key, get_key_name(key), duration_ms, tap_counts);
 	}
 
 	RETURN(result, int);
@@ -599,7 +630,8 @@ int KeyDispatcher::handle_on_key_up_confirmed(const KeyEvent &event, const nsecs
 		tap_counts = this->tap_counts(key);
 	}
 
-	LOGD("key=%d,duration_ms=%ld,tap_counts=%d", key, duration_ms, tap_counts);
+	LOGD("key=%d/%s,duration_ms=%ld,tap_counts=%d",
+		key, get_key_name(key), duration_ms, tap_counts);
 	if (!result && (tap_counts == 3)) {
 		// トリプルタップ
 		result = on_tap_triple(current_key_mode, event);
@@ -677,6 +709,8 @@ int KeyDispatcher::handle_on_long_key_pressed(const KeyEvent &event) {
 /*private*/
 int KeyDispatcher::on_tap_short(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
+
+	LOGD("key=%d/%s,mode=%d", event.key, get_key_name(event.key), current_key_mode);
 
 	int result = 0;
 	switch (current_key_mode) {
@@ -807,6 +841,8 @@ int KeyDispatcher::on_tap_short_osd(const KeyEvent &event) {
 /*private*/
 int KeyDispatcher::on_tap_long(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
+
+	LOGD("key=%d/%s,mode=%d", event.key, get_key_name(event.key), current_key_mode);
 
 	int result = 0;
 	switch (current_key_mode) {
@@ -991,6 +1027,8 @@ int KeyDispatcher::on_tap_long_osd(const KeyEvent &event) {
 int KeyDispatcher::on_tap_double(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
 
+	LOGD("key=%d/%s,mode=%d", event.key, get_key_name(event.key), current_key_mode);
+
 	int result = 0;
 	switch (current_key_mode) {
 	case KEY_MODE_NORMAL:
@@ -1127,6 +1165,8 @@ int KeyDispatcher::on_tap_double_osd(const KeyEvent &event) {
 /*private*/
 int KeyDispatcher::on_tap_triple(const key_mode_t &current_key_mode, const KeyEvent &event) {
 	ENTER();
+
+	LOGD("key=%d/%s,mode=%d", event.key, get_key_name(event.key), current_key_mode);
 
 	int result = 0;
 	switch (current_key_mode) {
