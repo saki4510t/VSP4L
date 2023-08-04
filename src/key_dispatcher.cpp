@@ -163,6 +163,7 @@ void KeyDispatcher::reset_key_mode() {
 /**
  * すべてのキーの状態をクリアしてキーモードをリセットする(KEY_MODE_NORMALへ戻す)
 */
+/*public*/
 void KeyDispatcher::clear() {
 	ENTER();
 
