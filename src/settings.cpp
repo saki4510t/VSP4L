@@ -10,14 +10,21 @@
 	#undef NDEBUG
 #endif
 
+#define USE_FILE_SYSTEM (0)
+
 #include <algorithm>
 #include <cstring>
 #include <fstream>
-#include <filesystem>
 #include <iterator>
 #include <iostream>
 #include <stdio.h>
 #include <string>
+
+#if USE_FILE_SYSTEM
+	#include <filesystem>
+#else
+	#include <sys/stat.h>
+#endif
 
 #include "utilbase.h"
 // common
@@ -30,7 +37,20 @@ namespace serenegiant::app {
 #define APP_SETTINGS_FILE "app.ini"
 #define CAMERA_SETTINGS_FILE "camera.ini"
 
-namespace fs = std::filesystem;
+#if USE_FILE_SYSTEM
+	namespace fs = std::filesystem;
+#endif
+
+static inline bool file_exists(const std::string &path) {
+#if USE_FILE_SYSTEM
+	// なぜかターゲット向けのyoctoビルドでコンパイルエラーになる、
+	// ターゲット上でのセルフコンパイルならOK
+	return fs::exists(fs::status(path.c_str()));
+#else
+	struct stat buffer;   
+	return (stat (path.c_str(), &buffer) == 0); 
+#endif
+}
 
 AppSettings::AppSettings()
 :	modified(false)
@@ -76,9 +96,9 @@ int AppSettings::load(const std::string &path) {
 
 	const std::string _path = !path.empty() ? path : APP_SETTINGS_FILE;
 	clear();
-	if (fs::exists(fs::status(_path.c_str()))) {
+	if (file_exists(_path)) {
 		std::ifstream in(_path.c_str());
-		{
+		if (in.good()) {
 			std::istream_iterator<std::string> it(in);
 			std::istream_iterator<std::string> last;
 			std::for_each(it, last, [this](std::string v) {
@@ -90,8 +110,8 @@ int AppSettings::load(const std::string &path) {
 					LOGD("kye=%s,val=%s", key_str.c_str(), val_str.c_str());
 				}
 			});
+			in.close();
 		}
-		in.close();
 	}
 	set_modified(false);
 
@@ -153,9 +173,9 @@ int CameraSettings::load(const std::string &path) {
 
 	const std::string _path = !path.empty() ? path : CAMERA_SETTINGS_FILE;
 	clear();
-	if (fs::exists(fs::status(_path.c_str()))) {
+	if (file_exists(_path)) {
 		std::ifstream in(_path.c_str());
-		{
+		if (in.good()) {
 			std::istream_iterator<std::string> it(in);
 			std::istream_iterator<std::string> last;
 			std::for_each(it, last, [this](std::string v) {
@@ -163,6 +183,7 @@ int CameraSettings::load(const std::string &path) {
 				if (div != std::string::npos) {
 					const auto id_str = v.substr(0, div);
 					const auto val_str = v.substr(div + 1, v.size());
+					LOGD("%s=%s", id_str.c_str(), val_str.c_str());
 					try {
 						const auto id = (uint32_t)(std::stol(id_str, nullptr, 0) & 0xffffff);
 						const auto val = std::stoi(val_str);
@@ -172,8 +193,8 @@ int CameraSettings::load(const std::string &path) {
 					}
 				}
 			});
+			in.close();
 		}
-		in.close();
 	}
 	set_modified(false);
 
