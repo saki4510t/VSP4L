@@ -39,9 +39,10 @@ protected:
 	static void resize(GLFWwindow *win, int width, int height);
 	static void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods);
 
+	bool poll_events() override;
+	bool should_close() const override;
 	void init_gl() override;
 	void terminate_gl() override;
-	bool poll_events() override;
 	void swap_buffers() override;
 	void init_gui() override;
 	void terminate_gui() override;

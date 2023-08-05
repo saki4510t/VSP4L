@@ -90,6 +90,11 @@ bool EglWindow::poll_events() {
 	return true; // !result && display;
 }
 
+/*protected*/
+bool EglWindow::should_close() const {
+    return !is_running();
+}
+
 /*protected,@WorkerThread*/
 void EglWindow::init_gl() {
 	ENTER();

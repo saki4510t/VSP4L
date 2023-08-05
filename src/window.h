@@ -67,6 +67,7 @@ protected:
 		return prev;
 	};
 	virtual bool poll_events() = 0;
+	virtual bool should_close() const = 0;
 	virtual void init_gl() = 0;
 	virtual void terminate_gl() = 0;
 	virtual void swap_buffers() = 0;

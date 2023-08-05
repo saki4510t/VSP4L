@@ -354,7 +354,7 @@ void GlfwWindow::key_callback(GLFWwindow *win, int key, int scancode, int action
 	EXIT();
 }
 
-/*private*/
+/*protected*/
 bool GlfwWindow::poll_events() {
 	// イベントを確認
 //	glfwWaitEvents(); // こっちはイベントが起こるまで実行をブロックする
@@ -362,6 +362,11 @@ bool GlfwWindow::poll_events() {
 	glfwPollEvents(); // イベントをチェックするが実行をブロックしない
 	// ウィンドウを閉じる必要がなければ true を返す
 	return window && !glfwWindowShouldClose(window);
+}
+
+/*protected*/
+bool GlfwWindow::should_close() const {
+    return !is_running() || !window || glfwWindowShouldClose(window);
 }
 
 /*protected,@WorkerThread*/
