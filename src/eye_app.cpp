@@ -249,8 +249,9 @@ void EyeApp::run() {
 	handler.post(update_state_task);
 
 	// ウインドウのイベント処理ループ
-    for ( ; window.is_running() && window ; ) {
-        usleep(30000);	//　30ms
+    for ( ; window.is_running() /*&& window*/ ; ) {
+        // usleep(30000);	//　30ms
+		glfwWaitEventsTimeout(0.100);	// 100ms
 		// FIXME ここで装着検知センサーの読み込みを行い未装着ならpauseさせる
 		const auto attached = true;	// FIXME 未実装
 		if (attached && !window.is_resumed()) {
