@@ -805,7 +805,7 @@ int KeyDispatcher::on_tap_short_brightness(const KeyEvent &event) {
 	case ImGuiKey_DownArrow:
 	case ImGuiKey_UpArrow:
 	default:
-		LOGW("unexpected key code,%d", key);
+		LOGW("unexpected key code,%d/%s", key, get_key_name(key));
 		break;
 	}
 
@@ -836,7 +836,7 @@ int KeyDispatcher::on_tap_short_zoom(const KeyEvent &event) {
 	case ImGuiKey_RightArrow:
 	case ImGuiKey_LeftArrow:
 	default:
-		LOGW("unexpected key code,%d", key);
+		LOGW("unexpected key code,%d/%s", key, get_key_name(key));
 		break;
 	}
 
@@ -930,7 +930,7 @@ int KeyDispatcher::on_tap_long_normal(const KeyEvent &event) {
 			result = 1;
 			break;
 		default:
-			LOGW("unexpected key code,%d", key);
+			LOGW("unexpected key code,%d/%s", key, get_key_name(key));
 			break;
 		}
 	} else if (n == 2) {
@@ -984,7 +984,7 @@ int KeyDispatcher::on_tap_long_brightness(const KeyEvent &event) {
 		case ImGuiKey_LeftArrow:
 			break;
 		default:
-			LOGW("unexpected key code,%d", key);
+			LOGW("unexpected key code,%d/%s", key, get_key_name(key));
 			break;
 		}
 	}
@@ -1019,7 +1019,7 @@ int KeyDispatcher::on_tap_long_zoom(const KeyEvent &event) {
 			result = 1;
 			break;
 		default:
-			LOGW("unexpected key code,%d", key);
+			LOGW("unexpected key code,%d/%s", key, get_key_name(key));
 			break;
 		}
 	}
@@ -1116,7 +1116,7 @@ int KeyDispatcher::on_tap_double_normal(const KeyEvent &event) {
 			result = 1;
 			break;
 		default:
-			LOGW("unexpected key code,%d", key);
+			LOGW("unexpected key code,%d/%s", key, get_key_name(key));
 			break;
 		}
 	}
@@ -1251,7 +1251,7 @@ int KeyDispatcher::on_tap_triple_normal(const KeyEvent &event) {
 			result = 1;
 			break;
 		default:
-			LOGW("unexpected key code,%d", key);
+			LOGW("unexpected key code,%d/%s", key, get_key_name(key));
 			break;
 		}
 	}
