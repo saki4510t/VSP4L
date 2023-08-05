@@ -61,6 +61,11 @@ private:
 protected:
 	OnKeyEventFunc on_key_event_func;
 
+	inline bool set_running(const bool &b) {
+		bool prev = running;
+		running = b;
+		return prev;
+	};
 	virtual bool poll_events() = 0;
 	virtual void init_gl() = 0;
 	virtual void terminate_gl() = 0;
