@@ -30,7 +30,6 @@ namespace app = serenegiant::app;
 
 /**
  * @brief メイン関数
- *        EyeAppを生成して呼び出すだけ
  * 
  * @param argc 
  * @param argv 
@@ -40,16 +39,18 @@ int main(int argc, char *const *argv) {
 
 	ENTER();
 
+	// コマンドラインオプションの解析・取得
 	int opt;
 	int longindex;
 	std::unordered_map<std::string, std::string> options = app::init_options();
 
 	while ((opt = getopt_long(argc, argv, SHORT_OPTS, app::LONG_OPTS, &longindex)) != -1) {
-		LOGD("%d %s", longindex, LONG_OPTS[longindex].name);
+		LOGD("%d=%s", longindex, app::LONG_OPTS[longindex].name);
 		// FIXME 値のチェックをしたほうがいいかも
 		options[app::LONG_OPTS[longindex].name] = optarg ? optarg : "";
 	}
 
+	// アプリのメインループを実行
 	app::EyeApp app(options);
 	if (app.is_initialized()) {
 		app.run();

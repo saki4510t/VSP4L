@@ -97,7 +97,8 @@ EyeApp::EyeApp(
 :   options(std::move(_options)),
 	gl_version(gl_version),
 	initialized(!GlfwWindow::initialize()),
-	show_debug(options.find(OPT_DEBUG) != options.end()),
+	exit_esc(options.find(OPT_DEBUG_EXIT_ESC) != options.end()),
+	show_fps(options.find(OPT_DEBUG_SHOW_FPS) != options.end()),
 	width(to_int(options[OPT_WIDTH], to_int(OPT_WIDTH_DEFAULT, 1920))),
 	height(to_int(options[OPT_HEIGHT], to_int(OPT_HEIGHT_DEFAULT, 1080))),
 	app_settings(), camera_settings(),
@@ -163,7 +164,8 @@ EyeApp::EyeApp(
 	// キーイベントハンドラを登録
 	window
 		.on_key_event([this](const ImGuiKey &key, const int &scancode, const key_action_t &action, const int &mods) {
-			if ((key == ImGuiKey_Escape) && (key_dispatcher.get_key_mode() != KEY_MODE_OSD)) {
+			if (exit_esc && (key == ImGuiKey_Escape)
+				&& (key_dispatcher.get_key_mode() != KEY_MODE_OSD)) {
 				// OSDモード以外でESCキーを押したときはアプリを終了させる
 				window.terminate();
 			}
@@ -500,7 +502,7 @@ void EyeApp::on_render() {
 	// 画面へ転送
 	handle_draw(offscreen, screen_renderer);
 
-	if (show_debug || show_brightness || show_zoom || show_osd) {
+	if (show_fps || show_brightness || show_zoom || show_osd) {
 		// GUI(2D)描画処理を実行
 		handle_draw_gui();
 	}
@@ -634,7 +636,7 @@ void EyeApp::handle_draw_gui() {
 
 	// ウインドウ位置を指定するにはImGui::Beginの前にImGui::SetNextWindowPosを呼び出す
 	// ウインドウサイズを指定するにはImGui::Beginの前にImGui::SetNextWindowSizeを呼び出す
-	if (show_debug) {
+	if (show_fps) {
 		ImGui::Begin("DEBUG");
 		const auto fps = ImGui::GetIO().Framerate;
 		ImGui::Text("%.3f ms/frame(%.1f FPS)", 1000.0f / fps, fps);

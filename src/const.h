@@ -17,20 +17,23 @@ namespace serenegiant::app {
 // Open GL3を使うかどうか, 1: GL3を使う, 0: 使わない(GL2を使う)
 #define USE_GL3 (0)
 
-// ノイズ低減コントロール(カーネルドライバー側で決まっている値)
-#define V4L2_CID_DENOISE	(0x00980922)
-// フレームレートコントロール(カーネルドライバー側で決まっている値)
-#define V4L2_CID_FRAMERATE	(0x00980923)
-// 設定を初期値に戻す
-#define V4L2_CID_RESTORE_SETTINGS (0x00980924)
-
+//--------------------------------------------------------------------------------
 // コマンドラインオプション
-#define OPT_DEBUG "debug"
+// ESCキーでアプリを終了させるかどうか
+#define OPT_DEBUG_EXIT_ESC "debug_exit_esc"
+// FPS表示をするかどうか
+#define OPT_DEBUG_SHOW_FPS "debug_show_fps"
+// 接続するV4L2機器のデバイスファイルを指定, デフォルトはOPT_DEVICE_DEFAULT="/dev/video0"
 #define OPT_DEVICE "device"
+// V4L2機器から映像データを受け取る際に使うUDMABUFのデバイスファイル名, デフォルトはOPT_UDMABUF_DEFAULT="/dev/udmabuf0"
 #define OPT_UDMABUF "udmabuf"
+// V4L2機器から映像データを受け取る際に使うバッファの数、デフォルトはOPT_BUF_NUMS_DEFAULT="4"
 #define OPT_BUF_NUMS "buf_nums"
+// V4L2機器から受け取る映像データの幅, デフォルトはOPT_WIDTH_DEFAULT="1920"
 #define OPT_WIDTH "width"
+// V4L2機器から受け取る映像データの高さ, デフォルトはOPT_HEIGHT_DEFAULT="1080"
 #define OPT_HEIGHT "height"
+
 // コマンドラインオプションのデフォルト値
 #define OPT_DEVICE_DEFAULT "/dev/video0"
 #define OPT_UDMABUF_DEFAULT "/dev/udmabuf0"
@@ -38,15 +41,18 @@ namespace serenegiant::app {
 #define OPT_WIDTH_DEFAULT "1920"
 #define OPT_HEIGHT_DEFAULT "1080"
 
-#define SHORT_OPTS "Dd:u:n:w:h"
+// 短い形式のコマンドラインオプション(-オプション、うまく動かない)
+#define SHORT_OPTS "efd:u:n:w:h"
+// 長い形式のコマンドラインオプション定義(--オプション)
 const struct option LONG_OPTS[] = {
-	{ OPT_DEBUG,	no_argument,		nullptr,	'D' },
-	{ OPT_DEVICE,	required_argument,	nullptr,	'd' },
-	{ OPT_UDMABUF,	required_argument,	nullptr,	'u' },
-	{ OPT_BUF_NUMS,	required_argument,	nullptr,	'n' },
-	{ OPT_WIDTH,	required_argument,	nullptr,	'w' },
-	{ OPT_HEIGHT,	required_argument,	nullptr,	'h' },
-	{ 0,			0,					0,			0  },
+	{ OPT_DEBUG_EXIT_ESC,	no_argument,		nullptr,	'e' },
+	{ OPT_DEBUG_SHOW_FPS,	no_argument,		nullptr,	'f' },
+	{ OPT_DEVICE,			required_argument,	nullptr,	'd' },
+	{ OPT_UDMABUF,			required_argument,	nullptr,	'u' },
+	{ OPT_BUF_NUMS,			required_argument,	nullptr,	'n' },
+	{ OPT_WIDTH,			required_argument,	nullptr,	'w' },
+	{ OPT_HEIGHT,			required_argument,	nullptr,	'h' },
+	{ 0,					0,					0,			0  },
 };
 
 /**
@@ -56,6 +62,7 @@ const struct option LONG_OPTS[] = {
  */
 std::unordered_map<std::string, std::string> init_options();
 
+//--------------------------------------------------------------------------------
 /**
  * @brief モデル文字列
  * 
@@ -67,6 +74,7 @@ extern const char *MODEL;
  */
 extern const char *VERSION;
 
+//--------------------------------------------------------------------------------
 /**
  * @brief キー操作モード定数
  * 
@@ -78,6 +86,7 @@ typedef enum {
 	KEY_MODE_OSD,			// OSD操作モード
 } key_mode_t;
 
+//--------------------------------------------------------------------------------
 /**
  * @brief 映像効果定数
  * 
@@ -91,6 +100,7 @@ typedef enum {
 	EFFECT_NUM,				// 映像効果の数
 } effect_t;
 
+//--------------------------------------------------------------------------------
 /**
  * @brief 測光モード
  * 
@@ -100,12 +110,14 @@ typedef enum {
 	EXP_MODE_CENTER,		// 中央測光
 } exp_mode_t;
 
+//--------------------------------------------------------------------------------
 /**
  * @brief レンズ補正係数
  * 
  */
 extern const float LENSE_FACTOR;
 
+//--------------------------------------------------------------------------------
 /**
  * @brief 拡大縮小倍率配列
  * 
@@ -122,12 +134,21 @@ extern const int NUM_ZOOM_FACTORS;
  */
 extern const int DEFAULT_ZOOM_IX;
 
+//--------------------------------------------------------------------------------
 /**
  * @brief シリアル番号を取得
  * 
  * @return std::string 
  */
 std::string get_serial();
+
+//--------------------------------------------------------------------------------
+// ノイズ低減コントロール(カーネルドライバー側で決まっている値)
+#define V4L2_CID_DENOISE	(0x00980922)
+// フレームレートコントロール(カーネルドライバー側で決まっている値)
+#define V4L2_CID_FRAMERATE	(0x00980923)
+// 設定を初期値に戻す
+#define V4L2_CID_RESTORE_SETTINGS (0x00980924)
 
 /**
  * OSD画面で対応可能なカメラコントロール

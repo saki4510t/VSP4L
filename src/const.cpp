@@ -75,6 +75,8 @@ std::string get_serial() {
  */
 std::unordered_map<std::string, std::string> init_options() {
 	std::unordered_map<std::string, std::string> options;
+//	options[OPT_DEBUG_EXIT_ESC] = "";
+//	options[OPT_DEBUG_SHOW_FPS] = "";
 	options[OPT_DEVICE] = OPT_DEVICE_DEFAULT;
 	options[OPT_UDMABUF] = OPT_UDMABUF_DEFAULT;
 	options[OPT_BUF_NUMS] = OPT_BUF_NUMS_DEFAULT;
