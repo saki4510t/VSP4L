@@ -292,6 +292,7 @@ void GlfwWindow::terminate() {
     if (window) {
         glfwSetWindowShouldClose(window, 1);
     } 
+    set_running(false);
 
     EXIT();
 }
