@@ -151,8 +151,7 @@ void Window::renderer_thread_func() {
 			}
 
 			// 描画ループ
-			// メインスレッドでイベント処理しているのでここではpoll_eventsを呼び出さないように変更
-			for ( ; running && resumed /*&& poll_events()*/; ) {
+			for ( ; running && resumed ; ) {
 				const auto start = systemTime();
 				on_render();
 				// ダブルバッファーをスワップ
