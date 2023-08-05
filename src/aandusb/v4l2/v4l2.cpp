@@ -469,11 +469,9 @@ int get_menu_items(int fd, const struct v4l2_queryctrl &query, std::vector<std::
 void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &supported, const bool &dump) {
 	ENTER();
 
-	#define V4L2_CID_END (V4L2_CID_IMAGE_PROC_CLASS_BASE + 0x100)
-
 	supported.clear();
-	// v4l2標準コントロール一覧
-	for (uint32_t i = V4L2_CID_BASE; i <  V4L2_CID_END; i++) {
+	// v4l2のユーザーコントロール一覧
+	for (uint32_t i = V4L2_CID_BASE; i <  V4L2_CID_LASTP1; i++) {
 		struct v4l2_queryctrl query {
 			.id = i,
 		};
@@ -486,7 +484,33 @@ void update_ctrl_all_locked(int fd, std::unordered_map<uint32_t, QueryCtrlSp> &s
 		}
 	}
 	// v4l2標準のカメラコントロール一覧
-	for (uint32_t i = V4L2_CID_EXPOSURE_AUTO + 1; i < V4L2_CID_LASTP1; i++) {
+	for (uint32_t i = V4L2_CID_CAMERA_CLASS_BASE; i < V4L2_CID_CAMERA_SENSOR_ROTATION + 1; i++) {
+		struct v4l2_queryctrl query {
+			.id = i,
+		};
+		int r = xioctl(fd, VIDIOC_QUERYCTRL, &query);
+		if ((r != -1) && !(query.flags & V4L2_CTRL_FLAG_DISABLED)) {
+			supported[i] = std::make_shared<struct v4l2_queryctrl>(query);
+			if (dump) {
+				dump_ctrl(fd, query);
+			}
+		}
+	}
+	// 映像ソースコントロール一覧
+	for (uint32_t i = V4L2_CID_IMAGE_SOURCE_CLASS_BASE; i < V4L2_CID_IMAGE_SOURCE_CLASS_BASE + 16; i++) {
+		struct v4l2_queryctrl query {
+			.id = i,
+		};
+		int r = xioctl(fd, VIDIOC_QUERYCTRL, &query);
+		if ((r != -1) && !(query.flags & V4L2_CTRL_FLAG_DISABLED)) {
+			supported[i] = std::make_shared<struct v4l2_queryctrl>(query);
+			if (dump) {
+				dump_ctrl(fd, query);
+			}
+		}
+	}
+	// 映像プロセッシングコントロール一覧
+	for (uint32_t i = V4L2_CID_IMAGE_PROC_CLASS_BASE; i < V4L2_CID_IMAGE_PROC_CLASS_BASE + 16; i++) {
 		struct v4l2_queryctrl query {
 			.id = i,
 		};
