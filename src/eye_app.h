@@ -140,6 +140,12 @@ private:
 	*/
 	void save_settings();
 	/**
+	 * カメラ設定のデフォルト値を修正する
+	 * @param settings
+	 * @param force true: 強制的に上書きする
+	*/
+	void fix_camera_settings(CameraSettings &settings, const bool &force = false);
+	/**
 	 * @brief カメラ設定を適用する
 	 * 
 	 * @param settings 

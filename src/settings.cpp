@@ -196,6 +196,8 @@ int CameraSettings::load(const std::string &path) {
 			in.close();
 		}
 	}
+	// フレームレート指定は受け付けない
+	remove(V4L2_CID_FRAMERATE);
 	set_modified(false);
 
 	RETURN(0, int);

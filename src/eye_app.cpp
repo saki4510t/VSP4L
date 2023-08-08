@@ -403,10 +403,6 @@ void EyeApp::on_resume() {
 		LOGD("set frame rate to 30");
 		source->set_ctrl_value(V4L2_CID_FRAMERATE, 30);
 	}
-	if (source->is_ctrl_supported(V4L2_CID_DENOISE)) {
-		LOGD("set denose to 1");
-		source->set_ctrl_value(V4L2_CID_DENOISE, 1);	// FIXME 設定で変更できるようにする
-	}
 	const auto buf_nums = to_int(options[OPT_BUF_NUMS], to_int(OPT_BUF_NUMS_DEFAULT, 4));
 	if (source->start(buf_nums)) {
 		LOGE("カメラを開始できなかった");
@@ -418,15 +414,7 @@ void EyeApp::on_resume() {
 	// カメラ設定を読み込む
 	camera_settings.load();
 	const bool empty = camera_settings.empty();
-	// 電源周波数設定(フリッカー抑制設定)に対応していてカメラ設定に値がなければ3:AUTOを試みる
-	if (!camera_settings.contains(V4L2_CID_POWER_LINE_FREQUENCY)
-		&& source->is_ctrl_supported(V4L2_CID_POWER_LINE_FREQUENCY)) {
-		int32_t val = 3;
-		if (!set_ctrl_value(V4L2_CID_POWER_LINE_FREQUENCY, val)) {
-			camera_settings.set_value(V4L2_CID_POWER_LINE_FREQUENCY, val);
-			camera_settings.save();
-		}
-	}
+	fix_camera_settings(camera_settings);
 
 	if (UNLIKELY(empty)) {
 		// カメラ設定が保存されていないとき=初回起動時
@@ -786,6 +774,8 @@ void EyeApp::restore_settings() {
 				}
 			}
 		}
+		// デフォルトの設定だとよろしくないのを修正する
+		fix_camera_settings(camera_settings, true);
 		// カメラ設定を適用
 		apply_settings(camera_settings);
 	}
@@ -820,6 +810,75 @@ void EyeApp::save_settings() {
 }
 
 /**
+ * カメラ設定のデフォルト値を修正する
+ * @param settings
+ * @param force true: 強制的に上書きする
+*/
+void EyeApp::fix_camera_settings(CameraSettings &settings, const bool &force) {
+	ENTER();
+
+	if (source) {
+		if (source->is_ctrl_supported(V4L2_CID_POWER_LINE_FREQUENCY)) {
+			// 電源周波数設定(フリッカー抑制設定)に対応していている場合
+			if (force || !settings.contains(V4L2_CID_POWER_LINE_FREQUENCY)) {
+				// カメラ設定に値がないかforce指定なら3:AUTOを試みる
+				int32_t val = 3;
+				if (!set_ctrl_value(V4L2_CID_POWER_LINE_FREQUENCY, val)) {
+					settings.set_value(V4L2_CID_POWER_LINE_FREQUENCY, val);
+				}
+			}
+		}
+
+		if (source->is_ctrl_supported(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE)) {
+			// オートホワイトバランス設定に対応していている場合
+			if (force || !settings.contains(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE)) {
+				// カメラ設定に値がないかforce指定なら1:AUTOを試みる
+				int32_t val = 1;
+				if (!set_ctrl_value(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE, val)) {
+					settings.set_value(V4L2_CID_AUTO_N_PRESET_WHITE_BALANCE, val);
+				}
+			}
+		}
+
+		if (source->is_ctrl_supported(V4L2_CID_DENOISE)) {
+			// ノイズ除去に対応している場合
+			if (force || !settings.contains(V4L2_CID_DENOISE)) {
+				// カメラ設定に値がないかforce指定なら1:OFFを試みる
+				int32_t val = 1;
+				if (!set_ctrl_value(V4L2_CID_DENOISE, val)) {
+					settings.set_value(V4L2_CID_DENOISE, val);
+				}
+			}
+		}
+
+		if (source->is_ctrl_supported(V4L2_CID_EXPOSURE_AUTO)) {
+			// 自動露出に対応している場合
+			if (force || !settings.contains(V4L2_CID_EXPOSURE_AUTO)) {
+				// カメラ設定に値がないかforce指定なら0:Autoを試みる
+				int32_t val = 0;
+				if (!set_ctrl_value(V4L2_CID_EXPOSURE_AUTO, val)) {
+					settings.set_value(V4L2_CID_EXPOSURE_AUTO, val);
+				} else {
+					// 0:Autoがだめなときはデフォルト値にする
+					uvc::control_value32_t ctrl;
+					auto r = source->get_ctrl(V4L2_CID_EXPOSURE_AUTO, ctrl);
+					if (!r && !set_ctrl_value(V4L2_CID_EXPOSURE_AUTO, ctrl.def)) {
+						settings.set_value(V4L2_CID_EXPOSURE_AUTO, ctrl.def);
+					}
+				}
+			}
+		}
+
+		if (settings.is_modified()) {
+			// 変更されていれば保存する
+			settings.save();
+		}
+	}	// if (source)
+
+	EXIT();
+}
+
+/**
  * @brief カメラ設定を適用する
  * 
  * @param settings 
@@ -828,6 +887,12 @@ void EyeApp::apply_settings(CameraSettings &settings) {
 	ENTER();
 
 	if (LIKELY(source)) {
+		// フレームレートは30fps固定にする
+		settings.remove(V4L2_CID_FRAMERATE);
+		if (source->is_ctrl_supported(V4L2_CID_FRAMERATE)) {
+			LOGD("set frame rate to 30");
+			source->set_ctrl_value(V4L2_CID_FRAMERATE, 30);
+		}
 		for (const auto id: SUPPORTED_CTRLS) {
 			int32_t val;
 			auto r = settings.get_value(id, val);
