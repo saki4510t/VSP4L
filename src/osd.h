@@ -30,7 +30,7 @@ typedef struct _osd_value {
 	bool modified;
 	int32_t prev;
 	uvc::control_value32_t value;
-	std::vector<std::string> items;
+	std::vector<std::string> items;	// FIXME とびとびの値を持つことがあるのでmapに変更する
 } osd_value_t;
 
 typedef std::unique_ptr<osd_value_t> OSDValueUp;
