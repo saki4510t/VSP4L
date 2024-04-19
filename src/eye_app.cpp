@@ -1,3 +1,19 @@
+// Vision Support Program for Linux ... EyeApp
+// Copyright (C) 2023-2024 saki t_saki@serenegiant.com
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 #if 1    // set 0 if you need debug log, otherwise set 1
 	#ifndef LOG_NDEBUG
 	#define LOG_NDEBUG
@@ -102,7 +118,7 @@ EyeApp::EyeApp(
 	width(to_int(options[OPT_WIDTH], to_int(OPT_WIDTH_DEFAULT, 1920))),
 	height(to_int(options[OPT_HEIGHT], to_int(OPT_HEIGHT_DEFAULT, 1080))),
 	app_settings(), camera_settings(),
-	window(width, height, "BOV EyeApp"),
+	window(width, height, "VSP4L EyeApp"),
 	source(nullptr),
 	m_egl(nullptr),
 	video_renderer(nullptr), image_renderer(nullptr),

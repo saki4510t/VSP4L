@@ -1,5 +1,6 @@
-# bovproj_eyeapp
-Vision support app on linux for BOV project
+# VSP4L_EYEAPP
+
+Vision support program on linux
 
 ## キー操作(暫定)
 
