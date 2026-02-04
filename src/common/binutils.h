@@ -8,6 +8,7 @@
 #ifndef BINUTILS_H_
 #define BINUTILS_H_
 
+#include <cstdint>
 #include <vector>
 #include <string>
 
